@@ -10,6 +10,6 @@ const mediaItemSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
 }, { timestamps: true }); // Enable timestamps
 
-const MediaItem = mongoose.models.MediaItem || mongoose.model('MediaItem', mediaItemSchema);
+const MediaItem = mongoose.models.MediaItem || mongoose.model('MediaItem', mediaItemSchema, 'mediaItems');
 
 export default MediaItem;

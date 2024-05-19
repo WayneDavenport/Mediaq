@@ -1,9 +1,13 @@
+// src/pages/api/auth/[...nextauth].js
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { MongoDBAdapter } from "@auth/mongodb-adapter"
-import { connectToDatabase } from "@/lib/db";
+import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import { connectToMongoose } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth";
 import clientPromise from "@/lib/db";
+import mongoose from "mongoose";
+import MediaItem from "@/models/MediaItem";
+import User from "@/models/User"
 
 export const authOptions = {
     session: {
@@ -17,29 +21,29 @@ export const authOptions = {
                 password: { label: "Password", type: "password" }
             },
             authorize: async (credentials) => {
-                const client = await connectToDatabase();
+                await connectToMongoose();
                 try {
-                    const usersCollection = client.db("Mediaq").collection("users");
-                    const user = await usersCollection.findOne({ email: credentials.email });
+                    const User = mongoose.model('User'); // Assuming you have a User model
+                    const user = await User.findOne({ email: credentials.email });
 
                     if (!user) {
-                        client.close();
                         throw new Error('No user found with the email');
                     }
 
                     const isValid = await verifyPassword(credentials.password, user.password);
 
                     if (!isValid) {
-                        client.close();
                         throw new Error('Password is incorrect');
                     }
 
-                    return { id: user._id, email: user.email }; // Include user ID
+                    // Fetch media items for the user
+                    const MediaItem = mongoose.model('MediaItem');
+                    const mediaItems = await MediaItem.find({ userId: user._id });
+
+                    return { id: user._id, email: user.email, mediaItems }; // Include media items
                 } catch (error) {
                     console.error("Authentication error:", error);
                     return null;
-                } finally {
-                    client.close();
                 }
             }
         })
@@ -54,6 +58,7 @@ export const authOptions = {
             if (user) {
                 token.id = user.id; // Include user ID in the token
                 token.email = user.email;
+                token.mediaItems = user.mediaItems; // Include media items in the token
             }
             console.log("JWT Callback - Token:", token); // Debug log
             return token;
@@ -61,6 +66,7 @@ export const authOptions = {
         session: async ({ session, token }) => {
             session.user.id = token.id; // Include user ID in the session
             session.user.email = token.email;
+            session.user.mediaItems = token.mediaItems; // Include media items in the session
             console.log("Session Callback - Session:", session); // Debug log
             return session;
         }

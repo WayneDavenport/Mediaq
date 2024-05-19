@@ -1,5 +1,7 @@
+// src/pages/api/signup.js
 import { hashPassword } from "@/lib/auth";
-import { connectToDatabase } from "@/lib/db";
+import { connectToMongoose } from "@/lib/db";
+import User from "@/models/User";
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -14,30 +16,25 @@ export default async function handler(req, res) {
         });
     }
 
-    let client;
-
     try {
-        client = await connectToDatabase();
-        const db = client.db("Mediaq"); // Ensure you are using the correct database
+        await connectToMongoose();
 
-        const existingUser = await db.collection('users').findOne({ email: email });
+        const existingUser = await User.findOne({ email: email });
         if (existingUser) {
             return res.status(422).json({ message: 'User exists already!' });
         }
 
         const hashedPassword = await hashPassword(password);
-        const result = await db.collection('users').insertOne({
+        const newUser = new User({
             email: email,
             password: hashedPassword
         });
+
+        const result = await newUser.save();
 
         res.status(201).json({ message: 'Created user!' });
     } catch (error) {
         console.error("Failed to create user:", error);
         res.status(500).json({ message: 'Internal server error' });
-    } finally {
-        if (client) {
-            client.close();
-        }
     }
 }

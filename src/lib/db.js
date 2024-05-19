@@ -7,10 +7,10 @@ let mongooseConnectionPromise;
 
 if (!global._mongoClientPromise) {
     client = new MongoClient(process.env.MONGODB_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 30000, // Increase timeout to 30 seconds
-        connectTimeoutMS: 30000, // Increase connection timeout to 30 seconds
+        /*         useNewUrlParser: true,
+                useUnifiedTopology: true,
+                serverSelectionTimeoutMS: 30000, // Increase timeout to 30 seconds
+                connectTimeoutMS: 30000, // Increase connection timeout to 30 seconds */
     });
     global._mongoClientPromise = client.connect();
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import SignOutButton from "@/components/SignOutButton";
 import MediaForm from "@/components/MediaForm";
+import MediaItemsList from "@/components/MediaItemsList";
 
 export default function Home() {
     const { data: session } = useSession();
@@ -38,6 +39,8 @@ export default function Home() {
                 )}
             </div>
             <MediaForm onSubmit={handleFormSubmit} />
+            <br /> <br />
+            <MediaItemsList />
         </>
     );
 }

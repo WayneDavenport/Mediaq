@@ -30,7 +30,7 @@ export default async function handler(req, res) {
                 userEmail: req.user.email,
                 userId: req.user.id,
                 createdAt: new Date(),
-                updatedAt: new Date(), // Use user ID from req.user set by middleware
+                updatedAt: new Date(),
             });
 
             console.log("Saving new item to database...");
