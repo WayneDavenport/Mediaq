@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const MediaItemsList = () => {
+const MediaItemsList = ({ newMediaItem }) => {
     const [mediaItems, setMediaItems] = useState([]);
 
     useEffect(() => {
@@ -18,9 +18,16 @@ const MediaItemsList = () => {
         fetchMediaItems();
     }, []);
 
+    useEffect(() => {
+        if (newMediaItem) {
+            console.log("Adding new media item:", newMediaItem);
+            setMediaItems(prevItems => [newMediaItem, ...prevItems]);
+        }
+    }, [newMediaItem]);
+
     return (
         <div className="media-items-list">
-            {mediaItems.map(item => (
+            {mediaItems.filter(item => item).map(item => (
                 <div key={item._id} className="media-item-thumbnail">
                     <h3>{item.title}</h3>
                     <p>Category: {item.category}</p>
