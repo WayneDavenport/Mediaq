@@ -52,7 +52,7 @@ export default function Home() {
                 )}
             </div>
             <MediaForm onSubmit={handleFormSubmit} />
-            <br /> <br />
+            <br /> <Link href="/search">Search</Link> <br />
             <MediaItemsList newMediaItem={optimisticMediaItem} />
         </>
     );
