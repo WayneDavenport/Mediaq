@@ -1,85 +1,71 @@
-// pages/search.js
+// src/pages/search.js
 import { useState } from 'react';
+import MovieSearch from '@/components/MovieSearch';
+import TvSearch from '@/components/TvSearch';
+import Staging from '@/components/Staging';
 
 const Search = () => {
     const [mediaType, setMediaType] = useState('movie');
-    const [searchParams, setSearchParams] = useState({
-        title: '',
-        genre: '',
-        year: '',
-    });
-    const [results, setResults] = useState([]);
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setSearchParams({ ...searchParams, [name]: value });
-    };
+    const [stagingItem, setStagingItem] = useState(null);
 
     const handleMediaTypeChange = (e) => {
         setMediaType(e.target.value);
-        setSearchParams({
-            title: '',
-            genre: '',
-            year: '',
-        });
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleAdd = (item) => {
+        const formData = {
+            title: item.title || item.name,
+            duration: item.runtime || item.episode_run_time?.[0] || '',
+            category: '', // Default category or let the user choose later
+            mediaType: mediaType === 'movie' ? 'Movie' : 'Show',
+            description: item.overview,
+            additionalFields: {
+                cast: item.credits?.cast?.slice(0, 3).map(cast => cast.name).join(', '),
+                director: item.credits?.crew?.find(crew => crew.job === 'Director')?.name,
+                network: item.networks?.map(network => network.name).join(', '),
+                crew: item.credits?.crew?.slice(0, 3).map(crew => crew.name).join(', '),
+                episodes: item.number_of_episodes,
+            },
+        };
+
+        setStagingItem(formData);
+    };
+
+    const handleSubmit = async (formData) => {
         try {
-            const response = await fetch(`/api/tmdb?mediaType=${mediaType}&title=${searchParams.title}&genre=${searchParams.genre}&year=${searchParams.year}`);
-            const data = await response.json();
-            setResults(data.results);
+            const response = await fetch('/api/newItem', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            if (response.ok) {
+                console.log('Media item added successfully');
+                setStagingItem(null); // Clear staging item after successful submission
+            } else {
+                const errorData = await response.json();
+                console.error('Error adding media item:', errorData.message);
+            }
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error('Error adding media item:', error);
         }
     };
 
     return (
         <div>
             <h1>Search</h1>
-            <form onSubmit={handleSubmit}>
-                <select name="mediaType" value={mediaType} onChange={handleMediaTypeChange}>
-                    <option value="movie">Movie</option>
-                    <option value="show">Show</option>
-                    <option value="book">Book</option>
-                    <option value="videoGame">Video Game</option>
-                    <option value="musicAlbum">Music Album</option>
-                </select>
-                <input
-                    type="text"
-                    name="title"
-                    placeholder="Title"
-                    value={searchParams.title}
-                    onChange={handleInputChange}
-                    required
-                />
-                <input
-                    type="text"
-                    name="genre"
-                    placeholder="Genre"
-                    value={searchParams.genre}
-                    onChange={handleInputChange}
-                />
-                {mediaType === 'movie' && (
-                    <input
-                        type="text"
-                        name="year"
-                        placeholder="Year"
-                        value={searchParams.year}
-                        onChange={handleInputChange}
-                    />
-                )}
-                <button type="submit">Search</button>
-            </form>
-            <div>
-                {results.map((result) => (
-                    <div key={result.id}>
-                        <h3>{result.title || result.name}</h3>
-                        <p>{result.overview}</p>
-                    </div>
-                ))}
-            </div>
+            <select value={mediaType} onChange={handleMediaTypeChange}>
+                <option value="movie">Movie</option>
+                <option value="tv">TV Show</option>
+            </select>
+            {mediaType === 'movie' ? (
+                <MovieSearch onAdd={handleAdd} />
+            ) : (
+                <TvSearch onAdd={handleAdd} />
+            )}
+            {stagingItem && <Staging item={stagingItem} onSubmit={handleSubmit} />}
         </div>
     );
 };

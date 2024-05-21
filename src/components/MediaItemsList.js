@@ -53,14 +53,15 @@ const MediaItemsList = ({ newMediaItem }) => {
     }, {});
 
     return (
-        <div className="media-items-list">
-            <div>
-                <label>
+        <div className="media-items-list p-4">
+            <div className="mb-4">
+                <label className="mr-4">
                     <input
                         type="radio"
                         value="mediaType"
                         checked={groupBy === 'mediaType'}
                         onChange={handleGroupByChange}
+                        className="mr-2"
                     />
                     Group by Media Type
                 </label>
@@ -70,25 +71,21 @@ const MediaItemsList = ({ newMediaItem }) => {
                         value="category"
                         checked={groupBy === 'category'}
                         onChange={handleGroupByChange}
+                        className="mr-2"
                     />
                     Group by Category
                 </label>
             </div>
-            <br />
             {Object.keys(groupedMediaItems).map(group => (
-                <div key={group}>
-                    <h2>{group}</h2>
-                    <br />
+                <div key={group} className="mb-6">
+                    <h2 className="text-xl font-bold mb-2">{group}</h2>
                     {groupedMediaItems[group].map(item => (
-                        <div key={item._id} className="media-item-thumbnail">
-                            <h3>{item.title}</h3>
+                        <div key={item._id} className="media-item-thumbnail border p-4 rounded shadow mb-4">
+                            <h3 className="text-lg font-semibold">{item.title}</h3>
                             <p>Category: {item.category}</p>
                             <p>Type: {item.mediaType}</p>
                             <p>Duration: {item.duration}</p>
-                            <button onClick={() => handleDelete(item._id)}>Remove</button>
-                            <br />
-                            <br />
-
+                            <button onClick={() => handleDelete(item._id)} className="bg-red-500 text-white p-2 rounded mt-2">Remove</button>
                         </div>
                     ))}
                 </div>

@@ -5,6 +5,7 @@ const mediaItemSchema = new mongoose.Schema({
     duration: { type: String, required: true },
     category: { type: String, required: true },
     mediaType: { type: String, required: true },
+    description: { type: String },
     additionalFields: { type: Map, of: String },
     userEmail: { type: String, required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },

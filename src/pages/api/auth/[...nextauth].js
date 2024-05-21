@@ -58,7 +58,7 @@ export const authOptions = {
             if (user) {
                 token.id = user.id; // Include user ID in the token
                 token.email = user.email;
-                token.mediaItems = user.mediaItems; // Include media items in the token
+                /* token.mediaItems = user.mediaItems; */ // Include media items in the token
             }
             console.log("JWT Callback - Token:", token); // Debug log
             return token;
@@ -66,7 +66,7 @@ export const authOptions = {
         session: async ({ session, token }) => {
             session.user.id = token.id; // Include user ID in the session
             session.user.email = token.email;
-            session.user.mediaItems = token.mediaItems; // Include media items in the session
+            /* session.user.mediaItems = token.mediaItems; */ // Include media items in the session
             console.log("Session Callback - Session:", session); // Debug log
             return session;
         }

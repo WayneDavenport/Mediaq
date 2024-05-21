@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     }
 
     await requireAuth(req, res, async () => {
-        const { title, duration, category, mediaType, additionalFields } = req.body;
+        const { title, duration, category, mediaType, description, additionalFields } = req.body;
 
         if (!title || !duration || !category || !mediaType) {
             return res.status(422).json({
@@ -26,6 +26,7 @@ export default async function handler(req, res) {
                 duration,
                 category,
                 mediaType,
+                description,
                 additionalFields,
                 userEmail: req.user.email,
                 userId: req.user.id,
