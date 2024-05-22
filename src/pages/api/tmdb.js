@@ -34,6 +34,7 @@ export default async function handler(req, res) {
                 return {
                     ...item,
                     credits: detailsData.credits,
+                    runtime: detailsData.runtime, // Add runtime to the response
                 };
             })
         );

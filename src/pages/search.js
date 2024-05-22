@@ -54,18 +54,26 @@ const Search = () => {
     };
 
     return (
-        <div>
-            <h1>Search</h1>
-            <select value={mediaType} onChange={handleMediaTypeChange}>
-                <option value="movie">Movie</option>
-                <option value="tv">TV Show</option>
-            </select>
-            {mediaType === 'movie' ? (
-                <MovieSearch onAdd={handleAdd} />
-            ) : (
-                <TvSearch onAdd={handleAdd} />
-            )}
-            {stagingItem && <Staging item={stagingItem} onSubmit={handleSubmit} />}
+        <div className="container mx-auto p-4">
+            <h1 className="text-2xl font-bold mb-4">Search</h1>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                    <select value={mediaType} onChange={handleMediaTypeChange} className="border p-2 mb-4 w-full">
+                        <option value="movie">Movie</option>
+                        <option value="tv">TV Show</option>
+                    </select>
+                    {mediaType === 'movie' ? (
+                        <MovieSearch onAdd={handleAdd} />
+                    ) : (
+                        <TvSearch onAdd={handleAdd} />
+                    )}
+                </div>
+                {stagingItem && (
+                    <div>
+                        <Staging item={stagingItem} onSubmit={handleSubmit} />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
