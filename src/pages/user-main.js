@@ -5,10 +5,12 @@ import { useState } from "react";
 import SignOutButton from "@/components/SignOutButton";
 import MediaForm from "@/components/MediaForm";
 import MediaItemsList from "@/components/MediaItemsList";
+import UpdateForm from "@/components/UpdateForm";
 
 export default function Home() {
     const { data: session } = useSession();
     const [optimisticMediaItem, setOptimisticMediaItem] = useState(null);
+    const [editingItem, setEditingItem] = useState(null);
 
     const handleFormSubmit = async (formData) => {
         // Optimistically update the UI
@@ -42,18 +44,57 @@ export default function Home() {
         }
     };
 
+    const handleEdit = (item) => {
+        setEditingItem(item);
+    };
+
+    const handleUpdateSubmit = async (formData) => {
+        try {
+            const response = await fetch('/api/updateItem', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            if (response.ok) {
+                console.log('Media item updated successfully');
+                setEditingItem(null); // Clear editing item after successful submission
+            } else {
+                const errorData = await response.json();
+                console.error('Error updating media item:', errorData.message);
+            }
+        } catch (error) {
+            console.error('Error updating media item:', error);
+        }
+    };
+
+    const handleCancel = () => {
+        setEditingItem(null);
+    };
+
     return (
-        <>
+        <div className="container mx-auto p-4">
             <div>
-                <h1>User-Main</h1>
+                <h1 className="text-2xl font-bold mb-4">User-Main</h1>
                 <Link href='/'>Home Page</Link>
                 {session && (
                     <li><SignOutButton /></li>
                 )}
             </div>
-            <MediaForm onSubmit={handleFormSubmit} />
-            <br /> <Link href="/search">Search</Link> <br />
-            <MediaItemsList newMediaItem={optimisticMediaItem} />
-        </>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                    <MediaForm onSubmit={handleFormSubmit} />
+                    <br /> <Link href="/search">Search</Link> <br />
+                    <MediaItemsList newMediaItem={optimisticMediaItem} onEdit={handleEdit} />
+                </div>
+                {editingItem && (
+                    <div>
+                        <UpdateForm item={editingItem} onSubmit={handleUpdateSubmit} onCancel={handleCancel} />
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }

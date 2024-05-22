@@ -35,6 +35,8 @@ export default async function handler(req, res) {
                     ...item,
                     credits: detailsData.credits,
                     runtime: detailsData.runtime, // Add runtime to the response
+                    number_of_episodes: detailsData.number_of_episodes, // Add number of episodes to the response
+                    episode_run_time: detailsData.episode_run_time, // Add episode runtime to the response
                 };
             })
         );

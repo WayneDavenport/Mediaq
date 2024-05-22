@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const MediaItemsList = ({ newMediaItem }) => {
+const MediaItemsList = ({ newMediaItem, onEdit }) => {
     const [mediaItems, setMediaItems] = useState([]);
     const [groupBy, setGroupBy] = useState('mediaType'); // Default grouping by media type
 
@@ -86,6 +86,7 @@ const MediaItemsList = ({ newMediaItem }) => {
                             <p>Type: {item.mediaType}</p>
                             <p>Duration: {item.duration}</p>
                             <button onClick={() => handleDelete(item._id)} className="bg-red-500 text-white p-2 rounded mt-2">Remove</button>
+                            <button onClick={() => onEdit(item)} className="bg-yellow-500 text-white p-2 rounded mt-2 ml-2">Edit</button>
                         </div>
                     ))}
                 </div>

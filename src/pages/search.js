@@ -13,9 +13,13 @@ const Search = () => {
     };
 
     const handleAdd = (item) => {
+        const duration = mediaType === 'movie'
+            ? item.runtime
+            : item.number_of_episodes * (item.episode_run_time?.[0] || 0);
+
         const formData = {
             title: item.title || item.name,
-            duration: item.runtime || item.episode_run_time?.[0] || '',
+            duration: duration || '',
             category: '', // Default category or let the user choose later
             mediaType: mediaType === 'movie' ? 'Movie' : 'Show',
             description: item.overview,
