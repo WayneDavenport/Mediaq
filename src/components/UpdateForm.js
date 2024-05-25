@@ -1,4 +1,3 @@
-// src/components/UpdateForm.js
 import { useState } from 'react';
 
 const UpdateForm = ({ item, onSubmit, onCancel }) => {
@@ -10,6 +9,10 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
         mediaType: item.mediaType || '',
         description: item.description || '',
         additionalFields: item.additionalFields || {},
+        percentComplete: item.percentComplete || 0,
+        lockCondition: item.lockCondition || { type: 'None', value: 'None', duration: 0 },
+        goalCompletionTime: item.goalCompletionTime || 0,
+        completedDuration: item.completedDuration || 0
     });
 
     const handleChange = (e) => {
@@ -20,9 +23,39 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
         }));
     };
 
+    const handleSliderChange = (e) => {
+        const percentComplete = Number(e.target.value);
+        const completedDuration = (percentComplete / 100) * formData.duration;
+        setFormData((prevData) => ({
+            ...prevData,
+            percentComplete,
+            completedDuration
+        }));
+    };
+
+    const handleLockConditionChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prevData) => ({
+            ...prevData,
+            lockCondition: {
+                ...prevData.lockCondition,
+                [name]: value
+            }
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         onSubmit(formData);
+    };
+
+    const calculateCompleted = () => {
+        if (formData.mediaType === 'Book') {
+            return Math.ceil((formData.percentComplete / 100) * formData.additionalFields.pageCount);
+        } else if (formData.mediaType === 'Show') {
+            return Math.ceil((formData.percentComplete / 100) * formData.additionalFields.episodes);
+        }
+        return formData.percentComplete;
     };
 
     return (
@@ -78,7 +111,65 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
                         className="border p-2 w-full rounded"
                     />
                 </div>
-                {/* Add more fields as needed */}
+                <div>
+                    <label className="block text-gray-700">Percent Complete:</label>
+                    <input
+                        type="range"
+                        name="percentComplete"
+                        min="0"
+                        max="100"
+                        value={formData.percentComplete}
+                        onChange={handleSliderChange}
+                        className="w-full"
+                    />
+                    <span>{formData.percentComplete}%</span>
+                    {formData.mediaType === 'Book' && (
+                        <p>{calculateCompleted()} pages completed</p>
+                    )}
+                    {formData.mediaType === 'Show' && (
+                        <p>{calculateCompleted()} episodes completed</p>
+                    )}
+                </div>
+                <div>
+                    <label className="block text-gray-700">Lock Condition Type:</label>
+                    <select
+                        name="type"
+                        value={formData.lockCondition.type}
+                        onChange={handleLockConditionChange}
+                        className="border p-2 w-full rounded"
+                    >
+                        <option value="">None</option>
+                        <option value="mediaItem">Media Item</option>
+                        <option value="categoryTime">Category Time</option>
+                        <option value="mediaTypeTime">Media Type Time</option>
+                    </select>
+                </div>
+                {formData.lockCondition.type && (
+                    <>
+                        <div>
+                            <label className="block text-gray-700">Lock Condition Value:</label>
+                            <input
+                                type="text"
+                                name="value"
+                                value={formData.lockCondition.value}
+                                onChange={handleLockConditionChange}
+                                className="border p-2 w-full rounded"
+                            />
+                        </div>
+                        {formData.lockCondition.type !== 'mediaItem' && (
+                            <div>
+                                <label className="block text-gray-700">Lock Condition Duration (minutes):</label>
+                                <input
+                                    type="number"
+                                    name="duration"
+                                    value={formData.lockCondition.duration}
+                                    onChange={handleLockConditionChange}
+                                    className="border p-2 w-full rounded"
+                                />
+                            </div>
+                        )}
+                    </>
+                )}
                 <div className="flex space-x-4">
                     <button type="submit" className="bg-blue-500 text-white p-2 rounded mt-2">Update</button>
                     <button type="button" onClick={onCancel} className="bg-gray-500 text-white p-2 rounded mt-2">Cancel</button>

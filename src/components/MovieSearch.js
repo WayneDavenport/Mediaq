@@ -22,7 +22,10 @@ const MovieSearch = ({ onAdd }) => {
         try {
             const response = await fetch(`/api/tmdb?mediaType=movie&query=${searchParams.query}&language=${searchParams.language}&include_adult=${searchParams.include_adult}`);
             const data = await response.json();
-            setResults(data.results);
+            const filteredResults = data.results.filter(result =>
+                result.media_type !== 'tv' && result.title && result.overview
+            );
+            setResults(filteredResults);
         } catch (error) {
             console.error('Error fetching data:', error);
         }

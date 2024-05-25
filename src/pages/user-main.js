@@ -1,11 +1,12 @@
-// pages/user-main.js
+// src/pages/user-main.js
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SignOutButton from "@/components/SignOutButton";
 import MediaForm from "@/components/MediaForm";
 import MediaItemsList from "@/components/MediaItemsList";
 import UpdateForm from "@/components/UpdateForm";
+import MediaStats from "@/components/MediaStats";
 
 export default function Home() {
     const { data: session } = useSession();
@@ -15,7 +16,15 @@ export default function Home() {
     const handleFormSubmit = async (formData) => {
         // Optimistically update the UI
         const tempId = Date.now().toString(); // Temporary ID for the new item
-        const optimisticItem = { ...formData, _id: tempId };
+        const optimisticItem = {
+            ...formData,
+            _id: tempId,
+            complete: false, // Ensure default values
+            completedDuration: 0, // Ensure default values
+            userEmail: session.user.email, // Ensure userEmail is set
+            userId: session.user.id // Ensure userId is set
+        };
+        console.log('Optimistic Item:', optimisticItem); // Log optimistic item
         setOptimisticMediaItem(optimisticItem);
 
         try {
@@ -89,11 +98,14 @@ export default function Home() {
                     <br /> <Link href="/search">Search</Link> <br />
                     <MediaItemsList newMediaItem={optimisticMediaItem} onEdit={handleEdit} />
                 </div>
-                {editingItem && (
-                    <div>
+                <div>
+                    {editingItem && (
                         <UpdateForm item={editingItem} onSubmit={handleUpdateSubmit} onCancel={handleCancel} />
-                    </div>
-                )}
+                    )}
+                </div>
+                <div>
+                    <MediaStats />
+                </div>
             </div>
         </div>
     );

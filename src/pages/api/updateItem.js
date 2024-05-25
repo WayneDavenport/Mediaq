@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     }
 
     await requireAuth(req, res, async () => {
-        const { id, title, duration, category, mediaType, description, additionalFields } = req.body;
+        const { id, title, duration, percentComplete, complete, category, mediaType, description, additionalFields, lockCondition, goalCompletionTime, completedDuration } = req.body;
 
         if (!id || !title || !duration || !category || !mediaType) {
             return res.status(422).json({
@@ -30,10 +30,15 @@ export default async function handler(req, res) {
 
             mediaItem.title = title;
             mediaItem.duration = duration;
+            mediaItem.percentComplete = percentComplete;
+            mediaItem.complete = complete;
             mediaItem.category = category;
             mediaItem.mediaType = mediaType;
             mediaItem.description = description;
             mediaItem.additionalFields = additionalFields;
+            mediaItem.lockCondition = lockCondition;
+            mediaItem.goalCompletionTime = goalCompletionTime;
+            mediaItem.completedDuration = completedDuration;
             mediaItem.updatedAt = new Date();
 
             console.log("Updating item in database...");

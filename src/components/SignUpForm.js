@@ -1,9 +1,11 @@
+// src/components/SignUpForm.js
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 
 const SignUpForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [readingSpeed, setReadingSpeed] = useState(20); // Default value for reading speed
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
     const router = useRouter();
@@ -24,7 +26,7 @@ const SignUpForm = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password, readingSpeed }),
             });
 
             const data = await response.json();
@@ -36,6 +38,7 @@ const SignUpForm = () => {
             setSuccess('User created successfully!');
             setEmail('');
             setPassword('');
+            setReadingSpeed(20); // Reset to default value
             router.push('/');
         } catch (error) {
             setError(error.message);
@@ -65,6 +68,18 @@ const SignUpForm = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                     />
+                </div>
+                <div>
+                    <label htmlFor="readingSpeed">Reading Speed (pages per 30 min):</label>
+                    <input
+                        type="range"
+                        id="readingSpeed"
+                        min="1"
+                        max="128"
+                        value={readingSpeed}
+                        onChange={(e) => setReadingSpeed(e.target.value)}
+                    />
+                    <span>{readingSpeed} pages/30 min</span>
                 </div>
                 <button type="submit">Sign Up</button>
             </form>

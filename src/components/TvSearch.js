@@ -17,12 +17,37 @@ const TvSearch = ({ onAdd }) => {
         });
     };
 
+    const fetchEpisodeRuntime = async (showId, seasonNumber, episodeNumber) => {
+        const response = await fetch(`/api/tmdb?showId=${showId}&seasonNumber=${seasonNumber}&episodeNumber=${episodeNumber}`);
+        const data = await response.json();
+        return data.runtime;
+    };
+
+    const calculateAverageRuntime = async (showId, seasonNumber) => {
+        const episodeNumbers = [1, 2, 3]; // You can randomize or choose specific episodes
+        const runtimes = await Promise.all(
+            episodeNumbers.map(episodeNumber => fetchEpisodeRuntime(showId, seasonNumber, episodeNumber))
+        );
+        const validRuntimes = runtimes.filter(runtime => runtime !== undefined);
+        const averageRuntime = validRuntimes.reduce((acc, runtime) => acc + runtime, 0) / validRuntimes.length;
+        return averageRuntime;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             const response = await fetch(`/api/tmdb?mediaType=tv&query=${searchParams.query}&language=${searchParams.language}&include_adult=${searchParams.include_adult}`);
             const data = await response.json();
-            setResults(data.results);
+            const filteredResults = await Promise.all(data.results.filter(result =>
+                result.media_type !== 'movie' && result.name && result.overview
+            ).map(async (result) => {
+                if (!result.episode_run_time || result.episode_run_time.length === 0) {
+                    const averageRuntime = await calculateAverageRuntime(result.id, 1); // Assuming season 1
+                    result.episode_run_time = [averageRuntime];
+                }
+                return result;
+            }));
+            setResults(filteredResults);
         } catch (error) {
             console.error('Error fetching data:', error);
         }

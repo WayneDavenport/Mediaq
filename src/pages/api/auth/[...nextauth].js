@@ -7,7 +7,7 @@ import { verifyPassword } from "@/lib/auth";
 import clientPromise from "@/lib/db";
 import mongoose from "mongoose";
 import MediaItem from "@/models/MediaItem";
-import User from "@/models/User"
+import User from "@/models/User";
 
 export const authOptions = {
     session: {
@@ -23,7 +23,6 @@ export const authOptions = {
             authorize: async (credentials) => {
                 await connectToMongoose();
                 try {
-                    const User = mongoose.model('User'); // Assuming you have a User model
                     const user = await User.findOne({ email: credentials.email });
 
                     if (!user) {
@@ -37,10 +36,9 @@ export const authOptions = {
                     }
 
                     // Fetch media items for the user
-                    const MediaItem = mongoose.model('MediaItem');
                     const mediaItems = await MediaItem.find({ userId: user._id });
 
-                    return { id: user._id, email: user.email, mediaItems }; // Include media items
+                    return { id: user._id, email: user.email, readingSpeed: user.readingSpeed, mediaItems }; // Include reading speed and media items
                 } catch (error) {
                     console.error("Authentication error:", error);
                     return null;
@@ -58,6 +56,7 @@ export const authOptions = {
             if (user) {
                 token.id = user.id; // Include user ID in the token
                 token.email = user.email;
+                token.readingSpeed = user.readingSpeed; // Include reading speed in the token
                 /* token.mediaItems = user.mediaItems; */ // Include media items in the token
             }
             console.log("JWT Callback - Token:", token); // Debug log
@@ -66,6 +65,7 @@ export const authOptions = {
         session: async ({ session, token }) => {
             session.user.id = token.id; // Include user ID in the session
             session.user.email = token.email;
+            session.user.readingSpeed = token.readingSpeed; // Include reading speed in the session
             /* session.user.mediaItems = token.mediaItems; */ // Include media items in the session
             console.log("Session Callback - Session:", session); // Debug log
             return session;
