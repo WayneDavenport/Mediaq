@@ -1,12 +1,9 @@
-// MediaItemsList.js
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { isItemLocked } from '@/controllers/lockController';
 
 const MediaItemsList = ({ newMediaItem, onEdit }) => {
     const [mediaItems, setMediaItems] = useState([]);
     const [groupBy, setGroupBy] = useState('mediaType'); // Default grouping by media type
-    const [lockedItems, setLockedItems] = useState({});
 
     useEffect(() => {
         const fetchMediaItems = async () => {
@@ -27,18 +24,6 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
             setMediaItems(prevItems => [newMediaItem, ...prevItems]);
         }
     }, [newMediaItem]);
-
-    useEffect(() => {
-        const checkLockedStatus = async () => {
-            const lockedStatus = {};
-            for (const item of mediaItems) {
-                lockedStatus[item._id] = await isItemLocked(item, item.userId);
-            }
-            setLockedItems(lockedStatus);
-        };
-
-        checkLockedStatus();
-    }, [mediaItems]);
 
     const handleDelete = async (id) => {
         try {
@@ -63,13 +48,25 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
             }
 
             const updatedData = {
-                ...itemToUpdate,
+                id: itemToUpdate._id,
+                title: itemToUpdate.title,
+                duration: itemToUpdate.duration,
+                category: itemToUpdate.category,
+                mediaType: itemToUpdate.mediaType,
+                description: itemToUpdate.description,
+                additionalFields: itemToUpdate.additionalFields,
+                percentComplete: itemToUpdate.percentComplete,
+                goalCompletionTime: itemToUpdate.goalCompletionTime,
+                completedDuration: itemToUpdate.completedDuration,
                 complete: true,
             };
+
+            console.log('Updating item:', updatedData); // Log the updated data
 
             const response = await axios.put('/api/updateItem', updatedData);
 
             if (response.status === 200) {
+                console.log('Item marked as complete:', response.data.item); // Log the response
                 setMediaItems(prevItems =>
                     prevItems.map(item =>
                         item._id === id ? { ...item, complete: true } : item
@@ -136,16 +133,10 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                             <p>Type: {item.mediaType}</p>
                             <p>Duration: {item.duration}</p>
                             <p>Percent Complete: {item.percentComplete}%</p>
-                            {lockedItems[item._id] ? (
-                                <p className="text-red-500">Locked</p>
-                            ) : (
-                                <>
-                                    <button onClick={() => handleDelete(item._id)} className="bg-red-500 text-white p-2 rounded mt-2">Remove</button>
-                                    <button onClick={() => onEdit(item)} className="bg-yellow-500 text-white p-2 rounded mt-2 ml-2">Edit</button>
-                                    {!item.complete && (
-                                        <button onClick={() => markAsComplete(item._id)} className="bg-green-500 text-white p-2 rounded mt-2">Mark as Complete</button>
-                                    )}
-                                </>
+                            <button onClick={() => handleDelete(item._id)} className="bg-red-500 text-white p-2 rounded mt-2">Remove</button>
+                            <button onClick={() => onEdit(item)} className="bg-yellow-500 text-white p-2 rounded mt-2 ml-2">Edit</button>
+                            {!item.complete && (
+                                <button onClick={() => markAsComplete(item._id)} className="bg-green-500 text-white p-2 rounded mt-2">Mark as Complete</button>
                             )}
                         </div>
                     ))}

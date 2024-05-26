@@ -10,7 +10,6 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
         description: item.description || '',
         additionalFields: item.additionalFields || {},
         percentComplete: item.percentComplete || 0,
-        lockCondition: item.lockCondition || { type: 'None', value: 'None', duration: 0 },
         goalCompletionTime: item.goalCompletionTime || 0,
         completedDuration: item.completedDuration || 0
     });
@@ -30,17 +29,6 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
             ...prevData,
             percentComplete,
             completedDuration
-        }));
-    };
-
-    const handleLockConditionChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prevData) => ({
-            ...prevData,
-            lockCondition: {
-                ...prevData.lockCondition,
-                [name]: value
-            }
         }));
     };
 
@@ -130,46 +118,6 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
                         <p>{calculateCompleted()} episodes completed</p>
                     )}
                 </div>
-                <div>
-                    <label className="block text-gray-700">Lock Condition Type:</label>
-                    <select
-                        name="type"
-                        value={formData.lockCondition.type}
-                        onChange={handleLockConditionChange}
-                        className="border p-2 w-full rounded"
-                    >
-                        <option value="">None</option>
-                        <option value="mediaItem">Media Item</option>
-                        <option value="categoryTime">Category Time</option>
-                        <option value="mediaTypeTime">Media Type Time</option>
-                    </select>
-                </div>
-                {formData.lockCondition.type && (
-                    <>
-                        <div>
-                            <label className="block text-gray-700">Lock Condition Value:</label>
-                            <input
-                                type="text"
-                                name="value"
-                                value={formData.lockCondition.value}
-                                onChange={handleLockConditionChange}
-                                className="border p-2 w-full rounded"
-                            />
-                        </div>
-                        {formData.lockCondition.type !== 'mediaItem' && (
-                            <div>
-                                <label className="block text-gray-700">Lock Condition Duration (minutes):</label>
-                                <input
-                                    type="number"
-                                    name="duration"
-                                    value={formData.lockCondition.duration}
-                                    onChange={handleLockConditionChange}
-                                    className="border p-2 w-full rounded"
-                                />
-                            </div>
-                        )}
-                    </>
-                )}
                 <div className="flex space-x-4">
                     <button type="submit" className="bg-blue-500 text-white p-2 rounded mt-2">Update</button>
                     <button type="button" onClick={onCancel} className="bg-gray-500 text-white p-2 rounded mt-2">Cancel</button>

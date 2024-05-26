@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     }
 
     await requireAuth(req, res, async () => {
-        const { title, duration, category, mediaType, description, additionalFields, lockCondition, goalCompletionTime, completedDuration } = req.body;
+        const { title, duration, category, mediaType, description, additionalFields, goalCompletionTime, completedDuration } = req.body;
 
         if (!title || !duration || !category || !mediaType) {
             return res.status(422).json({
@@ -31,9 +31,8 @@ export default async function handler(req, res) {
                 percentComplete: 0,
                 complete: false,
                 additionalFields,
-                lockCondition: 'none',
-                goalCompletionTime,
-                completedDuration,
+                /* goalCompletionTime, */
+                completedDuration: 0,
                 userEmail: req.user.email,
                 userId: req.user.id,
                 createdAt: new Date(),
