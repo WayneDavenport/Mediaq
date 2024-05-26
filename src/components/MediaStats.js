@@ -3,9 +3,9 @@ import axios from 'axios';
 
 const MediaStats = () => {
     const [mediaItems, setMediaItems] = useState([]);
-    const [totalDuration, setTotalDuration] = useState({ incomplete: 0, complete: 0 });
-    const [categoryDurations, setCategoryDurations] = useState({ incomplete: {}, complete: {} });
-    const [mediaTypeDurations, setMediaTypeDurations] = useState({ incomplete: {}, complete: {} });
+    const [totalDuration, setTotalDuration] = useState({ readyToStart: 0, inProgress: 0, completed: 0 });
+    const [categoryDurations, setCategoryDurations] = useState({ readyToStart: {}, inProgress: {}, completed: {} });
+    const [mediaTypeDurations, setMediaTypeDurations] = useState({ readyToStart: {}, inProgress: {}, completed: {} });
 
     useEffect(() => {
         const fetchMediaItems = async () => {
@@ -23,85 +23,119 @@ const MediaStats = () => {
     }, []);
 
     const calculateDurations = (items) => {
-        let totalIncomplete = 0;
-        let totalComplete = 0;
-        const categoryDurationsIncomplete = {};
-        const categoryDurationsComplete = {};
-        const mediaTypeDurationsIncomplete = {};
-        const mediaTypeDurationsComplete = {};
+        let totalReadyToStart = 0;
+        let totalInProgress = 0;
+        let totalCompleted = 0;
+        const categoryDurationsReadyToStart = {};
+        const categoryDurationsInProgress = {};
+        const categoryDurationsCompleted = {};
+        const mediaTypeDurationsReadyToStart = {};
+        const mediaTypeDurationsInProgress = {};
+        const mediaTypeDurationsCompleted = {};
 
         items.forEach(item => {
             if (item.complete) {
-                totalComplete += item.duration;
-                if (categoryDurationsComplete[item.category]) {
-                    categoryDurationsComplete[item.category] += item.duration;
+                totalCompleted += item.duration;
+                if (categoryDurationsCompleted[item.category]) {
+                    categoryDurationsCompleted[item.category] += item.duration;
                 } else {
-                    categoryDurationsComplete[item.category] = item.duration;
+                    categoryDurationsCompleted[item.category] = item.duration;
                 }
-                if (mediaTypeDurationsComplete[item.mediaType]) {
-                    mediaTypeDurationsComplete[item.mediaType] += item.duration;
+                if (mediaTypeDurationsCompleted[item.mediaType]) {
+                    mediaTypeDurationsCompleted[item.mediaType] += item.duration;
                 } else {
-                    mediaTypeDurationsComplete[item.mediaType] = item.duration;
+                    mediaTypeDurationsCompleted[item.mediaType] = item.duration;
                 }
             } else {
-                totalIncomplete += item.duration;
-                if (categoryDurationsIncomplete[item.category]) {
-                    categoryDurationsIncomplete[item.category] += item.duration;
+                if (item.percentComplete === 0) {
+                    totalReadyToStart += item.duration;
+                    if (categoryDurationsReadyToStart[item.category]) {
+                        categoryDurationsReadyToStart[item.category] += item.duration;
+                    } else {
+                        categoryDurationsReadyToStart[item.category] = item.duration;
+                    }
+                    if (mediaTypeDurationsReadyToStart[item.mediaType]) {
+                        mediaTypeDurationsReadyToStart[item.mediaType] += item.duration;
+                    } else {
+                        mediaTypeDurationsReadyToStart[item.mediaType] = item.duration;
+                    }
                 } else {
-                    categoryDurationsIncomplete[item.category] = item.duration;
-                }
-                if (mediaTypeDurationsIncomplete[item.mediaType]) {
-                    mediaTypeDurationsIncomplete[item.mediaType] += item.duration;
-                } else {
-                    mediaTypeDurationsIncomplete[item.mediaType] = item.duration;
+                    totalInProgress += item.completedDuration;
+                    if (categoryDurationsInProgress[item.category]) {
+                        categoryDurationsInProgress[item.category] += item.completedDuration;
+                    } else {
+                        categoryDurationsInProgress[item.category] = item.completedDuration;
+                    }
+                    if (mediaTypeDurationsInProgress[item.mediaType]) {
+                        mediaTypeDurationsInProgress[item.mediaType] += item.completedDuration;
+                    } else {
+                        mediaTypeDurationsInProgress[item.mediaType] = item.completedDuration;
+                    }
                 }
             }
         });
 
-        setTotalDuration({ incomplete: totalIncomplete, complete: totalComplete });
-        setCategoryDurations({ incomplete: categoryDurationsIncomplete, complete: categoryDurationsComplete });
-        setMediaTypeDurations({ incomplete: mediaTypeDurationsIncomplete, complete: mediaTypeDurationsComplete });
+        setTotalDuration({ readyToStart: totalReadyToStart, inProgress: totalInProgress, completed: totalCompleted });
+        setCategoryDurations({ readyToStart: categoryDurationsReadyToStart, inProgress: categoryDurationsInProgress, completed: categoryDurationsCompleted });
+        setMediaTypeDurations({ readyToStart: mediaTypeDurationsReadyToStart, inProgress: mediaTypeDurationsInProgress, completed: mediaTypeDurationsCompleted });
     };
 
     return (
         <div className="media-stats p-4 border rounded shadow">
             <h2 className="text-xl font-bold mb-4">Media Statistics</h2>
             <div className="mb-4">
-                <h3 className="text-lg font-semibold">Total Incomplete Duration: {totalDuration.incomplete} minutes</h3>
-                <h3 className="text-lg font-semibold">Total Complete Duration: {totalDuration.complete} minutes</h3>
+                <h3 className="text-lg font-semibold">Ready to Start: {totalDuration.readyToStart} minutes</h3>
+                <h3 className="text-lg font-semibold">In Progress: {totalDuration.inProgress} minutes</h3>
+                <h3 className="text-lg font-semibold">Completed: {totalDuration.completed} minutes</h3>
             </div>
             <div className="mb-4">
-                <h3 className="text-lg font-semibold">Duration by Category (Incomplete):</h3>
+                <h3 className="text-lg font-semibold">Duration by Category (Ready to Start):</h3>
                 <ul>
-                    {Object.keys(categoryDurations.incomplete).map(category => (
+                    {Object.keys(categoryDurations.readyToStart).map(category => (
                         <li key={category}>
-                            {category}: {categoryDurations.incomplete[category]} minutes
+                            {category}: {categoryDurations.readyToStart[category]} minutes
                         </li>
                     ))}
                 </ul>
-                <h3 className="text-lg font-semibold">Duration by Category (Complete):</h3>
+                <h3 className="text-lg font-semibold">Duration by Category (In Progress):</h3>
                 <ul>
-                    {Object.keys(categoryDurations.complete).map(category => (
+                    {Object.keys(categoryDurations.inProgress).map(category => (
                         <li key={category}>
-                            {category}: {categoryDurations.complete[category]} minutes
+                            {category}: {categoryDurations.inProgress[category]} minutes
+                        </li>
+                    ))}
+                </ul>
+                <h3 className="text-lg font-semibold">Duration by Category (Completed):</h3>
+                <ul>
+                    {Object.keys(categoryDurations.completed).map(category => (
+                        <li key={category}>
+                            {category}: {categoryDurations.completed[category]} minutes
                         </li>
                     ))}
                 </ul>
             </div>
             <div className="mb-4">
-                <h3 className="text-lg font-semibold">Duration by Media Type (Incomplete):</h3>
+                <h3 className="text-lg font-semibold">Duration by Media Type (Ready to Start):</h3>
                 <ul>
-                    {Object.keys(mediaTypeDurations.incomplete).map(mediaType => (
+                    {Object.keys(mediaTypeDurations.readyToStart).map(mediaType => (
                         <li key={mediaType}>
-                            {mediaType}: {mediaTypeDurations.incomplete[mediaType]} minutes
+                            {mediaType}: {mediaTypeDurations.readyToStart[mediaType]} minutes
                         </li>
                     ))}
                 </ul>
-                <h3 className="text-lg font-semibold">Duration by Media Type (Complete):</h3>
+                <h3 className="text-lg font-semibold">Duration by Media Type (In Progress):</h3>
                 <ul>
-                    {Object.keys(mediaTypeDurations.complete).map(mediaType => (
+                    {Object.keys(mediaTypeDurations.inProgress).map(mediaType => (
                         <li key={mediaType}>
-                            {mediaType}: {mediaTypeDurations.complete[mediaType]} minutes
+                            {mediaType}: {mediaTypeDurations.inProgress[mediaType]} minutes
+                        </li>
+                    ))}
+                </ul>
+                <h3 className="text-lg font-semibold">Duration by Media Type (Completed):</h3>
+                <ul>
+                    {Object.keys(mediaTypeDurations.completed).map(mediaType => (
+                        <li key={mediaType}>
+                            {mediaType}: {mediaTypeDurations.completed[mediaType]} minutes
                         </li>
                     ))}
                 </ul>

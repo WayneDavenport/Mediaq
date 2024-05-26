@@ -44,6 +44,28 @@ export default async function handler(req, res) {
             const result = await mediaItem.save();
             console.log("Item updated:", result);
 
+            // Calculate the total completed duration for the key parent
+            const filter = { userId: req.user.id, locked: true, $or: [{ keyParent: mediaType }, { keyParent: category }] };
+            console.log(`Filter: ${JSON.stringify(filter)}`);
+            const lockedItems = await MediaItem.find(filter);
+            console.log(`Locked items found: ${lockedItems.length}`);
+
+            for (const lockedItem of lockedItems) {
+                const keyParentFilter = { userId: req.user.id, $or: [{ mediaType: lockedItem.keyParent }, { category: lockedItem.keyParent }] };
+                const items = await MediaItem.find(keyParentFilter);
+                const totalCompletedDuration = items.reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
+
+                console.log(`Total Completed Duration for ${lockedItem.keyParent}: ${totalCompletedDuration}`);
+                console.log(`Goal Completion Time for ${lockedItem.keyParent}: ${lockedItem.goalCompletionTime}`);
+
+                // Check if the total completed duration is greater than or equal to the goal completion time
+                if (totalCompletedDuration >= lockedItem.goalCompletionTime) {
+                    lockedItem.locked = false;
+                    console.log(`Unlocking item ${lockedItem._id} as total completed duration meets or exceeds goal completion time.`);
+                    await lockedItem.save();
+                }
+            }
+
             res.status(200).json({ message: 'Updated item!', item: result });
         } catch (error) {
             console.error("Failed to update item:", error);

@@ -54,10 +54,13 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                 category: itemToUpdate.category,
                 mediaType: itemToUpdate.mediaType,
                 description: itemToUpdate.description,
-                additionalFields: itemToUpdate.additionalFields,
-                percentComplete: itemToUpdate.percentComplete,
-                goalCompletionTime: itemToUpdate.goalCompletionTime,
-                completedDuration: itemToUpdate.completedDuration,
+                additionalFields: {
+                    ...itemToUpdate.additionalFields,
+                    ...(itemToUpdate.mediaType === 'Book' && { pagesCompleted: itemToUpdate.additionalFields.pageCount }),
+                    ...(itemToUpdate.mediaType === 'Show' && { episodesCompleted: itemToUpdate.additionalFields.episodes })
+                },
+                percentComplete: 100,
+                completedDuration: itemToUpdate.duration,
                 complete: true,
             };
 
@@ -69,7 +72,7 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                 console.log('Item marked as complete:', response.data.item); // Log the response
                 setMediaItems(prevItems =>
                     prevItems.map(item =>
-                        item._id === id ? { ...item, complete: true } : item
+                        item._id === id ? { ...item, complete: true, percentComplete: 100, completedDuration: item.duration } : item
                     )
                 );
             } else {

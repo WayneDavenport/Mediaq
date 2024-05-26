@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     }
 
     await requireAuth(req, res, async () => {
-        const { title, duration, category, mediaType, description, additionalFields, goalCompletionTime, completedDuration } = req.body;
+        const { title, duration, category, mediaType, description, additionalFields, locked, keyParent, goalDuration } = req.body;
 
         if (!title || !duration || !category || !mediaType) {
             return res.status(422).json({
@@ -22,6 +22,14 @@ export default async function handler(req, res) {
             await connectToMongoose();
             console.log("Connected to Mongoose");
 
+            // Calculate the total completed duration for the key parent
+            let totalCompletedDuration = 0;
+            if (keyParent) {
+                const filter = { userId: req.user.id, [keyParent]: req.body[keyParent] };
+                const items = await MediaItem.find(filter);
+                totalCompletedDuration = items.reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
+            }
+
             const mediaItem = new MediaItem({
                 title,
                 duration,
@@ -31,10 +39,12 @@ export default async function handler(req, res) {
                 percentComplete: 0,
                 complete: false,
                 additionalFields,
-                /* goalCompletionTime, */
+                goalCompletionTime: totalCompletedDuration + goalDuration,
                 completedDuration: 0,
                 userEmail: req.user.email,
                 userId: req.user.id,
+                locked,
+                keyParent, // Add keyParent to the new item
                 createdAt: new Date(),
                 updatedAt: new Date(),
             });
