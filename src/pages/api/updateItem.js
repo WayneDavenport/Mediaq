@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     }
 
     await requireAuth(req, res, async () => {
-        const { id, title, duration, category, mediaType, description, additionalFields, percentComplete, goalCompletionTime, completedDuration, complete } = req.body;
+        const { id, title, duration, category, mediaType, description, additionalFields, percentComplete, completedDuration, complete, locked, keyParent, goalDuration } = req.body;
 
         if (!id || !title || !duration || !category || !mediaType) {
             return res.status(422).json({
@@ -35,9 +35,28 @@ export default async function handler(req, res) {
             mediaItem.description = description;
             mediaItem.additionalFields = additionalFields;
             mediaItem.percentComplete = percentComplete;
-            mediaItem.goalCompletionTime = goalCompletionTime;
             mediaItem.completedDuration = completedDuration;
             mediaItem.complete = complete;
+            mediaItem.locked = locked; // Add locked field
+            mediaItem.keyParent = keyParent; // Add keyParent field
+            mediaItem.goalDuration = goalDuration; // Add goalDuration field
+
+            // Calculate the total completed duration for the key parent
+            let totalCompletedDuration = 0;
+            if (keyParent) {
+                const filter = { userId: req.user.id, [keyParent]: req.body[keyParent] };
+                const items = await MediaItem.find(filter);
+                totalCompletedDuration = items.reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
+            }
+
+            // Ensure goalDuration is a valid number
+            const validGoalDuration = isNaN(goalDuration) ? 0 : goalDuration;
+            mediaItem.goalCompletionTime = totalCompletedDuration + validGoalDuration; // Calculate goalCompletionTime
+
+            console.log(`Total Completed Duration: ${totalCompletedDuration}`);
+            console.log(`Goal Duration: ${validGoalDuration}`);
+            console.log(`Goal Completion Time: ${mediaItem.goalCompletionTime}`);
+
             mediaItem.updatedAt = new Date();
 
             console.log("Updating item in database...");
@@ -45,13 +64,28 @@ export default async function handler(req, res) {
             console.log("Item updated:", result);
 
             // Calculate the total completed duration for the key parent
-            const filter = { userId: req.user.id, locked: true, $or: [{ keyParent: mediaType }, { keyParent: category }] };
+            const filter = {
+                userId: req.user.id,
+                locked: true,
+                $or: [
+                    { keyParent: mediaType },
+                    { keyParent: category },
+                    { keyParent: id } // Include media items by their _id
+                ]
+            };
             console.log(`Filter: ${JSON.stringify(filter)}`);
             const lockedItems = await MediaItem.find(filter);
             console.log(`Locked items found: ${lockedItems.length}`);
 
             for (const lockedItem of lockedItems) {
-                const keyParentFilter = { userId: req.user.id, $or: [{ mediaType: lockedItem.keyParent }, { category: lockedItem.keyParent }] };
+                const keyParentFilter = {
+                    userId: req.user.id,
+                    $or: [
+                        { mediaType: lockedItem.keyParent },
+                        { category: lockedItem.keyParent },
+                        { _id: lockedItem.keyParent } // Include media items by their _id
+                    ]
+                };
                 const items = await MediaItem.find(keyParentFilter);
                 const totalCompletedDuration = items.reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
 

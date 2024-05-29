@@ -22,12 +22,20 @@ export default async function handler(req, res) {
             await connectToMongoose();
             console.log("Connected to Mongoose");
 
-            // Calculate the total completed duration for the key parent
-            let totalCompletedDuration = 0;
+            let goalCompletionTime = 0;
+
             if (keyParent) {
-                const filter = { userId: req.user.id, [keyParent]: req.body[keyParent] };
-                const items = await MediaItem.find(filter);
-                totalCompletedDuration = items.reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
+                const selectedItem = await MediaItem.findById(keyParent);
+                if (selectedItem) {
+                    // If keyParent is a media item, set goalCompletionTime directly from user input
+                    goalCompletionTime = goalDuration;
+                } else {
+                    // Calculate the total completed duration for the key parent
+                    const filter = { userId: req.user.id, [keyParent]: req.body[keyParent] };
+                    const items = await MediaItem.find(filter);
+                    const totalCompletedDuration = items.reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
+                    goalCompletionTime = totalCompletedDuration + goalDuration;
+                }
             }
 
             const mediaItem = new MediaItem({
@@ -39,7 +47,7 @@ export default async function handler(req, res) {
                 percentComplete: 0,
                 complete: false,
                 additionalFields,
-                goalCompletionTime: totalCompletedDuration + goalDuration,
+                goalCompletionTime,
                 completedDuration: 0,
                 userEmail: req.user.email,
                 userId: req.user.id,

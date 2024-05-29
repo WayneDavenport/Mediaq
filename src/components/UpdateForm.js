@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const UpdateForm = ({ item, onSubmit, onCancel }) => {
     const [formData, setFormData] = useState({
@@ -11,14 +12,40 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
         additionalFields: item.additionalFields || {},
         percentComplete: item.percentComplete || 0,
         goalCompletionTime: item.goalCompletionTime || 0,
-        completedDuration: item.completedDuration || 0
+        completedDuration: item.completedDuration || 0,
+        locked: item.locked || false, // Add locked field
+        keyParent: item.keyParent || '', // Add keyParent field
+        goalDuration: item.goalDuration || 0 // Add goalDuration field
     });
 
+    const [mediaTypes, setMediaTypes] = useState([]);
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        const fetchMediaItems = async () => {
+            try {
+                const response = await axios.get('/api/getMediaItems');
+                const mediaItems = response.data.mediaItems;
+
+                // Extract unique media types and categories
+                const uniqueMediaTypes = [...new Set(mediaItems.map(item => item.mediaType))];
+                const uniqueCategories = [...new Set(mediaItems.map(item => item.category))];
+
+                setMediaTypes(uniqueMediaTypes);
+                setCategories(uniqueCategories);
+            } catch (error) {
+                console.error("Failed to fetch media items:", error);
+            }
+        };
+
+        fetchMediaItems();
+    }, []);
+
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         setFormData((prevData) => ({
             ...prevData,
-            [name]: value,
+            [name]: type === 'checkbox' ? checked : value,
         }));
     };
 
@@ -117,6 +144,47 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
                     {formData.mediaType === 'Show' && (
                         <p>{calculateCompleted()} episodes completed</p>
                     )}
+                </div>
+                <div>
+                    <label className="block text-gray-700">Locked:</label>
+                    <input
+                        type="checkbox"
+                        name="locked"
+                        checked={formData.locked}
+                        onChange={handleChange}
+                        className="mr-2"
+                    />
+                </div>
+                <div>
+                    <label className="block text-gray-700">Key Parent:</label>
+                    <select
+                        name="keyParent"
+                        value={formData.keyParent}
+                        onChange={handleChange}
+                        className="border p-2 w-full rounded"
+                    >
+                        <option value="">Select Key Parent</option>
+                        <optgroup label="Media Types">
+                            {mediaTypes.map((type) => (
+                                <option key={type} value={type}>{type}</option>
+                            ))}
+                        </optgroup>
+                        <optgroup label="Categories">
+                            {categories.map((category) => (
+                                <option key={category} value={category}>{category}</option>
+                            ))}
+                        </optgroup>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-gray-700">Goal Duration:</label>
+                    <input
+                        type="number"
+                        name="goalDuration"
+                        value={formData.goalDuration}
+                        onChange={handleChange}
+                        className="border p-2 w-full rounded"
+                    />
                 </div>
                 <div className="flex space-x-4">
                     <button type="submit" className="bg-blue-500 text-white p-2 rounded mt-2">Update</button>

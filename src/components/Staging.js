@@ -16,6 +16,8 @@ const Staging = ({ item, onSubmit }) => {
 
     const [mediaTypes, setMediaTypes] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [incompleteMediaItems, setIncompleteMediaItems] = useState([]);
+    const [selectedKeyParent, setSelectedKeyParent] = useState(null);
 
     useEffect(() => {
         const fetchMediaItems = async () => {
@@ -29,6 +31,10 @@ const Staging = ({ item, onSubmit }) => {
 
                 setMediaTypes(uniqueMediaTypes);
                 setCategories(uniqueCategories);
+
+                // Extract incomplete media items
+                const incompleteItems = mediaItems.filter(item => !item.complete);
+                setIncompleteMediaItems(incompleteItems);
             } catch (error) {
                 console.error("Failed to fetch media items:", error);
             }
@@ -42,6 +48,23 @@ const Staging = ({ item, onSubmit }) => {
         setFormData((prevData) => ({
             ...prevData,
             [name]: type === 'checkbox' ? checked : value,
+        }));
+
+        if (name === 'keyParent') {
+            const selectedItem = incompleteMediaItems.find(item => item._id === value);
+            setSelectedKeyParent(selectedItem);
+            setFormData((prevData) => ({
+                ...prevData,
+                goalDuration: selectedItem ? selectedItem.duration : 0
+            }));
+        }
+    };
+
+    const handleSliderChange = (e) => {
+        const goalDuration = Number(e.target.value);
+        setFormData((prevData) => ({
+            ...prevData,
+            goalDuration
         }));
     };
 
@@ -113,37 +136,51 @@ const Staging = ({ item, onSubmit }) => {
                         className="mr-2"
                     />
                 </div>
-                <div>
-                    <label className="block text-gray-700">Key Parent:</label>
-                    <select
-                        name="keyParent"
-                        value={formData.keyParent}
-                        onChange={handleChange}
-                        className="border p-2 w-full rounded"
-                    >
-                        <option value="">Select Key Parent</option>
-                        <optgroup label="Media Types">
-                            {mediaTypes.map((type) => (
-                                <option key={type} value={type}>{type}</option>
-                            ))}
-                        </optgroup>
-                        <optgroup label="Categories">
-                            {categories.map((category) => (
-                                <option key={category} value={category}>{category}</option>
-                            ))}
-                        </optgroup>
-                    </select>
-                </div>
-                <div>
-                    <label className="block text-gray-700">Goal Duration:</label>
-                    <input
-                        type="number"
-                        name="goalDuration"
-                        value={formData.goalDuration}
-                        onChange={handleChange}
-                        className="border p-2 w-full rounded"
-                    />
-                </div>
+                {formData.locked && (
+                    <>
+                        <div>
+                            <label className="block text-gray-700">Key Parent:</label>
+                            <select
+                                name="keyParent"
+                                value={formData.keyParent}
+                                onChange={handleChange}
+                                className="border p-2 w-full rounded"
+                            >
+                                <option value="">Select Key Parent</option>
+                                <optgroup label="Media Types">
+                                    {mediaTypes.map((type) => (
+                                        <option key={type} value={type}>{type}</option>
+                                    ))}
+                                </optgroup>
+                                <optgroup label="Categories">
+                                    {categories.map((category) => (
+                                        <option key={category} value={category}>{category}</option>
+                                    ))}
+                                </optgroup>
+                                <optgroup label="Incomplete Media Items">
+                                    {incompleteMediaItems.map((item) => (
+                                        <option key={item._id} value={item._id}>{item.title}</option>
+                                    ))}
+                                </optgroup>
+                            </select>
+                        </div>
+                        {selectedKeyParent && (
+                            <div>
+                                <label className="block text-gray-700">Goal Duration:</label>
+                                <input
+                                    type="range"
+                                    name="goalDuration"
+                                    min="0"
+                                    max={selectedKeyParent.duration}
+                                    value={formData.goalDuration}
+                                    onChange={handleSliderChange}
+                                    className="w-full"
+                                />
+                                <span>{formData.goalDuration} minutes</span>
+                            </div>
+                        )}
+                    </>
+                )}
                 <button type="submit" className="bg-blue-500 text-white p-2 rounded mt-2">Submit</button>
             </form>
         </div>
