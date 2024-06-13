@@ -43,7 +43,7 @@ const Staging = ({ item, onSubmit }) => {
         fetchMediaItems();
     }, []);
 
-    const handleChange = (e) => {
+    const handleChange = async (e) => {
         const { name, value, type, checked } = e.target;
         setFormData((prevData) => ({
             ...prevData,
@@ -55,7 +55,14 @@ const Staging = ({ item, onSubmit }) => {
             setSelectedKeyParent(selectedItem);
             setFormData((prevData) => ({
                 ...prevData,
-                goalDuration: selectedItem ? selectedItem.duration : 0
+                goalDuration: selectedItem ? selectedItem.duration : 0,
+                keyParent: selectedItem ? selectedItem.title : value // Save title if media item is selected
+            }));
+        } else if (name === 'category' || name === 'mediaType') {
+            const totalCompletedTime = await fetchTotalCompletedTime(value);
+            setFormData((prevData) => ({
+                ...prevData,
+                goalDuration: totalCompletedTime + formData.goalDuration
             }));
         }
     };
@@ -68,9 +75,46 @@ const Staging = ({ item, onSubmit }) => {
         }));
     };
 
+    const handleGoalDurationChange = (e) => {
+        const goalDuration = Number(e.target.value);
+        setFormData((prevData) => ({
+            ...prevData,
+            goalDuration
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (isCategoryOrMediaType(formData.keyParent)) {
+            const totalCompletedTime = await fetchTotalCompletedTime(formData.keyParent);
+            const updatedGoalDuration = totalCompletedTime + formData.goalDuration;
+            setFormData((prevData) => ({
+                ...prevData,
+                goalDuration: updatedGoalDuration
+            }));
+        }
+
         onSubmit(formData);
+    };
+
+    const isCategoryOrMediaType = (keyParent) => {
+        // Assuming categories and media types are strings and item IDs are ObjectIds
+        return typeof keyParent === 'string' && !keyParent.match(/^[0-9a-fA-F]{24}$/);
+    };
+
+    const fetchTotalCompletedTime = async (keyParent) => {
+        try {
+            const response = await axios.get('/api/getMediaItems');
+            const mediaItems = response.data.mediaItems;
+            const totalCompletedTime = mediaItems
+                .filter(item => item[keyParent] === keyParent)
+                .reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
+            return totalCompletedTime;
+        } catch (error) {
+            console.error("Failed to fetch total completed time:", error);
+            return 0;
+        }
     };
 
     return (
@@ -164,7 +208,7 @@ const Staging = ({ item, onSubmit }) => {
                                 </optgroup>
                             </select>
                         </div>
-                        {selectedKeyParent && (
+                        {selectedKeyParent ? (
                             <div>
                                 <label className="block text-gray-700">Goal Duration:</label>
                                 <input
@@ -175,6 +219,18 @@ const Staging = ({ item, onSubmit }) => {
                                     value={formData.goalDuration}
                                     onChange={handleSliderChange}
                                     className="w-full"
+                                />
+                                <span>{formData.goalDuration} minutes</span>
+                            </div>
+                        ) : (
+                            <div>
+                                <label className="block text-gray-700">Goal Duration:</label>
+                                <input
+                                    type="number"
+                                    name="goalDuration"
+                                    value={formData.goalDuration}
+                                    onChange={handleGoalDurationChange}
+                                    className="border p-2 w-full rounded"
                                 />
                                 <span>{formData.goalDuration} minutes</span>
                             </div>

@@ -70,7 +70,7 @@ export default async function handler(req, res) {
                 $or: [
                     { keyParent: mediaType },
                     { keyParent: category },
-                    { keyParent: id } // Include media items by their _id
+                    { keyParent: title } // Include media items by their title
                 ]
             };
             console.log(`Filter: ${JSON.stringify(filter)}`);
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
                     $or: [
                         { mediaType: lockedItem.keyParent },
                         { category: lockedItem.keyParent },
-                        { _id: lockedItem.keyParent } // Include media items by their _id
+                        { title: lockedItem.keyParent } // Include media items by their title
                     ]
                 };
                 const items = await MediaItem.find(keyParentFilter);

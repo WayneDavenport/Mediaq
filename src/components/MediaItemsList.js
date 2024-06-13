@@ -4,12 +4,24 @@ import axios from 'axios';
 const MediaItemsList = ({ newMediaItem, onEdit }) => {
     const [mediaItems, setMediaItems] = useState([]);
     const [groupBy, setGroupBy] = useState('mediaType'); // Default grouping by media type
+    const [keyParentTitles, setKeyParentTitles] = useState({}); // State to store key parent titles
 
     useEffect(() => {
         const fetchMediaItems = async () => {
             try {
                 const response = await axios.get('/api/getMediaItems');
-                setMediaItems(response.data.mediaItems);
+                const items = response.data.mediaItems;
+                setMediaItems(items);
+
+                // Fetch key parent titles for item IDs
+                const keyParentIds = items.map(item => item.keyParent).filter(id => id && !isCategoryOrMediaType(id));
+                const uniqueKeyParentIds = [...new Set(keyParentIds)];
+                const keyParentResponses = await Promise.all(uniqueKeyParentIds.map(id => axios.get(`/api/getMediaItems?id=${id}`)));
+                const keyParentTitlesMap = keyParentResponses.reduce((acc, res) => {
+                    acc[res.data.mediaItem._id] = res.data.mediaItem.title;
+                    return acc;
+                }, {});
+                setKeyParentTitles(keyParentTitlesMap);
             } catch (error) {
                 console.error("Failed to fetch media items:", error);
             }
@@ -87,6 +99,18 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
         setGroupBy(event.target.value);
     };
 
+    const isCategoryOrMediaType = (keyParent) => {
+        // Assuming categories and media types are strings and item IDs are ObjectIds
+        return typeof keyParent === 'string' && !keyParent.match(/^[0-9a-fA-F]{24}$/);
+    };
+
+    const getKeyParentTitle = (keyParent) => {
+        if (isCategoryOrMediaType(keyParent)) {
+            return keyParent;
+        }
+        return keyParentTitles[keyParent] || 'Unknown';
+    };
+
     const groupedMediaItems = mediaItems.reduce((acc, item) => {
         const key = item[groupBy];
         if (!acc[key]) {
@@ -129,17 +153,29 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                 <div key={group} className="mb-6">
                     <h2 className="text-xl font-bold mb-2">{group}</h2>
                     {activeMediaItems[group].map(item => (
-                        <div key={item._id} className="media-item-thumbnail border p-4 rounded shadow mb-4">
+                        <div
+                            key={item._id}
+                            className={`media-item-thumbnail border p-4 rounded shadow mb-4 ${item.locked ? 'border-red-500' : ''}`}
+                        >
                             {/* Render item details */}
                             <h3 className="text-lg font-semibold">{item.title}</h3>
                             <p>Category: {item.category}</p>
                             <p>Type: {item.mediaType}</p>
                             <p>Duration: {item.duration}</p>
                             <p>Percent Complete: {item.percentComplete}%</p>
+                            {item.locked && item.keyParent && (
+                                <p className="text-red-500">Locked Behind: {getKeyParentTitle(item.keyParent)}</p>
+                            )}
                             <button onClick={() => handleDelete(item._id)} className="bg-red-500 text-white p-2 rounded mt-2">Remove</button>
                             <button onClick={() => onEdit(item)} className="bg-yellow-500 text-white p-2 rounded mt-2 ml-2">Edit</button>
                             {!item.complete && (
-                                <button onClick={() => markAsComplete(item._id)} className="bg-green-500 text-white p-2 rounded mt-2">Mark as Complete</button>
+                                <button
+                                    onClick={() => markAsComplete(item._id)}
+                                    className={`p-2 rounded mt-2 ${item.locked ? 'bg-gray-500 text-white' : 'bg-green-500 text-white'}`}
+                                    disabled={item.locked}
+                                >
+                                    Mark as Complete
+                                </button>
                             )}
                         </div>
                     ))}

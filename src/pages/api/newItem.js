@@ -25,7 +25,7 @@ export default async function handler(req, res) {
             let goalCompletionTime = 0;
 
             if (keyParent) {
-                const selectedItem = await MediaItem.findById(keyParent);
+                const selectedItem = await MediaItem.findOne({ title: keyParent });
                 if (selectedItem) {
                     // If keyParent is a media item, set goalCompletionTime directly from user input
                     goalCompletionTime = goalDuration;
