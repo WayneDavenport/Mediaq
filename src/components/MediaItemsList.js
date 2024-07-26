@@ -125,6 +125,13 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
         return acc;
     }, {});
 
+
+    const formatDuration = (duration) => {
+        const hours = Math.floor(duration / 60);
+        const minutes = duration % 60;
+        return `${hours}h ${minutes}m`;
+    };
+
     return (
         <div className="media-items-list p-4">
             <div className="mb-4">
@@ -149,38 +156,46 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                     Group by Category
                 </label>
             </div>
-            {Object.keys(activeMediaItems).map(group => (
-                <div key={group} className="mb-6">
-                    <h2 className="text-xl font-bold mb-2">{group}</h2>
-                    {activeMediaItems[group].map(item => (
-                        <div
-                            key={item._id}
-                            className={`media-item-thumbnail border p-4 rounded shadow mb-4 ${item.locked ? 'border-red-500' : ''}`}
-                        >
-                            {/* Render item details */}
-                            <h3 className="text-lg font-semibold">{item.title}</h3>
-                            <p>Category: {item.category}</p>
-                            <p>Type: {item.mediaType}</p>
-                            <p>Duration: {item.duration}</p>
-                            <p>Percent Complete: {item.percentComplete}%</p>
-                            {item.locked && item.keyParent && (
-                                <p className="text-red-500">Locked Behind: {getKeyParentTitle(item.keyParent)}</p>
-                            )}
-                            <button onClick={() => handleDelete(item._id)} className="bg-red-500 text-white p-2 rounded mt-2">Remove</button>
-                            <button onClick={() => onEdit(item)} className="bg-yellow-500 text-white p-2 rounded mt-2 ml-2">Edit</button>
-                            {!item.complete && (
-                                <button
-                                    onClick={() => markAsComplete(item._id)}
-                                    className={`p-2 rounded mt-2 ${item.locked ? 'bg-gray-500 text-white' : 'bg-green-500 text-white'}`}
-                                    disabled={item.locked}
-                                >
-                                    Mark as Complete
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            ))}
+            <div className="max-h-[24rem] overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.keys(activeMediaItems).map(group => (
+                    <div key={group} className="mb-6">
+                        <h2 className="text-xl font-bold mb-2">{group}</h2>
+                        {activeMediaItems[group].map(item => (
+                            <div
+                                key={item._id}
+                                className="media-item-thumbnail flex flex-col justify-between w-80 bg-[#222227] text-white rounded-lg shadow-lg p-4 mb-4 transition-transform transform hover:scale-105"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-lg font-semibold">{item.title}</h3>
+                                        <p>Duration: {formatDuration(item.duration)}</p>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <button onClick={() => handleDelete(item._id)} className="bg-red-500 w-4 h-4 rounded-full hover:bg-red-700 transition-colors"></button>
+                                        <button onClick={() => onEdit(item)} className="bg-yellow-500 w-4 h-4 rounded-full hover:bg-yellow-700 transition-colors"></button>
+                                        {!item.complete && (
+                                            <button
+                                                onClick={() => markAsComplete(item._id)}
+                                                className={`w-4 h-4 rounded-full ${item.locked ? 'bg-gray-500' : 'bg-green-500'} hover:${item.locked ? 'bg-gray-700' : 'bg-green-700'} transition-colors`}
+                                                disabled={item.locked}
+                                            ></button>
+                                        )}
+                                    </div>
+                                </div>
+                                {item.locked && item.keyParent && (
+                                    <p className="text-red-500">Locked Behind: {getKeyParentTitle(item.keyParent)}</p>
+                                )}
+                                <div className="w-full h-2 bg-opacity-50 bg-[#0c0c0c] mt-2">
+                                    <div
+                                        className="h-full bg-[#4B8F8C]"
+                                        style={{ width: `${item.percentComplete}%`, opacity: item.percentComplete / 100 }}
+                                    ></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };

@@ -9,7 +9,7 @@ const mediaItemSchema = new mongoose.Schema({
     category: { type: String, required: true },
     mediaType: { type: String, required: true },
     description: { type: String },
-    additionalFields: { type: Map, of: String },
+    additionalFields: { type: Map, of: mongoose.Schema.Types.Mixed },
     userEmail: { type: String, required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
     locked: { type: Boolean, default: false }, // New field

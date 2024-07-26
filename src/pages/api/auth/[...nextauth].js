@@ -67,7 +67,7 @@ export const authOptions = {
             session.user.email = token.email;
             session.user.readingSpeed = token.readingSpeed; // Include reading speed in the session
             /* session.user.mediaItems = token.mediaItems; */ // Include media items in the session
-            console.log("Session Callback - Session:", session); // Debug log
+            /* console.log("Session Callback - Session:", session); */ // Debug log
             return session;
         }
     },

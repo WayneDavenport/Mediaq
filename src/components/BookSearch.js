@@ -37,7 +37,7 @@ const BookSearch = ({ onAdd }) => {
                     placeholder="Title"
                     value={searchParams.query}
                     onChange={handleInputChange}
-                    className="border p-2 mb-2 w-full"
+                    className="border p-2 mb-2 w-full text-white-700 bg-[#222227]"
                 />
                 <input
                     type="text"
@@ -45,7 +45,7 @@ const BookSearch = ({ onAdd }) => {
                     placeholder="Author"
                     value={searchParams.author}
                     onChange={handleInputChange}
-                    className="border p-2 mb-2 w-full"
+                    className="border p-2 mb-2 w-full text-white-700 bg-[#222227]"
                 />
                 <button type="submit" className="bg-blue-500 text-white p-2 rounded">Search</button>
             </form>
@@ -56,7 +56,7 @@ const BookSearch = ({ onAdd }) => {
                         <p className="text-gray-700">{result.description}</p>
                         <p className="text-gray-500">Authors: {result.authors?.join(', ')}</p>
                         <p className="text-gray-500">Publisher: {result.publisher}</p>
-                        <p className="text-gray-500">Page Count: {result.pageCount}</p>
+                        <p className="text-gray-500">Page Count: {parseInt(result.pageCount)}</p>
                         <button onClick={() => onAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
                     </div>
                 ))}

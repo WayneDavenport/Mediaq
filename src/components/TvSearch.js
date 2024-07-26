@@ -91,6 +91,7 @@ const TvSearch = ({ onAdd }) => {
                     <div key={result.id} className="border p-4 rounded shadow">
                         <h3 className="text-xl font-semibold">{result.name}</h3>
                         <p className="text-gray-700">{result.overview}</p>
+                        <p className="text-gray-700">Number of Episodes: {result.number_of_episodes}</p>
                         <p className="text-gray-500">First Air Date: {result.first_air_date}</p>
                         <p className="text-gray-500">Language: {result.original_language}</p>
                         <p className="text-gray-500">Vote Average: {result.vote_average}</p>

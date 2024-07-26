@@ -37,24 +37,29 @@ export default async function handler(req, res) {
             mediaItem.percentComplete = percentComplete;
             mediaItem.completedDuration = completedDuration;
             mediaItem.complete = complete;
-            mediaItem.locked = locked; // Add locked field
-            mediaItem.keyParent = keyParent; // Add keyParent field
-            mediaItem.goalDuration = goalDuration; // Add goalDuration field
+            mediaItem.locked = locked;
+            mediaItem.keyParent = keyParent;
+            mediaItem.goalDuration = goalDuration;
 
-            // Calculate the total completed duration for the key parent
-            let totalCompletedDuration = 0;
+            // Calculate the goalCompletionTime
+            let goalCompletionTime = 0;
+
             if (keyParent) {
-                const filter = { userId: req.user.id, [keyParent]: req.body[keyParent] };
-                const items = await MediaItem.find(filter);
-                totalCompletedDuration = items.reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
+                const selectedItem = await MediaItem.findOne({ title: keyParent });
+                if (selectedItem) {
+                    // If keyParent is a media item, set goalCompletionTime directly from user input
+                    goalCompletionTime = goalDuration;
+                } else {
+                    // Calculate the total completed duration for the key parent
+                    const filter = { userId: req.user.id, [keyParent]: req.body[keyParent] };
+                    const items = await MediaItem.find(filter);
+                    const totalCompletedDuration = items.reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
+                    goalCompletionTime = totalCompletedDuration + goalDuration;
+                }
             }
 
-            // Ensure goalDuration is a valid number
-            const validGoalDuration = isNaN(goalDuration) ? 0 : goalDuration;
-            mediaItem.goalCompletionTime = totalCompletedDuration + validGoalDuration; // Calculate goalCompletionTime
+            mediaItem.goalCompletionTime = goalCompletionTime;
 
-            console.log(`Total Completed Duration: ${totalCompletedDuration}`);
-            console.log(`Goal Duration: ${validGoalDuration}`);
             console.log(`Goal Completion Time: ${mediaItem.goalCompletionTime}`);
 
             mediaItem.updatedAt = new Date();
