@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 
 const MediaItemsList = ({ newMediaItem, onEdit }) => {
@@ -156,39 +156,39 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                     Group by Category
                 </label>
             </div>
-            <div className="max-h-[24rem] overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="max-h-[32rem] overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Object.keys(activeMediaItems).map(group => (
                     <div key={group} className="mb-6">
                         <h2 className="text-xl font-bold mb-2">{group}</h2>
                         {activeMediaItems[group].map(item => (
                             <div
+                                onClick={() => onEdit(item)}
                                 key={item._id}
                                 className="media-item-thumbnail flex flex-col justify-between w-80 bg-[#222227] text-white rounded-lg shadow-lg p-4 mb-4 transition-transform transform hover:scale-105"
                             >
                                 <div className="flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-lg font-semibold">{item.title}</h3>
-                                        <p>Duration: {formatDuration(item.duration)}</p>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <button onClick={() => handleDelete(item._id)} className="bg-red-500 w-4 h-4 rounded-full hover:bg-red-700 transition-colors"></button>
-                                        <button onClick={() => onEdit(item)} className="bg-yellow-500 w-4 h-4 rounded-full hover:bg-yellow-700 transition-colors"></button>
-                                        {!item.complete && (
-                                            <button
-                                                onClick={() => markAsComplete(item._id)}
-                                                className={`w-4 h-4 rounded-full ${item.locked ? 'bg-gray-500' : 'bg-green-500'} hover:${item.locked ? 'bg-gray-700' : 'bg-green-700'} transition-colors`}
-                                                disabled={item.locked}
-                                            ></button>
-                                        )}
-                                    </div>
+                                    <MarqueeTitle title={item.title} />
+
                                 </div>
+                                <p className='text-xs'>{formatDuration(item.duration)}</p>
+                                {/*                                 <div className="flex items-center space-x-2">
+                                    <button onClick={() => handleDelete(item._id)} className="bg-red-500 w-4 h-4 rounded-full hover:bg-red-700 transition-colors"></button>
+                                    <button onClick={() => onEdit(item)} className="bg-yellow-500 w-4 h-4 rounded-full hover:bg-yellow-700 transition-colors"></button>
+                                    {!item.complete && (
+                                        <button
+                                            onClick={() => markAsComplete(item._id)}
+                                            className={`w-4 h-4 rounded-full ${item.locked ? 'bg-gray-500' : 'bg-green-500'} hover:${item.locked ? 'bg-gray-700' : 'bg-green-700'} transition-colors`}
+                                            disabled={item.locked}
+                                        ></button>
+                                    )}
+                                </div> */}
                                 {item.locked && item.keyParent && (
-                                    <p className="text-red-500">Locked Behind: {getKeyParentTitle(item.keyParent)}</p>
+                                    <p className="text-red-500 text-xs">Locked Behind: {getKeyParentTitle(item.keyParent)}</p>
                                 )}
                                 <div className="w-full h-2 bg-opacity-50 bg-[#0c0c0c] mt-2">
                                     <div
-                                        className="h-full bg-[#4B8F8C]"
-                                        style={{ width: `${item.percentComplete}%`, opacity: item.percentComplete / 100 }}
+                                        className="h-full bg-[#803af1]"
+                                        style={{ width: `${item.percentComplete}%` }}
                                     ></div>
                                 </div>
                             </div>
@@ -196,6 +196,32 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                     </div>
                 ))}
             </div>
+        </div>
+    );
+};
+
+const MarqueeTitle = ({ title }) => {
+    const titleRef = useRef(null);
+    const [isOverflowing, setIsOverflowing] = useState(false);
+
+    useEffect(() => {
+        const checkOverflow = () => {
+            if (titleRef.current) {
+                setIsOverflowing(titleRef.current.scrollWidth > titleRef.current.clientWidth);
+            }
+        };
+
+        checkOverflow();
+        window.addEventListener('resize', checkOverflow);
+
+        return () => {
+            window.removeEventListener('resize', checkOverflow);
+        };
+    }, [title]);
+
+    return (
+        <div className="marquee-container" ref={titleRef}>
+            <h3 className={`font-semibold ${isOverflowing ? 'marquee' : ''}`}>{title}</h3>
         </div>
     );
 };

@@ -5,3 +5,24 @@
 body {
     background-color: #0A0A0B;
 }
+
+.marquee-container {
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.marquee {
+    display: inline-block;
+    animation: marquee 10s linear infinite;
+}
+
+@keyframes marquee {
+    0% {
+        transform: translateX(100%);
+    }
+
+    100% {
+        transform: translateX(-70%);
+    }
+}
