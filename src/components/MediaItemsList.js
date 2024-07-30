@@ -1,10 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
+import { useDispatch } from 'react-redux';
+import { setSelectedMediaItem } from '@/store/slices/selectedMediaItemSlice';
 
 const MediaItemsList = ({ newMediaItem, onEdit }) => {
     const [mediaItems, setMediaItems] = useState([]);
     const [groupBy, setGroupBy] = useState('mediaType'); // Default grouping by media type
     const [keyParentTitles, setKeyParentTitles] = useState({}); // State to store key parent titles
+    const [keyParentProgress, setKeyParentProgress] = useState({}); // State to store key parent progress
 
     useEffect(() => {
         const fetchMediaItems = async () => {
@@ -22,6 +25,14 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                     return acc;
                 }, {});
                 setKeyParentTitles(keyParentTitlesMap);
+
+                // Fetch key parent progress
+                const keyParentProgressMap = keyParentResponses.reduce((acc, res) => {
+                    const item = res.data.mediaItem;
+                    acc[item._id] = item.completedDuration;
+                    return acc;
+                }, {});
+                setKeyParentProgress(keyParentProgressMap);
             } catch (error) {
                 console.error("Failed to fetch media items:", error);
             }
@@ -111,6 +122,18 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
         return keyParentTitles[keyParent] || 'Unknown';
     };
 
+    const getProgressWidth = (item) => {
+        if (item.locked && item.keyParent) {
+            /*             const keyParentCompletedDuration = keyParentProgress[item.keyParent] || 0;
+                        const goalCompletionTime = item.goalCompletionTime || 1; // Avoid division by zero
+                        const progressWidth = (keyParentCompletedDuration / goalCompletionTime) * 100;
+                        console.log(`Item: ${item.title}, Key Parent Completed Duration: ${keyParentCompletedDuration}, Goal Completion Time: ${goalCompletionTime}, Progress Width: ${progressWidth}`);
+                        return progressWidth; */
+            return item.keyParentProgress;
+        }
+        return item.percentComplete;
+    };
+
     const groupedMediaItems = mediaItems.reduce((acc, item) => {
         const key = item[groupBy];
         if (!acc[key]) {
@@ -124,7 +147,6 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
         acc[key] = items.filter(item => !item.complete);
         return acc;
     }, {});
-
 
     const formatDuration = (duration) => {
         const hours = Math.floor(duration / 60);
@@ -168,27 +190,15 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                             >
                                 <div className="flex items-center justify-between">
                                     <MarqueeTitle title={item.title} />
-
                                 </div>
                                 <p className='text-xs'>{formatDuration(item.duration)}</p>
-                                {/*                                 <div className="flex items-center space-x-2">
-                                    <button onClick={() => handleDelete(item._id)} className="bg-red-500 w-4 h-4 rounded-full hover:bg-red-700 transition-colors"></button>
-                                    <button onClick={() => onEdit(item)} className="bg-yellow-500 w-4 h-4 rounded-full hover:bg-yellow-700 transition-colors"></button>
-                                    {!item.complete && (
-                                        <button
-                                            onClick={() => markAsComplete(item._id)}
-                                            className={`w-4 h-4 rounded-full ${item.locked ? 'bg-gray-500' : 'bg-green-500'} hover:${item.locked ? 'bg-gray-700' : 'bg-green-700'} transition-colors`}
-                                            disabled={item.locked}
-                                        ></button>
-                                    )}
-                                </div> */}
                                 {item.locked && item.keyParent && (
                                     <p className="text-red-500 text-xs">Locked Behind: {getKeyParentTitle(item.keyParent)}</p>
                                 )}
                                 <div className="w-full h-2 bg-opacity-50 bg-[#0c0c0c] mt-2">
                                     <div
-                                        className="h-full bg-[#803af1]"
-                                        style={{ width: `${item.percentComplete}%` }}
+                                        className={`h-full ${item.locked ? 'bg-red-500' : 'bg-[#803af1]'}`}
+                                        style={{ width: `${getProgressWidth(item)}%` }}
                                     ></div>
                                 </div>
                             </div>

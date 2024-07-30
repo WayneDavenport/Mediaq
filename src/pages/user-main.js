@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
+import { useSelector } from 'react-redux';
+
 import SignOutButton from "@/components/SignOutButton";
 
 import MediaItemsList from "@/components/MediaItemsList";
@@ -56,6 +58,8 @@ export default function Home() {
 
     const handleEdit = (item) => {
         setEditingItem(item);
+        console.log(item);
+        console.log(editingItem);
     };
 
     const handleUpdateSubmit = async (formData) => {

@@ -12,10 +12,11 @@ const mediaItemSchema = new mongoose.Schema({
     additionalFields: { type: Map, of: mongoose.Schema.Types.Mixed },
     userEmail: { type: String, required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
-    locked: { type: Boolean, default: false }, // New field
-    keyParent: { type: String, default: '' }, // New field
-    goalCompletionTime: { type: Number, default: 0 }, // New field
-}, { timestamps: true }); // Enable timestamps
+    locked: { type: Boolean, default: false },
+    keyParent: { type: String, default: '' },
+    goalCompletionTime: { type: Number, default: 0 },
+    keyParentProgress: { type: Number, default: 0 }, // New field
+}, { timestamps: true });
 
 const MediaItem = mongoose.models.MediaItem || mongoose.model('MediaItem', mediaItemSchema);
 

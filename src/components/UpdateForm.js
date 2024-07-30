@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import _ from 'lodash';
 
 const UpdateForm = ({ item, onSubmit, onCancel }) => {
     const [formData, setFormData] = useState({
@@ -17,7 +18,23 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
         keyParent: item.keyParent || '',
         goalDuration: item.goalDuration || 0
     });
-
+    useEffect(() => {
+        setFormData({
+            id: item._id,
+            title: item.title || '',
+            duration: item.duration || '',
+            category: item.category || '',
+            mediaType: item.mediaType || '',
+            description: item.description || '',
+            additionalFields: item.additionalFields || {},
+            percentComplete: item.percentComplete || 0,
+            goalCompletionTime: item.goalCompletionTime || 0,
+            completedDuration: item.completedDuration || 0,
+            locked: item.locked || false,
+            keyParent: item.keyParent || '',
+            goalDuration: item.goalDuration || 0
+        });
+    }, [item]);
     const [mediaTypes, setMediaTypes] = useState([]);
     const [categories, setCategories] = useState([]);
     const [incompleteMediaItems, setIncompleteMediaItems] = useState([]);

@@ -43,6 +43,7 @@ export default async function handler(req, res) {
 
             // Calculate the goalCompletionTime
             let goalCompletionTime = 0;
+            let keyParentProgress = 0;
 
             if (keyParent) {
                 const selectedItem = await MediaItem.findOne({ title: keyParent });
@@ -97,12 +98,16 @@ export default async function handler(req, res) {
                 console.log(`Total Completed Duration for ${lockedItem.keyParent}: ${totalCompletedDuration}`);
                 console.log(`Goal Completion Time for ${lockedItem.keyParent}: ${lockedItem.goalCompletionTime}`);
 
+                // Calculate the progress percentage
+                const progressPercentage = (totalCompletedDuration / lockedItem.goalCompletionTime) * 100;
+                lockedItem.keyParentProgress = progressPercentage;
+
                 // Check if the total completed duration is greater than or equal to the goal completion time
                 if (totalCompletedDuration >= lockedItem.goalCompletionTime) {
                     lockedItem.locked = false;
                     console.log(`Unlocking item ${lockedItem._id} as total completed duration meets or exceeds goal completion time.`);
-                    await lockedItem.save();
                 }
+                await lockedItem.save();
             }
 
             res.status(200).json({ message: 'Updated item!', item: result });

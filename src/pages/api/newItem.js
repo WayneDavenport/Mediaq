@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     }
 
     await requireAuth(req, res, async () => {
-        const { title, duration, category, mediaType, description, additionalFields, locked, keyParent, goalDuration } = req.body;
+        const { title, duration, category, mediaType, description, additionalFields, percentComplete, completedDuration, complete, locked, keyParent, goalDuration } = req.body;
 
         if (!title || !duration || !category || !mediaType) {
             return res.status(422).json({
@@ -22,7 +22,9 @@ export default async function handler(req, res) {
             await connectToMongoose();
             console.log("Connected to Mongoose");
 
+            // Calculate the goalCompletionTime
             let goalCompletionTime = 0;
+            let keyParentProgress = 0;
 
             if (keyParent) {
                 const selectedItem = await MediaItem.findOne({ title: keyParent });
@@ -38,27 +40,26 @@ export default async function handler(req, res) {
                 }
             }
 
-            const mediaItem = new MediaItem({
+            const newItem = new MediaItem({
                 title,
                 duration,
                 category,
                 mediaType,
                 description,
-                percentComplete: 0,
-                complete: false,
                 additionalFields,
+                percentComplete,
+                completedDuration,
+                complete,
+                locked,
+                keyParent,
                 goalCompletionTime,
-                completedDuration: 0,
+                keyParentProgress,
                 userEmail: req.user.email,
                 userId: req.user.id,
-                locked,
-                keyParent, // Add keyParent to the new item
-                createdAt: new Date(),
-                updatedAt: new Date(),
             });
 
             console.log("Saving new item to database...");
-            const result = await mediaItem.save();
+            const result = await newItem.save();
             console.log("New item saved:", result);
 
             res.status(201).json({ message: 'Created new item!', item: result });
