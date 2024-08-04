@@ -1,4 +1,4 @@
-// src/pages/api/updateItem.js
+// pages/api/updateItem.js
 import { connectToMongoose } from '@/lib/db';
 import MediaItem from '@/models/MediaItem';
 import { requireAuth } from '@/middleware/auth';
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     }
 
     await requireAuth(req, res, async () => {
-        const { id, title, duration, category, mediaType, description, additionalFields, percentComplete, completedDuration, complete, locked, keyParent, goalDuration, queueNumber } = req.body;
+        const { id, title, duration, category, mediaType, description, additionalFields, percentComplete, completedDuration, complete, locked, keyParent, goalDuration } = req.body;
 
         if (!id || !title || !duration || !category || !mediaType) {
             return res.status(422).json({
@@ -28,25 +28,6 @@ export default async function handler(req, res) {
                 return res.status(404).json({ message: 'Media item not found' });
             }
 
-            // If the queue number has changed, update the queue numbers of other items
-            if (mediaItem.queueNumber !== queueNumber) {
-                const itemsToUpdate = await MediaItem.find({
-                    userId: req.user.id,
-                    queueNumber: { $gte: Math.min(mediaItem.queueNumber, queueNumber), $lte: Math.max(mediaItem.queueNumber, queueNumber) }
-                });
-
-                for (const item of itemsToUpdate) {
-                    if (item._id.toString() === id) {
-                        item.queueNumber = queueNumber;
-                    } else if (mediaItem.queueNumber < queueNumber) {
-                        item.queueNumber -= 1;
-                    } else {
-                        item.queueNumber += 1;
-                    }
-                    await item.save();
-                }
-            }
-
             mediaItem.title = title;
             mediaItem.duration = duration;
             mediaItem.category = category;
@@ -59,7 +40,6 @@ export default async function handler(req, res) {
             mediaItem.locked = locked;
             mediaItem.keyParent = keyParent;
             mediaItem.goalDuration = goalDuration;
-            mediaItem.queueNumber = queueNumber;
 
             // Calculate the goalCompletionTime
             let goalCompletionTime = 0;
@@ -125,9 +105,6 @@ export default async function handler(req, res) {
                 // Check if the total completed duration is greater than or equal to the goal completion time
                 if (totalCompletedDuration >= lockedItem.goalCompletionTime) {
                     lockedItem.locked = false;
-                    lockedItem.keyParent = '';
-                    lockedItem.goalCompletionTime = 0;
-                    lockedItem.keyParentProgress = 0;
                     console.log(`Unlocking item ${lockedItem._id} as total completed duration meets or exceeds goal completion time.`);
                 }
                 await lockedItem.save();

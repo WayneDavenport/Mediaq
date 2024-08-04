@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const mediaItemSchema = new mongoose.Schema({
     title: { type: String, required: true },
+    queueNumber: { type: Number, default: 0 },
     duration: { type: Number, required: true },
     completedDuration: { type: Number, required: true },
     percentComplete: { type: Number, required: true },

@@ -1,4 +1,4 @@
-// pages/api/newItem.js
+// src/pages/api/newItem.js
 import { connectToMongoose } from '@/lib/db';
 import MediaItem from '@/models/MediaItem';
 import { requireAuth } from '@/middleware/auth';
@@ -40,6 +40,10 @@ export default async function handler(req, res) {
                 }
             }
 
+            // Find the highest current queue number and increment it by one
+            const highestQueueItem = await MediaItem.findOne({ userId: req.user.id }).sort({ queueNumber: -1 });
+            const nextQueueNumber = highestQueueItem ? highestQueueItem.queueNumber + 1 : 1;
+
             const newItem = new MediaItem({
                 title,
                 duration,
@@ -56,6 +60,7 @@ export default async function handler(req, res) {
                 keyParentProgress,
                 userEmail: req.user.email,
                 userId: req.user.id,
+                queueNumber: nextQueueNumber // Assign the next queue number
             });
 
             console.log("Saving new item to database...");

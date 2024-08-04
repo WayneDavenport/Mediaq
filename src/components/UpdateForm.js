@@ -16,7 +16,8 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
         completedDuration: item.completedDuration || 0,
         locked: item.locked || false,
         keyParent: item.keyParent || '',
-        goalDuration: item.goalDuration || 0
+        goalDuration: item.goalDuration || 0,
+        queueNumber: item.queueNumber || 0
     });
     useEffect(() => {
         setFormData({
@@ -32,7 +33,8 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
             completedDuration: item.completedDuration || 0,
             locked: item.locked || false,
             keyParent: item.keyParent || '',
-            goalDuration: item.goalDuration || 0
+            goalDuration: item.goalDuration || 0,
+            queueNumber: item.queueNumber || 0
         });
     }, [item]);
     const [mediaTypes, setMediaTypes] = useState([]);
@@ -40,6 +42,7 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
     const [incompleteMediaItems, setIncompleteMediaItems] = useState([]);
     const [selectedKeyParent, setSelectedKeyParent] = useState(null);
     const [backgroundArt, setBackgroundArt] = useState('');
+    const [maxQueueNumber, setMaxQueueNumber] = useState(0);
 
     useEffect(() => {
         const fetchMediaItems = async () => {
@@ -57,6 +60,10 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
                 // Extract incomplete media items
                 const incompleteItems = mediaItems.filter(item => !item.complete);
                 setIncompleteMediaItems(incompleteItems);
+
+                // Set max queue number
+                const maxQueue = Math.max(...mediaItems.map(item => item.queueNumber));
+                setMaxQueueNumber(maxQueue);
             } catch (error) {
                 console.error("Failed to fetch media items:", error);
             }
@@ -227,6 +234,50 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
         return `${completed} out of ${total} ${unit} (${percentComplete.toFixed(2)}%) - ${completedDuration.toFixed(2)} out of ${duration} minutes`;
     };
 
+    const moveToTop = async () => {
+        try {
+            const updatedData = {
+                ...formData,
+                queueNumber: 1
+            };
+
+            console.log('Moving item to top:', updatedData);
+
+            const response = await axios.put('/api/updateItem', updatedData);
+
+            if (response.status === 200) {
+                console.log('Item moved to top:', response.data.item);
+                onSubmit(updatedData); // Update the parent component
+            } else {
+                console.error('Failed to move item to top:', response.data.message);
+            }
+        } catch (error) {
+            console.error('Error moving item to top:', error);
+        }
+    };
+
+    const moveToBottom = async () => {
+        try {
+            const updatedData = {
+                ...formData,
+                queueNumber: maxQueueNumber + 1
+            };
+
+            console.log('Moving item to bottom:', updatedData);
+
+            const response = await axios.put('/api/updateItem', updatedData);
+
+            if (response.status === 200) {
+                console.log('Item moved to bottom:', response.data.item);
+                onSubmit(updatedData); // Update the parent component
+            } else {
+                console.error('Failed to move item to bottom:', response.data.message);
+            }
+        } catch (error) {
+            console.error('Error moving item to bottom:', error);
+        }
+    };
+
     return (
         <div className="p-4 border rounded shadow" style={{ backgroundImage: `url(${backgroundArt})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
             <h2 className="text-xl font-bold mb-4">Update Media Item</h2>
@@ -294,6 +345,18 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
                         className="w-full"
                     />
                     <span>{formatCompletion()}</span>
+                </div>
+                <div>
+                    <label className="block text-gray-700">Queue Number:</label>
+                    <input
+                        type="number"
+                        name="queueNumber"
+                        value={formData.queueNumber}
+                        onChange={handleChange}
+                        min="1"
+                        max={maxQueueNumber}
+                        className="border p-2 w-full rounded text-white-700 bg-opacity-20 bg-[#222227]"
+                    />
                 </div>
                 <div>
                     <label className="block text-white-700">Locked:</label>
@@ -369,6 +432,8 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
                     {!formData.complete && (
                         <button type="button" onClick={() => markAsComplete(formData.id)} className="bg-green-500 text-white p-2 rounded mt-2">Mark as Complete</button>
                     )}
+                    <button type="button" onClick={moveToTop} className="bg-yellow-500 text-white p-2 rounded mt-2">Move to Top</button>
+                    <button type="button" onClick={moveToBottom} className="bg-yellow-500 text-white p-2 rounded mt-2">Move to Bottom</button>
                 </div>
             </form>
         </div>

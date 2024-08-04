@@ -1,3 +1,4 @@
+// src/components/MediaItemsList.js
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
@@ -73,6 +74,7 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
             const updatedData = {
                 id: itemToUpdate._id,
                 title: itemToUpdate.title,
+                queueNumber: itemToUpdate.queueNumber,
                 duration: itemToUpdate.duration,
                 category: itemToUpdate.category,
                 mediaType: itemToUpdate.mediaType,
@@ -124,17 +126,16 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
 
     const getProgressWidth = (item) => {
         if (item.locked && item.keyParent) {
-            /*             const keyParentCompletedDuration = keyParentProgress[item.keyParent] || 0;
-                        const goalCompletionTime = item.goalCompletionTime || 1; // Avoid division by zero
-                        const progressWidth = (keyParentCompletedDuration / goalCompletionTime) * 100;
-                        console.log(`Item: ${item.title}, Key Parent Completed Duration: ${keyParentCompletedDuration}, Goal Completion Time: ${goalCompletionTime}, Progress Width: ${progressWidth}`);
-                        return progressWidth; */
             return item.keyParentProgress;
         }
         return item.percentComplete;
     };
 
-    const groupedMediaItems = mediaItems.reduce((acc, item) => {
+    const sortedMediaItems = groupBy === 'queueOrder'
+        ? [...mediaItems].sort((a, b) => a.queueNumber - b.queueNumber)
+        : mediaItems;
+
+    const groupedMediaItems = sortedMediaItems.reduce((acc, item) => {
         const key = item[groupBy];
         if (!acc[key]) {
             acc[key] = [];
@@ -167,7 +168,7 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                     />
                     Group by Media Type
                 </label>
-                <label>
+                <label className="mr-4">
                     <input
                         type="radio"
                         value="category"
@@ -176,6 +177,16 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                         className="mr-2"
                     />
                     Group by Category
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        value="queueOrder"
+                        checked={groupBy === 'queueOrder'}
+                        onChange={handleGroupByChange}
+                        className="mr-2"
+                    />
+                    Queue Order
                 </label>
             </div>
             <div className="max-h-[32rem] overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4">

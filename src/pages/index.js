@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import SignInForm from "@/components/SignInForm";
 import Link from "next/link";
+import SignOutButton from "@/components/SignOutButton";
 
 export default function Home() {
   const { data: session } = useSession();
@@ -20,16 +21,19 @@ export default function Home() {
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.orem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.orem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.orem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
               </p>
               <div className="  space-x-8  ">
-                <button
+                {session ? (
+                  <SignOutButton />
+                ) : (<button
                   onClick={() => setShowSignInForm(true)}
                   className="px-4 py-2 bg-blue-500 text-white rounded"
                 >
                   Sign In
-                </button>
+                </button>)}
                 <span>or</span>
-                <Link href="/create-user" className="px-4 py-2 bg-green-500 text-white rounded">
+                {session ? (<Link className="px-4 py-2 bg-green-500 text-white rounded" href='/user-main'>Dashboard</Link>) : (<Link
+                  href="/create-user" className="px-4 py-2 bg-green-500 text-white rounded">
                   Sign Up
-                </Link>
+                </Link>)}
               </div>
             </>
           )}

@@ -117,3 +117,12 @@ export default function Home() {
         </div>
     );
 }
+
+/* {session ? (
+    <div><SignOutButton /></div>
+) : (<button
+onClick={() => setShowSignInForm(true)}
+className="px-4 py-2 bg-blue-500 text-white rounded"
+>
+Sign In
+</button>) } */
