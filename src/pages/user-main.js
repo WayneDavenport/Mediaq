@@ -110,6 +110,8 @@ export default function Home() {
 
                 </div>
                 <Link href='/'>Home Page</Link>
+                <Link href='/media-gallery'>M.G</Link>
+                <Link href='/friend-search'>Friends</Link>
                 {session && (
                     <div><SignOutButton /></div>
                 )}

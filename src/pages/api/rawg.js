@@ -24,7 +24,9 @@ export default async function handler(req, res) {
         const response = await axios.get(RAWG_BASE_URL, { params });
         const games = response.data.results.map(item => {
             return {
+                id: item.id,
                 title: item.name,
+                description: item.description,
                 publisher: item.publishers?.map(publisher => publisher.name).join(', '),
                 playtime: item.playtime, // Playtime in hours
             };

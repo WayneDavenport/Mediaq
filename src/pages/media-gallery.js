@@ -1,11 +1,14 @@
+// src/pages/media-gallery.js
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import MediaRow from '@/components/MediaRow';
 import Link from "next/link";
+import FriendZone from '@/components/FriendZone';
 
 const MediaGallery = () => {
     const [mediaItems, setMediaItems] = useState([]);
     const [categories, setCategories] = useState({});
+    const [friendsMediaQueues, setFriendsMediaQueues] = useState([]);
 
     useEffect(() => {
         const fetchMediaItems = async () => {
@@ -35,7 +38,17 @@ const MediaGallery = () => {
             }
         };
 
+        const fetchFriendsMediaQueues = async () => {
+            try {
+                const response = await axios.get('/api/friends/media-queues');
+                setFriendsMediaQueues(response.data.friendsMediaQueues);
+            } catch (error) {
+                console.error("Failed to fetch friends' media queues:", error);
+            }
+        };
+
         fetchMediaItems();
+        fetchFriendsMediaQueues();
     }, []);
 
     return (
@@ -43,6 +56,7 @@ const MediaGallery = () => {
             {Object.keys(categories).map((category) => (
                 <MediaRow key={category} title={category} items={categories[category]} />
             ))}
+            <FriendZone friendsMediaQueues={friendsMediaQueues} />
             <Link className="px-4 py-2 bg-green-500 text-white rounded" href='/user-main'>Dashboard</Link>
         </div>
     );

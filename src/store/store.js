@@ -1,9 +1,11 @@
+// src/store/store.js
 import { configureStore } from '@reduxjs/toolkit';
-import selectedMediaItemReducer from './slices/selectedMediaItemSlice';
+import searchReducer from './slices/searchSlice';
 
 const store = configureStore({
     reducer: {
-        selectedMediaItem: selectedMediaItemReducer,
+        search: searchReducer,
+        // other reducers...
     },
 });
 

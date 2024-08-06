@@ -1,4 +1,4 @@
-// pages/api/googleBooks.js
+// src/pages/api/googleBooks.js
 import axios from 'axios';
 
 const GOOGLE_BOOKS_API_KEY = process.env.GOOGLE_BOOKS_API_KEY;
@@ -24,6 +24,9 @@ export default async function handler(req, res) {
         const response = await axios.get(GOOGLE_BOOKS_BASE_URL, { params });
         const books = response.data.items.map(item => {
             const volumeInfo = item.volumeInfo;
+            const industryIdentifiers = volumeInfo.industryIdentifiers || [];
+            const isbn = industryIdentifiers.find(identifier => identifier.type === 'ISBN_13')?.identifier || industryIdentifiers.find(identifier => identifier.type === 'ISBN_10')?.identifier || '';
+
             return {
                 title: volumeInfo.title,
                 authors: volumeInfo.authors,
@@ -31,6 +34,7 @@ export default async function handler(req, res) {
                 publisher: volumeInfo.publisher,
                 pageCount: volumeInfo.pageCount,
                 wordCount: volumeInfo.wordCount, // Note: Google Books API does not provide word count directly
+                isbn, // Include ISBN
             };
         });
         return res.status(200).json({ books });

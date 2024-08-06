@@ -46,12 +46,13 @@ const SignUpForm = () => {
     };
 
     return (
-        <div>
+        <div className='text-white'>
             <h1>Sign Up</h1>
             <form onSubmit={handleSubmit}>
                 <div>
                     <label htmlFor="email">Email:</label>
                     <input
+                        className='text-black'
                         type="email"
                         id="email"
                         value={email}
@@ -62,6 +63,7 @@ const SignUpForm = () => {
                 <div>
                     <label htmlFor="password">Password:</label>
                     <input
+                        className='text-black'
                         type="password"
                         id="password"
                         value={password}

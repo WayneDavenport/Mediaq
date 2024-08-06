@@ -1,3 +1,4 @@
+// src/components/MediaThumb.js
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
@@ -9,7 +10,14 @@ const MediaThumb = ({ item }) => {
         const fetchImage = async () => {
             try {
                 let url = '';
-                if (item.mediaType === 'Movie' || item.mediaType === 'Show') {
+                if (item.mediaType === 'Book' && item.additionalFields.isbn) {
+                    const response = await axios.get(`https://covers.openlibrary.org/b/isbn/${item.additionalFields.isbn}-M.jpg`, {
+
+                    });
+                    if (response.status === 200) {
+                        url = response.config.url;
+                    }
+                } else if (item.mediaType === 'Movie' || item.mediaType === 'Show') {
                     const response = await axios.get('/api/tmdb', {
                         params: {
                             query: item.title,
@@ -17,16 +25,7 @@ const MediaThumb = ({ item }) => {
                         }
                     });
                     if (response.data.results.length > 0) {
-                        url = `https://image.tmdb.org/t/p/original${response.data.results[0].backdrop_path}`;
-                    }
-                } else if (item.mediaType === 'Book') {
-                    const response = await axios.get('/api/googleBooks', {
-                        params: {
-                            query: item.title
-                        }
-                    });
-                    if (response.data.items.length > 0) {
-                        url = response.data.items[0].volumeInfo.imageLinks.thumbnail;
+                        url = `https://image.tmdb.org/t/p/w500${response.data.results[0].poster_path}`;
                     }
                 }
                 setImageUrl(url);
@@ -36,7 +35,7 @@ const MediaThumb = ({ item }) => {
         };
 
         fetchImage();
-    }, [item.title, item.mediaType]);
+    }, [item.title, item.mediaType, item.additionalFields.isbn]);
 
     return (
         <div className="media-thumb w-48 h-72 bg-light-blue-500 text-white rounded-lg shadow-lg p-4 mb-4 transition-transform transform hover:scale-105">

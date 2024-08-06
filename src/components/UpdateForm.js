@@ -76,17 +76,30 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
         const fetchBackgroundArt = async () => {
             if (formData.mediaType && formData.title) {
                 try {
-                    const response = await axios.get('/api/tmdb', {
-                        params: {
-                            query: formData.title,
-                            mediaType: formData.mediaType.toLowerCase()
+                    if (formData.mediaType === 'Book' && formData.additionalFields.isbn) {
+                        const response = await axios.get(`https://covers.openlibrary.org/b/isbn/${formData.additionalFields.isbn}-L.jpg`, {
+                            /* headers: {
+                                'User-Agent': 'Mediaq',
+                                'From': 'wayne86davenport@gmail.com'
+                            } */
+                        });
+                        if (response.status === 200) {
+                            setBackgroundArt(response.config.url);
                         }
-                    });
-                    const results = response.data.results;
-                    if (results.length > 0) {
-                        const backdropPath = results[0].backdrop_path;
-                        if (backdropPath) {
-                            setBackgroundArt(`https://image.tmdb.org/t/p/original${backdropPath}`);
+                    } else if (formData.mediaType === 'Movie' || formData.mediaType === 'Show') {
+                        const response = await axios.get('/api/tmdb', {
+                            params: {
+                                query: formData.title,
+                                mediaType: formData.mediaType.toLowerCase()
+                            }
+                        });
+                        const results = response.data.results;
+                        if (results.length > 0) {
+                            const backdropPath = results[0].backdrop_path;
+                            if (backdropPath) {
+                                setBackgroundArt(`https://image.tmdb.org/t/p/w500${response.data.results[0].poster_path}`);
+                                /* setBackgroundArt(`https://image.tmdb.org/t/p/original${backdropPath}`); */
+                            }
                         }
                     }
                 } catch (error) {
@@ -96,7 +109,7 @@ const UpdateForm = ({ item, onSubmit, onCancel }) => {
         };
 
         fetchBackgroundArt();
-    }, [formData.mediaType, formData.title]);
+    }, [formData.mediaType, formData.title, formData.additionalFields.isbn]);
 
     const handleGoalDurationChange = (e) => {
         const goalDuration = Number(e.target.value);

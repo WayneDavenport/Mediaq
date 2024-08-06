@@ -44,6 +44,8 @@ const VideoGameSearch = ({ onAdd }) => {
                 {results.map((result, index) => (
                     <div key={index} className="border p-4 rounded shadow">
                         <h3 className="text-xl font-semibold">{result.title}</h3>
+                        <p className="text-gray-500">Playtime: {result.id} hours</p>
+                        <p className="text-gray-500">Playtime: {result.description} hours</p>
                         <p className="text-gray-500">Publisher: {result.publisher}</p>
                         <p className="text-gray-500">Playtime: {result.playtime} hours</p>
                         <button onClick={() => onAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
