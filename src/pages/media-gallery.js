@@ -1,7 +1,7 @@
 // src/pages/media-gallery.js
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import MediaRow from '@/components/MediaRow';
+import MediaRow from '@/components/media-gallery/MediaRow';
 import Link from "next/link";
 import FriendZone from '@/components/FriendZone';
 

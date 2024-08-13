@@ -1,13 +1,16 @@
-// components/TvSearch.js
+// src/components/TvSearch.js
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { setSearchResults, setStagingItem } from '@/store/slices/searchSlice';
 
-const TvSearch = ({ onAdd }) => {
+const TvSearch = () => {
     const [searchParams, setSearchParams] = useState({
         query: '',
         language: 'en-US',
         include_adult: false,
     });
     const [results, setResults] = useState([]);
+    const dispatch = useDispatch();
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -48,9 +51,31 @@ const TvSearch = ({ onAdd }) => {
                 return result;
             }));
             setResults(filteredResults);
+            dispatch(setSearchResults(filteredResults));
         } catch (error) {
             console.error('Error fetching data:', error);
         }
+    };
+
+    const handleAdd = (item) => {
+        const duration = item.number_of_episodes * (item.episode_run_time?.[0] || 0);
+        const additionalFields = {
+            cast: item.credits?.cast?.slice(0, 3).map(cast => cast.name).join(', '),
+            network: item.networks?.map(network => network.name).join(', '),
+            crew: item.credits?.crew?.slice(0, 3).map(crew => crew.name).join(', '),
+            episodes: parseInt(item.number_of_episodes),
+        };
+
+        const formData = {
+            title: item.name,
+            duration: duration || '',
+            category: '', // Default category or let the user choose later
+            mediaType: 'Show',
+            description: item.overview,
+            additionalFields: additionalFields,
+        };
+
+        dispatch(setStagingItem(formData));
     };
 
     return (
@@ -114,7 +139,7 @@ const TvSearch = ({ onAdd }) => {
                                 </ul>
                             </div>
                         )}
-                        <button onClick={() => onAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
+                        <button onClick={() => handleAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
                     </div>
                 ))}
             </div>

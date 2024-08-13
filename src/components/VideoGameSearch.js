@@ -1,11 +1,14 @@
-// components/VideoGameSearch.js
+// src/components/VideoGameSearch.js
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { setSearchResults, setStagingItem } from '@/store/slices/searchSlice';
 
-const VideoGameSearch = ({ onAdd }) => {
+const VideoGameSearch = () => {
     const [searchParams, setSearchParams] = useState({
         query: '',
     });
     const [results, setResults] = useState([]);
+    const dispatch = useDispatch();
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -20,10 +23,31 @@ const VideoGameSearch = ({ onAdd }) => {
         try {
             const response = await fetch(`/api/rawg?query=${searchParams.query}`);
             const data = await response.json();
-            setResults(data.games);
+            setResults(data);
+            dispatch(setSearchResults(data));
         } catch (error) {
             console.error('Error fetching data:', error);
         }
+    };
+
+    const handleAdd = (item) => {
+        const duration = item.playtime * 60; // Convert playtime from hours to minutes
+        const additionalFields = {
+            publisher: item.publishers?.map(publisher => publisher.name).join(', '),
+            developers: item.developers?.map(developer => developer.name).join(', '),
+            coverArt: item.background_image, // Add cover art
+        };
+
+        const formData = {
+            title: item.name,
+            duration: duration || '',
+            category: '', // Default category or let the user choose later
+            mediaType: 'VideoGame',
+            description: item.description_raw,
+            additionalFields: additionalFields,
+        };
+
+        dispatch(setStagingItem(formData));
     };
 
     return (
@@ -43,12 +67,11 @@ const VideoGameSearch = ({ onAdd }) => {
             <div className="space-y-4">
                 {results.map((result, index) => (
                     <div key={index} className="border p-4 rounded shadow">
-                        <h3 className="text-xl font-semibold">{result.title}</h3>
-                        <p className="text-gray-500">Playtime: {result.id} hours</p>
-                        <p className="text-gray-500">Playtime: {result.description} hours</p>
-                        <p className="text-gray-500">Publisher: {result.publisher}</p>
-                        <p className="text-gray-500">Playtime: {result.playtime} hours</p>
-                        <button onClick={() => onAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
+                        <h3 className="text-xl font-semibold">{result.name}</h3>
+                        <p className="text-gray-500">Description: {result.description_raw}</p>
+                        <p className="text-gray-500">Publisher: {result.publishers?.map(publisher => publisher.name).join(', ')}</p>
+                        <p className="text-gray-500">Developer: {result.developers?.map(developer => developer.name).join(', ')}</p>
+                        <button onClick={() => handleAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
                     </div>
                 ))}
             </div>

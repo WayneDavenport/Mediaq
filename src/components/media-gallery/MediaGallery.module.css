@@ -1,0 +1,119 @@
+.mediaRow {
+    margin-bottom: 2rem;
+    /* Tailwind's mb-8 */
+}
+
+.mediaRowTitle {
+    font-size: 1.5rem;
+    /* Tailwind's text-2xl */
+    color: white;
+    font-weight: bold;
+    /* Tailwind's font-bold */
+    margin-bottom: 1rem;
+    /* Tailwind's mb-4 */
+}
+
+.mediaItems {
+    display: flex;
+    overflow-x: auto;
+    gap: 1rem;
+    /* Tailwind's space-x-4 */
+    white-space: nowrap;
+    /* Prevent items from wrapping to the next line */
+}
+
+.mediaThumb {
+    width: 12rem;
+    /* Tailwind's w-48 */
+    height: 18rem;
+    color: white;
+    border-radius: 0.5rem;
+    /* Tailwind's rounded-lg */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    /* Tailwind's shadow-lg */
+    padding: 1rem;
+    /* Tailwind's p-4 */
+    margin-bottom: 1rem;
+    /* Tailwind's mb-4 */
+    transition: transform 0.2s;
+    /* Tailwind's transition-transform */
+    flex: 0 0 auto;
+    /* Prevent flex items from shrinking */
+}
+
+.mediaThumb:hover {
+    transform: scale(1.05);
+    /* Tailwind's hover:scale-105 */
+}
+
+.mediaThumbImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    /* Tailwind's rounded-lg */
+}
+
+.mediaThumbPlaceholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #3b82f6;
+    /* Tailwind's bg-light-blue-500 */
+    border-radius: 0.5rem;
+    /* Tailwind's rounded-lg */
+    text-align: center;
+}
+
+.expandedMediaView {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr 2fr 2fr;
+    align-items: center;
+    /* justify-content: center; */
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 2rem;
+}
+
+.expandedImage {
+    width: 12rem;
+    /* Same as thumbnail width */
+    height: 18rem;
+    /* Same as thumbnail height */
+    object-fit: cover;
+    border-radius: 0.5rem;
+    /* Tailwind's rounded-lg */
+    margin-bottom: 1rem;
+    /* Tailwind's mb-4 */
+}
+
+.comments {
+    display: flex;
+    flex-direction: column;
+    /* justify-content: center; */
+    align-items: center;
+    color: whitesmoke;
+}
+
+.details {
+    color: white;
+    text-align: center;
+}
+
+.backButton {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    background-color: #3b82f6;
+    /* Tailwind's bg-light-blue-500 */
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    /* Tailwind's rounded-lg */
+    cursor: pointer;
+}

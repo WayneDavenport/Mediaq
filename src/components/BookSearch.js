@@ -1,12 +1,17 @@
-// components/BookSearch.js
+// src/components/BookSearch.js
 import { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { setSearchResults, setStagingItem } from '@/store/slices/searchSlice';
+import { useSession } from 'next-auth/react';
 
-const BookSearch = ({ onAdd }) => {
+const BookSearch = () => {
     const [searchParams, setSearchParams] = useState({
         query: '',
         author: '',
     });
     const [results, setResults] = useState([]);
+    const dispatch = useDispatch();
+    const { data: session } = useSession();
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -22,9 +27,31 @@ const BookSearch = ({ onAdd }) => {
             const response = await fetch(`/api/googleBooks?query=${searchParams.query}&author=${searchParams.author}`);
             const data = await response.json();
             setResults(data.books);
+            dispatch(setSearchResults(data.books));
         } catch (error) {
             console.error('Error fetching data:', error);
         }
+    };
+
+    const handleAdd = (item) => {
+        const readingSpeed = session?.user?.readingSpeed || 20; // Default to 20 if not provided
+        const duration = Math.ceil(item.pageCount / readingSpeed * 30); // Calculate duration in minutes
+        const additionalFields = {
+            authors: item.authors?.join(', '),
+            publisher: item.publisher,
+            pageCount: parseInt(item.pageCount),
+        };
+
+        const formData = {
+            title: item.title,
+            duration: duration || '',
+            category: '', // Default category or let the user choose later
+            mediaType: 'Book',
+            description: item.description,
+            additionalFields: additionalFields,
+        };
+
+        dispatch(setStagingItem(formData));
     };
 
     return (
@@ -57,7 +84,7 @@ const BookSearch = ({ onAdd }) => {
                         <p className="text-gray-500">Authors: {result.authors?.join(', ')}</p>
                         <p className="text-gray-500">Publisher: {result.publisher}</p>
                         <p className="text-gray-500">Page Count: {parseInt(result.pageCount)}</p>
-                        <button onClick={() => onAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
+                        <button onClick={() => handleAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
                     </div>
                 ))}
             </div>

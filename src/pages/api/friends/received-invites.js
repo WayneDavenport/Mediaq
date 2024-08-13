@@ -1,29 +1,30 @@
 // src/pages/api/friends/received-invites.js
 import { connectToMongoose } from "@/lib/db";
 import User from "@/models/User";
-import { getSession } from "next-auth/react";
+import { requireAuth } from '@/middleware/auth';
+
 
 export default async function handler(req, res) {
-    await connectToMongoose();
 
-    const session = await getSession({ req });
 
-    if (!session) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
+    await requireAuth(req, res, async () => {
+        try {
+            console.log("Connecting to Mongoose...");
+            await connectToMongoose();
+            console.log("Connected to Mongoose");
 
-    const { email } = session.user;
+            const { email } = req.user;
 
-    try {
-        const user = await User.findOne({ email });
+            const user = await User.findOne({ email });
 
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            return res.status(200).json({ receivedInvites: user.receivedInvites });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ message: 'Internal server error' });
         }
-
-        return res.status(200).json({ receivedInvites: user.receivedInvites });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: 'Internal server error' });
-    }
+    });
 }

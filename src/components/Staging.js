@@ -1,22 +1,45 @@
+// src/components/Staging.js
 import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import axios from 'axios';
 
-const Staging = ({ item, onSubmit }) => {
+const Staging = ({ onSubmit }) => {
+    const stagingItem = useSelector((state) => state.search.stagingItem);
     const [formData, setFormData] = useState({
-        title: item.title || '',
-        queueNumber: item.queueNumber || 0,
-        duration: item.duration || '',
+        title: '',
+        queueNumber: 0,
+        duration: '',
         completedDuration: 0,
         percentComplete: 0,
-        category: item.category || '',
-        mediaType: item.mediaType || '',
-        description: item.description || '',
-        additionalFields: item.additionalFields || {},
-        locked: item.locked || false,
+        category: '',
+        mediaType: '',
+        description: '',
+        additionalFields: {},
+        locked: false,
         keyParent: '',
         goalDuration: 0,
         keyParentProgress: 0 // Add keyParentProgress to the form data
     });
+
+    useEffect(() => {
+        if (stagingItem) {
+            setFormData({
+                title: stagingItem.title || '',
+                queueNumber: stagingItem.queueNumber || 0,
+                duration: stagingItem.duration || '',
+                completedDuration: 0,
+                percentComplete: 0,
+                category: stagingItem.category || '',
+                mediaType: stagingItem.mediaType || '',
+                description: stagingItem.description || '',
+                additionalFields: stagingItem.additionalFields || {},
+                locked: stagingItem.locked || false,
+                keyParent: '',
+                goalDuration: 0,
+                keyParentProgress: 0
+            });
+        }
+    }, [stagingItem]);
 
     const [mediaTypes, setMediaTypes] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -121,6 +144,8 @@ const Staging = ({ item, onSubmit }) => {
         }
     };
 
+
+
     return (
         <div className="p-4 border rounded shadow">
             <h2 className="text-xl font-bold mb-4">Review and Customize</h2>
@@ -184,16 +209,6 @@ const Staging = ({ item, onSubmit }) => {
                         className="mr-2"
                     />
                 </div>
-                <div>
-                    <label className="block text-gray-700">Queue Number:</label>
-                    <input
-                        type="number"
-                        name="queueNumber"
-                        value={formData.queueNumber}
-                        readOnly
-                        className="border p-2 w-full rounded"
-                    />
-                </div>
                 {formData.locked && (
                     <>
                         <div>
@@ -248,11 +263,12 @@ const Staging = ({ item, onSubmit }) => {
                                 />
                                 <span>{formData.goalDuration} minutes</span>
                             </div>
-
                         )}
                     </>
                 )}
-                <button type="submit" className="bg-blue-500 text-white p-2 rounded mt-2">Submit</button>
+                <div className="flex space-x-4">
+                    <button type="submit" className="bg-blue-500 text-white p-2 rounded mt-2">Submit</button>
+                </div>
             </form>
         </div>
     );

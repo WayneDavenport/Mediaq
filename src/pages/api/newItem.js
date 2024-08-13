@@ -60,7 +60,8 @@ export default async function handler(req, res) {
                 keyParentProgress,
                 userEmail: req.user.email,
                 userId: req.user.id,
-                queueNumber: nextQueueNumber // Assign the next queue number
+                queueNumber: nextQueueNumber,
+                comments: []
             });
 
             console.log("Saving new item to database...");

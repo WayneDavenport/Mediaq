@@ -1,13 +1,16 @@
-// components/MovieSearch.js
+// src/components/MovieSearch.js
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { setSearchResults, setStagingItem } from '@/store/slices/searchSlice';
 
-const MovieSearch = ({ onAdd }) => {
+const MovieSearch = () => {
     const [searchParams, setSearchParams] = useState({
         query: '',
         language: 'en-US',
         include_adult: false,
     });
     const [results, setResults] = useState([]);
+    const dispatch = useDispatch();
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -26,9 +29,29 @@ const MovieSearch = ({ onAdd }) => {
                 result.media_type !== 'tv' && result.title && result.overview
             );
             setResults(filteredResults);
+            dispatch(setSearchResults(filteredResults));
         } catch (error) {
             console.error('Error fetching data:', error);
         }
+    };
+
+    const handleAdd = (item) => {
+        const duration = item.runtime;
+        const additionalFields = {
+            cast: item.credits?.cast?.slice(0, 3).map(cast => cast.name).join(', '),
+            director: item.credits?.crew?.find(crew => crew.job === 'Director')?.name,
+        };
+
+        const formData = {
+            title: item.title,
+            duration: duration || '',
+            category: '', // Default category or let the user choose later
+            mediaType: 'Movie',
+            description: item.overview,
+            additionalFields: additionalFields,
+        };
+
+        dispatch(setStagingItem(formData));
     };
 
     return (
@@ -91,7 +114,7 @@ const MovieSearch = ({ onAdd }) => {
                                 </ul>
                             </div>
                         )}
-                        <button onClick={() => onAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
+                        <button onClick={() => handleAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
                     </div>
                 ))}
             </div>

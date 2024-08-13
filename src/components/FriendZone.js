@@ -1,6 +1,6 @@
 // src/components/FriendZone.js
 import React from 'react';
-import MediaRow from '@/components/MediaRow';
+import MediaRow from '@/components/media-gallery/MediaRow';
 
 const FriendZone = ({ friendsMediaQueues }) => {
     return (

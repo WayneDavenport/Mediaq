@@ -4,11 +4,12 @@ import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { setSelectedMediaItem } from '@/store/slices/selectedMediaItemSlice';
 
-const MediaItemsList = ({ newMediaItem, onEdit }) => {
+const MediaItemsList = ({ newMediaItem }) => {
     const [mediaItems, setMediaItems] = useState([]);
-    const [groupBy, setGroupBy] = useState('mediaType'); // Default grouping by media type
-    const [keyParentTitles, setKeyParentTitles] = useState({}); // State to store key parent titles
-    const [keyParentProgress, setKeyParentProgress] = useState({}); // State to store key parent progress
+    const [groupBy, setGroupBy] = useState('mediaType');
+    const [keyParentTitles, setKeyParentTitles] = useState({});
+    const [keyParentProgress, setKeyParentProgress] = useState({});
+    const dispatch = useDispatch();
 
     useEffect(() => {
         const fetchMediaItems = async () => {
@@ -89,12 +90,12 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                 complete: true,
             };
 
-            console.log('Updating item:', updatedData); // Log the updated data
+            console.log('Updating item:', updatedData);
 
             const response = await axios.put('/api/updateItem', updatedData);
 
             if (response.status === 200) {
-                console.log('Item marked as complete:', response.data.item); // Log the response
+                console.log('Item marked as complete:', response.data.item);
                 setMediaItems(prevItems =>
                     prevItems.map(item =>
                         item._id === id ? { ...item, complete: true, percentComplete: 100, completedDuration: item.duration } : item
@@ -113,7 +114,6 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
     };
 
     const isCategoryOrMediaType = (keyParent) => {
-        // Assuming categories and media types are strings and item IDs are ObjectIds
         return typeof keyParent === 'string' && !keyParent.match(/^[0-9a-fA-F]{24}$/);
     };
 
@@ -195,7 +195,7 @@ const MediaItemsList = ({ newMediaItem, onEdit }) => {
                         <h2 className="text-xl font-bold mb-2">{group}</h2>
                         {activeMediaItems[group].map(item => (
                             <div
-                                onClick={() => onEdit(item)}
+                                onClick={() => dispatch(setSelectedMediaItem(item))}
                                 key={item._id}
                                 className="media-item-thumbnail flex flex-col justify-between w-80 bg-[#222227] text-white rounded-lg shadow-lg p-4 mb-4 transition-transform transform hover:scale-105"
                             >

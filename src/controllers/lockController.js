@@ -1,5 +1,6 @@
 // controllers/lockController.js
 import MediaItem from '@/models/MediaItem';
+import { pages } from 'next/dist/build/templates/app-page';
 
 export const isItemLocked = async (item, userId) => {
     if (!item.lockCondition || !item.lockCondition.type) {
@@ -29,3 +30,18 @@ export const isItemLocked = async (item, userId) => {
 
     return false;
 };
+
+/* {
+    lockedItem: 'object id number - required';
+    keyParent: 'Media Item, category, or media type(object id) - required';
+    GoalTime: 'number of minutes - required'
+    (if Book) Goal pages: "number of pages - not required";
+    (if Show) Goal episodes: "number of pages - not required"; 
+    timeComplete: "initially 0. Updated when keyparent has CompletedDuration updated";
+    percentComplete: "intitially 0/ same";
+    pagesComplete:"initially 0/ same";
+    episodesComplete:""
+
+
+}
+ */

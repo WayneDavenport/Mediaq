@@ -7,11 +7,13 @@ import Staging from '@/components/Staging';
 import BookSearch from '@/components/BookSearch';
 import VideoGameSearch from '@/components/VideoGameSearch';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { useSelector } from 'react-redux';
 
 const Search = () => {
     const [mediaType, setMediaType] = useState('movie');
-    const [stagingItem, setStagingItem] = useState(null);
     const { data: session } = useSession();
+    const stagingItem = useSelector((state) => state.search.stagingItem);
 
     const handleMediaTypeChange = (e) => {
         setMediaType(e.target.value);
@@ -29,7 +31,6 @@ const Search = () => {
             userId: session.user.id // Ensure userId is set
         };
         console.log('Optimistic Item:', optimisticItem); // Log optimistic item
-        setOptimisticMediaItem(optimisticItem);
 
         try {
             const response = await fetch('/api/newItem', {
@@ -42,64 +43,13 @@ const Search = () => {
 
             if (response.ok) {
                 console.log('Media item added successfully');
-                // No need to update the client with the actual server item
-                setOptimisticMediaItem(null);
             } else {
                 const errorData = await response.json();
                 console.error('Error adding media item:', errorData.message);
-                // Revert the optimistic update if the request fails
-                setOptimisticMediaItem(null);
             }
         } catch (error) {
             console.error('Error adding media item:', error);
-            // Revert the optimistic update if the request fails
-            setOptimisticMediaItem(null);
         }
-    };
-
-    const handleAdd = (item) => {
-        let duration;
-        let additionalFields = {};
-
-        if (mediaType === 'movie') {
-            duration = item.runtime;
-            additionalFields = {
-                cast: item.credits?.cast?.slice(0, 3).map(cast => cast.name).join(', '),
-                director: item.credits?.crew?.find(crew => crew.job === 'Director')?.name,
-            };
-        } else if (mediaType === 'tv') {
-            duration = item.number_of_episodes * (item.episode_run_time?.[0] || 0);
-            additionalFields = {
-                cast: item.credits?.cast?.slice(0, 3).map(cast => cast.name).join(', '),
-                network: item.networks?.map(network => network.name).join(', '),
-                crew: item.credits?.crew?.slice(0, 3).map(crew => crew.name).join(', '),
-                episodes: parseInt(item.number_of_episodes),
-            };
-        } else if (mediaType === 'book') {
-            const readingSpeed = session?.user?.readingSpeed || 20; // Default to 20 if not provided
-            duration = Math.ceil(item.pageCount / readingSpeed * 30); // Calculate duration in minutes
-            additionalFields = {
-                authors: item.authors?.join(', '),
-                publisher: item.publisher,
-                pageCount: parseInt(item.pageCount),
-            };
-        } else if (mediaType === 'videoGame') {
-            duration = item.playtime * 60; // Convert playtime from hours to minutes
-            additionalFields = {
-                publisher: item.publisher,
-            };
-        }
-
-        const formData = {
-            title: item.title || item.name,
-            duration: duration || '',
-            category: '', // Default category or let the user choose later
-            mediaType: mediaType === 'movie' ? 'Movie' : mediaType === 'tv' ? 'Show' : mediaType === 'book' ? 'Book' : 'VideoGame',
-            description: item.description || item.overview,
-            additionalFields: additionalFields,
-        };
-
-        setStagingItem(formData);
     };
 
     const handleSubmit = async (formData) => {
@@ -114,7 +64,6 @@ const Search = () => {
 
             if (response.ok) {
                 console.log('Media item added successfully');
-                setStagingItem(null); // Clear staging item after successful submission
             } else {
                 const errorData = await response.json();
                 console.error('Error adding media item:', errorData.message);
@@ -139,17 +88,18 @@ const Search = () => {
                         <option value="book">Book</option>
                         <option value="videoGame">Video Game</option>
                     </select>
-                    {mediaType === 'movie' && <MovieSearch onAdd={handleAdd} />}
-                    {mediaType === 'tv' && <TvSearch onAdd={handleAdd} />}
-                    {mediaType === 'book' && <BookSearch onAdd={handleAdd} />}
-                    {mediaType === 'videoGame' && <VideoGameSearch onAdd={handleAdd} />}
+                    {mediaType === 'movie' && <MovieSearch />}
+                    {mediaType === 'tv' && <TvSearch />}
+                    {mediaType === 'book' && <BookSearch />}
+                    {mediaType === 'videoGame' && <VideoGameSearch />}
                 </div>
                 {stagingItem && (
                     <div>
-                        <Staging item={stagingItem} onSubmit={handleSubmit} />
+                        <Staging onSubmit={handleSubmit} />
                     </div>
                 )}
             </div>
+            <Link href='/user-main' className="bg-green-500 text-white p-2 rounded mt-2" >Dashboard</Link>
         </div>
     );
 };
