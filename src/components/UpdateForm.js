@@ -1,3 +1,4 @@
+// src/components/UpdateForm.js
 import { useDispatch, useSelector } from 'react-redux';
 import { clearSelectedMediaItem } from '@/store/slices/selectedMediaItemSlice';
 import useFormState from '@/hooks/useFormState';
@@ -14,7 +15,6 @@ const UpdateForm = ({ onCancel }) => {
         selectedKeyParent,
         backgroundArt,
         maxQueueNumber,
-        handleGoalDurationChange,
         handleSliderChange,
         handleChange,
         setFormData
@@ -29,11 +29,7 @@ const UpdateForm = ({ onCancel }) => {
         description: '',
         additionalFields: {},
         percentComplete: 0,
-        goalCompletionTime: 0,
         completedDuration: 0,
-        locked: false,
-        keyParent: '',
-        goalDuration: 0,
         queueNumber: 0
     });
 
@@ -194,60 +190,38 @@ const UpdateForm = ({ onCancel }) => {
                     <span>{formatCompletion()}</span>
                 </div>
                 <FormField label="Queue Number" name="queueNumber" value={formData.queueNumber} onChange={handleChange} type="number" min="1" max={maxQueueNumber} />
-                <div>
-                    <label className="block text-white-700">Locked:</label>
+                {/* Inert fields for goal completion time, key parent, and locking */}
+                <div style={{ display: 'none' }}>
+                    <label className="block text-gray-700">Locked:</label>
                     <input
                         type="checkbox"
                         name="locked"
-                        checked={formData.locked}
-                        onChange={handleChange}
+                        checked={false}
+                        onChange={() => { }}
                         className="mr-2"
                     />
                 </div>
-                {formData.locked && (
-                    <>
-                        <FormField
-                            label="Key Parent"
-                            name="keyParent"
-                            value={formData.keyParent}
-                            onChange={handleChange}
-                            type="select"
-                            options={[
-                                { label: 'Select Key Parent', value: '' },
-                                ...mediaTypes.map(type => ({ label: type, value: type })),
-                                ...categories.map(category => ({ label: category, value: category })),
-                                ...incompleteMediaItems.map(item => ({ label: item.title, value: item._id }))
-                            ]}
-                        />
-                        {selectedKeyParent ? (
-                            <div>
-                                <label className="block text-gray-700">Goal Duration:</label>
-                                <input
-                                    type="range"
-                                    name="goalDuration"
-                                    min="0"
-                                    max={selectedKeyParent.duration}
-                                    value={formData.goalDuration}
-                                    onChange={handleChange}
-                                    className="w-full text-white-700 bg-[#222227]"
-                                />
-                                <span>{formData.goalDuration} minutes</span>
-                            </div>
-                        ) : (
-                            <div>
-                                <label className="block text-white-700">Goal Duration:</label>
-                                <input
-                                    type="number"
-                                    name="goalDuration"
-                                    value={formData.goalDuration}
-                                    onChange={handleGoalDurationChange}
-                                    className="border p-2 w-full rounded text-white-700 bg-[#222227] opacity-20"
-                                />
-                                <span>{formData.goalDuration} minutes</span>
-                            </div>
-                        )}
-                    </>
-                )}
+                <div style={{ display: 'none' }}>
+                    <label className="block text-gray-700">Key Parent:</label>
+                    <select
+                        name="keyParent"
+                        value=""
+                        onChange={() => { }}
+                        className="border p-2 w-full rounded"
+                    >
+                        <option value="">Select Key Parent</option>
+                    </select>
+                </div>
+                <div style={{ display: 'none' }}>
+                    <label className="block text-gray-700">Goal Duration:</label>
+                    <input
+                        type="number"
+                        name="goalDuration"
+                        value={0}
+                        onChange={() => { }}
+                        className="border p-2 w-full rounded"
+                    />
+                </div>
                 <div className="flex space-x-4">
                     <button type="submit" className="bg-blue-500 text-white p-2 rounded mt-2">Update</button>
                     <button type="button" onClick={onCancel} className="bg-gray-500 text-white p-2 rounded mt-2">Cancel</button>

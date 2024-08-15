@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     }
 
     await requireAuth(req, res, async () => {
-        const { id, title, duration, category, mediaType, description, additionalFields, percentComplete, completedDuration, complete, locked, keyParent, goalDuration, queueNumber } = req.body;
+        const { id, title, duration, category, mediaType, description, additionalFields, percentComplete, completedDuration, complete, queueNumber } = req.body;
 
         if (!id || !title || !duration || !category || !mediaType) {
             return res.status(422).json({
@@ -56,82 +56,13 @@ export default async function handler(req, res) {
             mediaItem.percentComplete = percentComplete;
             mediaItem.completedDuration = completedDuration;
             mediaItem.complete = complete;
-            mediaItem.locked = locked;
-            mediaItem.keyParent = keyParent;
-            mediaItem.goalDuration = goalDuration;
             mediaItem.queueNumber = queueNumber;
-
-            // Calculate the goalCompletionTime
-            let goalCompletionTime = 0;
-            let keyParentProgress = 0;
-
-            if (keyParent) {
-                const selectedItem = await MediaItem.findOne({ title: keyParent });
-                if (selectedItem) {
-                    // If keyParent is a media item, set goalCompletionTime directly from user input
-                    goalCompletionTime = goalDuration;
-                } else {
-                    // Calculate the total completed duration for the key parent
-                    const filter = { userId: req.user.id, [keyParent]: req.body[keyParent] };
-                    const items = await MediaItem.find(filter);
-                    const totalCompletedDuration = items.reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
-                    goalCompletionTime = totalCompletedDuration + goalDuration;
-                }
-            }
-
-            mediaItem.goalCompletionTime = goalCompletionTime;
-
-            console.log(`Goal Completion Time: ${mediaItem.goalCompletionTime}`);
 
             mediaItem.updatedAt = new Date();
 
             console.log("Updating item in database...");
             const result = await mediaItem.save();
             console.log("Item updated:", result);
-
-            // Calculate the total completed duration for the key parent
-            const filter = {
-                userId: req.user.id,
-                locked: true,
-                $or: [
-                    { keyParent: mediaType },
-                    { keyParent: category },
-                    { keyParent: title } // Include media items by their title
-                ]
-            };
-            console.log(`Filter: ${JSON.stringify(filter)}`);
-            const lockedItems = await MediaItem.find(filter);
-            console.log(`Locked items found: ${lockedItems.length}`);
-
-            for (const lockedItem of lockedItems) {
-                const keyParentFilter = {
-                    userId: req.user.id,
-                    $or: [
-                        { mediaType: lockedItem.keyParent },
-                        { category: lockedItem.keyParent },
-                        { title: lockedItem.keyParent } // Include media items by their title
-                    ]
-                };
-                const items = await MediaItem.find(keyParentFilter);
-                const totalCompletedDuration = items.reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
-
-                console.log(`Total Completed Duration for ${lockedItem.keyParent}: ${totalCompletedDuration}`);
-                console.log(`Goal Completion Time for ${lockedItem.keyParent}: ${lockedItem.goalCompletionTime}`);
-
-                // Calculate the progress percentage
-                const progressPercentage = (totalCompletedDuration / lockedItem.goalCompletionTime) * 100;
-                lockedItem.keyParentProgress = progressPercentage;
-
-                // Check if the total completed duration is greater than or equal to the goal completion time
-                if (totalCompletedDuration >= lockedItem.goalCompletionTime) {
-                    lockedItem.locked = false;
-                    lockedItem.keyParent = '';
-                    lockedItem.goalCompletionTime = 0;
-                    lockedItem.keyParentProgress = 0;
-                    console.log(`Unlocking item ${lockedItem._id} as total completed duration meets or exceeds goal completion time.`);
-                }
-                await lockedItem.save();
-            }
 
             res.status(200).json({ message: 'Updated item!', item: result });
         } catch (error) {

@@ -1,6 +1,7 @@
 // src/pages/api/newItem.js
 import { connectToMongoose } from '@/lib/db';
 import MediaItem from '@/models/MediaItem';
+import LockedItem from '@/models/LockedItem';
 import { requireAuth } from '@/middleware/auth';
 
 export default async function handler(req, res) {
@@ -9,7 +10,7 @@ export default async function handler(req, res) {
     }
 
     await requireAuth(req, res, async () => {
-        const { title, duration, category, mediaType, description, additionalFields, percentComplete, completedDuration, complete, locked, keyParent, goalDuration } = req.body;
+        const { title, duration, category, mediaType, description, additionalFields, percentComplete, completedDuration, complete, locked, keyParent, goalTime, goalPages, goalEpisodes } = req.body;
 
         if (!title || !duration || !category || !mediaType) {
             return res.status(422).json({
@@ -21,24 +22,6 @@ export default async function handler(req, res) {
             console.log("Connecting to Mongoose...");
             await connectToMongoose();
             console.log("Connected to Mongoose");
-
-            // Calculate the goalCompletionTime
-            let goalCompletionTime = 0;
-            let keyParentProgress = 0;
-
-            if (keyParent) {
-                const selectedItem = await MediaItem.findOne({ title: keyParent });
-                if (selectedItem) {
-                    // If keyParent is a media item, set goalCompletionTime directly from user input
-                    goalCompletionTime = goalDuration;
-                } else {
-                    // Calculate the total completed duration for the key parent
-                    const filter = { userId: req.user.id, [keyParent]: req.body[keyParent] };
-                    const items = await MediaItem.find(filter);
-                    const totalCompletedDuration = items.reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
-                    goalCompletionTime = totalCompletedDuration + goalDuration;
-                }
-            }
 
             // Find the highest current queue number and increment it by one
             const highestQueueItem = await MediaItem.findOne({ userId: req.user.id }).sort({ queueNumber: -1 });
@@ -54,10 +37,6 @@ export default async function handler(req, res) {
                 percentComplete,
                 completedDuration,
                 complete,
-                locked,
-                keyParent,
-                goalCompletionTime,
-                keyParentProgress,
                 userEmail: req.user.email,
                 userId: req.user.id,
                 queueNumber: nextQueueNumber,
@@ -67,6 +46,24 @@ export default async function handler(req, res) {
             console.log("Saving new item to database...");
             const result = await newItem.save();
             console.log("New item saved:", result);
+
+            if (locked) {
+                const newLockedItem = new LockedItem({
+                    lockedItem: result._id,
+                    keyParent,
+                    goalTime,
+                    goalPages,
+                    goalEpisodes,
+                    timeComplete: completedDuration,
+                    percentComplete,
+                    pagesComplete: additionalFields.pagesCompleted || 0,
+                    episodesComplete: additionalFields.episodesCompleted || 0
+                });
+
+                console.log("Saving new locked item to database...");
+                await newLockedItem.save();
+                console.log("New locked item saved");
+            }
 
             res.status(201).json({ message: 'Created new item!', item: result });
         } catch (error) {

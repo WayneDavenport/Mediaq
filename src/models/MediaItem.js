@@ -13,10 +13,6 @@ const mediaItemSchema = new mongoose.Schema({
     additionalFields: { type: Map, of: mongoose.Schema.Types.Mixed },
     userEmail: { type: String, required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
-    locked: { type: Boolean, default: false },//
-    keyParent: { type: String, default: '' },//
-    goalCompletionTime: { type: Number, default: 0 },//
-    keyParentProgress: { type: Number, default: 0 }, // 
     comments: {
         type: [
             {

@@ -1,13 +1,10 @@
-// src/components/Staging.js
+// src/components/StagingOld.js
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 
 const Staging = ({ onSubmit }) => {
     const stagingItem = useSelector((state) => state.search.stagingItem);
-    const session = useSelector((state) => state.session);
-    const readingSpeed = session?.user?.readingSpeed || 20; // pages per 30 minutes
-
     const [formData, setFormData] = useState({
         title: '',
         queueNumber: 0,
@@ -20,9 +17,8 @@ const Staging = ({ onSubmit }) => {
         additionalFields: {},
         locked: false,
         keyParent: '',
-        goalTime: 0,
-        goalPages: 0,
-        goalEpisodes: 0
+        goalDuration: 0,
+        keyParentProgress: 0 // Add keyParentProgress to the form data
     });
 
     useEffect(() => {
@@ -37,11 +33,10 @@ const Staging = ({ onSubmit }) => {
                 mediaType: stagingItem.mediaType || '',
                 description: stagingItem.description || '',
                 additionalFields: stagingItem.additionalFields || {},
-                locked: false,
+                locked: stagingItem.locked || false,
                 keyParent: '',
-                goalTime: 0,
-                goalPages: 0,
-                goalEpisodes: 0
+                goalDuration: 0,
+                keyParentProgress: 0
             });
         }
     }, [stagingItem]);
@@ -63,7 +58,10 @@ const Staging = ({ onSubmit }) => {
 
                 setMediaTypes(uniqueMediaTypes);
                 setCategories(uniqueCategories);
-                setIncompleteMediaItems(mediaItems.filter(item => !item.complete));
+
+                // Extract incomplete media items
+                const incompleteItems = mediaItems.filter(item => !item.complete);
+                setIncompleteMediaItems(incompleteItems);
             } catch (error) {
                 console.error("Failed to fetch media items:", error);
             }
@@ -72,7 +70,7 @@ const Staging = ({ onSubmit }) => {
         fetchMediaItems();
     }, []);
 
-    const handleChange = (e) => {
+    const handleChange = async (e) => {
         const { name, value, type, checked } = e.target;
         setFormData((prevData) => ({
             ...prevData,
@@ -84,42 +82,69 @@ const Staging = ({ onSubmit }) => {
             setSelectedKeyParent(selectedItem);
             setFormData((prevData) => ({
                 ...prevData,
-                keyParent: selectedItem ? selectedItem.title : value,
-                goalTime: selectedItem ? selectedItem.duration : 0,
-                goalPages: selectedItem && selectedItem.mediaType === 'Book' ? selectedItem.additionalFields.pageCount : 0,
-                goalEpisodes: selectedItem && selectedItem.mediaType === 'Show' ? selectedItem.additionalFields.episodes : 0
+                goalDuration: selectedItem ? selectedItem.duration : 0,
+                keyParent: selectedItem ? selectedItem.title : value // Save title if media item is selected
+            }));
+        } else if (name === 'category' || name === 'mediaType') {
+            const totalCompletedTime = await fetchTotalCompletedTime(value);
+            setFormData((prevData) => ({
+                ...prevData,
+                goalDuration: totalCompletedTime + formData.goalDuration
             }));
         }
     };
 
-    const handleGoalChange = (e) => {
-        const { name, value } = e.target;
-        const goalValue = Number(value);
-
-        if (name === 'goalPages') {
-            setFormData((prevData) => ({
-                ...prevData,
-                goalPages: goalValue,
-                goalTime: Math.round((goalValue / readingSpeed) * 30) // Calculate time based on reading speed
-            }));
-        } else if (name === 'goalEpisodes') {
-            setFormData((prevData) => ({
-                ...prevData,
-                goalEpisodes: goalValue,
-                goalTime: selectedKeyParent ? Math.round((goalValue / selectedKeyParent.additionalFields.episodes) * selectedKeyParent.duration) : prevData.goalTime
-            }));
-        } else {
-            setFormData((prevData) => ({
-                ...prevData,
-                goalTime: goalValue
-            }));
-        }
+    const handleSliderChange = (e) => {
+        const goalDuration = Number(e.target.value);
+        setFormData((prevData) => ({
+            ...prevData,
+            goalDuration
+        }));
     };
 
-    const handleSubmit = (e) => {
+    const handleGoalDurationChange = (e) => {
+        const goalDuration = Number(e.target.value);
+        setFormData((prevData) => ({
+            ...prevData,
+            goalDuration
+        }));
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (isCategoryOrMediaType(formData.keyParent)) {
+            const totalCompletedTime = await fetchTotalCompletedTime(formData.keyParent);
+            const updatedGoalDuration = totalCompletedTime + formData.goalDuration;
+            setFormData((prevData) => ({
+                ...prevData,
+                goalDuration: updatedGoalDuration
+            }));
+        }
+
         onSubmit(formData);
     };
+
+    const isCategoryOrMediaType = (keyParent) => {
+        // Assuming categories and media types are strings and item IDs are ObjectIds
+        return typeof keyParent === 'string' && !keyParent.match(/^[0-9a-fA-F]{24}$/);
+    };
+
+    const fetchTotalCompletedTime = async (keyParent) => {
+        try {
+            const response = await axios.get('/api/getMediaItems');
+            const mediaItems = response.data.mediaItems;
+            const totalCompletedTime = mediaItems
+                .filter(item => item[keyParent] === keyParent)
+                .reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
+            return totalCompletedTime;
+        } catch (error) {
+            console.error("Failed to fetch total completed time:", error);
+            return 0;
+        }
+    };
+
+
 
     return (
         <div className="p-4 border rounded shadow">
@@ -147,46 +172,29 @@ const Staging = ({ onSubmit }) => {
                 </div>
                 <div>
                     <label className="block text-gray-700">Category:</label>
-                    <select
+                    <input
+                        type="text"
                         name="category"
                         value={formData.category}
                         onChange={handleChange}
                         className="border p-2 w-full rounded"
-                    >
-                        <option value="">Select Category</option>
-                        {categories.map(category => (
-                            <option key={category} value={category}>{category}</option>
-                        ))}
-                    </select>
+                    />
                 </div>
                 <div>
                     <label className="block text-gray-700">Media Type:</label>
-                    <select
+                    <input
+                        type="text"
                         name="mediaType"
                         value={formData.mediaType}
                         onChange={handleChange}
                         className="border p-2 w-full rounded"
-                    >
-                        <option value="">Select Media Type</option>
-                        {mediaTypes.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                        ))}
-                    </select>
+                    />
                 </div>
                 <div>
                     <label className="block text-gray-700">Description:</label>
                     <textarea
                         name="description"
                         value={formData.description}
-                        onChange={handleChange}
-                        className="border p-2 w-full rounded"
-                    />
-                </div>
-                <div>
-                    <label className="block text-gray-700">Additional Fields:</label>
-                    <textarea
-                        name="additionalFields"
-                        value={JSON.stringify(formData.additionalFields)}
                         onChange={handleChange}
                         className="border p-2 w-full rounded"
                     />
@@ -229,70 +237,32 @@ const Staging = ({ onSubmit }) => {
                                 </optgroup>
                             </select>
                         </div>
-                        {selectedKeyParent && (
-                            <>
-                                {selectedKeyParent.mediaType === 'Book' && (
-                                    <div>
-                                        <label className="block text-gray-700">Goal Pages:</label>
-                                        <input
-                                            type="range"
-                                            name="goalPages"
-                                            min="0"
-                                            max={selectedKeyParent.additionalFields.pageCount}
-                                            value={formData.goalPages}
-                                            onChange={handleGoalChange}
-                                            className="w-full"
-                                        />
-                                        <span>{formData.goalPages} pages ({Math.round((formData.goalPages / readingSpeed) * 30)} minutes)</span>
-                                    </div>
-                                )}
-                                {selectedKeyParent.mediaType === 'Show' && (
-                                    <div>
-                                        <label className="block text-gray-700">Goal Episodes:</label>
-                                        <input
-                                            type="range"
-                                            name="goalEpisodes"
-                                            min="0"
-                                            max={selectedKeyParent.additionalFields.episodes}
-                                            value={formData.goalEpisodes}
-                                            onChange={handleGoalChange}
-                                            className="w-full"
-                                        />
-                                        <span>{formData.goalEpisodes} episodes ({Math.round((formData.goalEpisodes / selectedKeyParent.additionalFields.episodes) * selectedKeyParent.duration)} minutes)</span>
-                                    </div>
-                                )}
-
-                            </>
-                        )}
-                        {!selectedKeyParent && (
+                        {selectedKeyParent ? (
                             <div>
-                                <label className="block text-gray-700">Goal Time:</label>
+                                <label className="block text-gray-700">Goal Duration:</label>
                                 <input
-                                    type="number"
-                                    name="goalTime"
-                                    value={formData.goalTime}
-                                    onChange={handleGoalChange}
-                                    className="border p-2 w-full rounded"
-                                />
-                                <span>{formData.goalTime} minutes</span>
-                            </div>
-                        )}
-                        {formData.keyParent === 'Book' && (
-                            <>                                    <div>
-                                <label className="block text-gray-700">Goal Pages:</label>
-                                <input
-                                    type="number"
-                                    name="goalPages"
+                                    type="range"
+                                    name="goalDuration"
                                     min="0"
-                                    max={10000}
-                                    value={formData.goalPages}
-                                    onChange={handleGoalChange}
+                                    max={selectedKeyParent.duration}
+                                    value={formData.goalDuration}
+                                    onChange={handleSliderChange}
                                     className="w-full"
                                 />
-                                <span>{formData.goalPages} pages ({Math.round((formData.goalPages / readingSpeed) * 30)} minutes)</span>
+                                <span>{formData.goalDuration} minutes</span>
                             </div>
-                            </>
-
+                        ) : (
+                            <div>
+                                <label className="block text-gray-700">Goal Duration:</label>
+                                <input
+                                    type="number"
+                                    name="goalDuration"
+                                    value={formData.goalDuration}
+                                    onChange={handleGoalDurationChange}
+                                    className="border p-2 w-full rounded"
+                                />
+                                <span>{formData.goalDuration} minutes</span>
+                            </div>
                         )}
                     </>
                 )}
@@ -304,4 +274,4 @@ const Staging = ({ onSubmit }) => {
     );
 };
 
-export default Staging;
+export default StagingOld;

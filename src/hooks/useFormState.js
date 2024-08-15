@@ -1,5 +1,6 @@
+// src/hooks/useFormState.js
 import { useState, useEffect } from 'react';
-import { fetchMediaItems, fetchBackgroundArt, fetchTotalCompletedTime } from '@/utils/formUtils';
+import { fetchMediaItems, fetchBackgroundArt } from '@/utils/formUtils';
 
 const useFormState = (item) => {
     const [formData, setFormData] = useState({
@@ -11,11 +12,7 @@ const useFormState = (item) => {
         description: item?.description || '',
         additionalFields: item?.additionalFields || {},
         percentComplete: item?.percentComplete || 0,
-        goalCompletionTime: item?.goalCompletionTime || 0,
         completedDuration: item?.completedDuration || 0,
-        locked: item?.locked || false,
-        keyParent: item?.keyParent || '',
-        goalDuration: item?.goalDuration || 0,
         queueNumber: item?.queueNumber || 0
     });
 
@@ -37,11 +34,7 @@ const useFormState = (item) => {
                 description: item.description || '',
                 additionalFields: item.additionalFields || {},
                 percentComplete: item.percentComplete || 0,
-                goalCompletionTime: item.goalCompletionTime || 0,
                 completedDuration: item.completedDuration || 0,
-                locked: item.locked || false,
-                keyParent: item.keyParent || '',
-                goalDuration: item.goalDuration || 0,
                 queueNumber: item.queueNumber || 0
             });
         }
@@ -72,14 +65,6 @@ const useFormState = (item) => {
 
         fetchArt();
     }, [formData.mediaType, formData.title, formData.additionalFields]);
-
-    const handleGoalDurationChange = (e) => {
-        const goalDuration = Number(e.target.value);
-        setFormData((prevData) => ({
-            ...prevData,
-            goalDuration
-        }));
-    };
 
     const handleSliderChange = (e) => {
         const value = Number(e.target.value);
@@ -118,14 +103,7 @@ const useFormState = (item) => {
             setSelectedKeyParent(selectedItem);
             setFormData((prevData) => ({
                 ...prevData,
-                goalDuration: selectedItem ? selectedItem.duration : 0,
                 keyParent: selectedItem ? selectedItem.title : value // Save title if media item is selected
-            }));
-        } else if (name === 'category' || name === 'mediaType') {
-            const totalCompletedTime = await fetchTotalCompletedTime(value);
-            setFormData((prevData) => ({
-                ...prevData,
-                goalDuration: totalCompletedTime + formData.goalDuration
             }));
         }
     };
@@ -138,7 +116,6 @@ const useFormState = (item) => {
         selectedKeyParent,
         backgroundArt,
         maxQueueNumber,
-        handleGoalDurationChange,
         handleSliderChange,
         handleChange,
         setFormData

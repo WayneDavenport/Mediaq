@@ -40,16 +40,3 @@ export const fetchBackgroundArt = async (mediaType, title, additionalFields) => 
     return '';
 };
 
-export const fetchTotalCompletedTime = async (keyParent) => {
-    try {
-        const response = await axios.get('/api/getMediaItems');
-        const mediaItems = response.data.mediaItems;
-        const totalCompletedTime = mediaItems
-            .filter(item => item[keyParent] === keyParent)
-            .reduce((acc, item) => acc + (item.complete ? item.duration : item.completedDuration), 0);
-        return totalCompletedTime;
-    } catch (error) {
-        console.error("Failed to fetch total completed time:", error);
-        return 0;
-    }
-};
