@@ -39,12 +39,12 @@ const FriendSearch = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter email to search"
             />
-            <button onClick={handleSearch}>Search</button>
+            <button className="bg-green-500 text-white p-2 rounded m-2 " onClick={handleSearch}>Search</button>
 
             {searchResult && (
                 <div>
                     <p>{searchResult.email}</p>
-                    <button onClick={handleSendInvite}>Send Invite</button>
+                    <button className="bg-blue-500 text-white p-2 rounded m-2 " onClick={handleSendInvite}>Send Invite</button>
                 </div>
             )}
 

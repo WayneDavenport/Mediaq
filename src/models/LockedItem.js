@@ -7,6 +7,10 @@ const LockedItemSchema = new mongoose.Schema({
         ref: 'MediaItem',
         required: true
     },
+    lockedItemName: {
+        type: String, // Can be Media Item ID, category, or media type
+        /* required: true */
+    },
     keyParent: {
         type: String, // Can be Media Item ID, category, or media type
         required: true
@@ -36,6 +40,10 @@ const LockedItemSchema = new mongoose.Schema({
     episodesComplete: {
         type: Number,
         default: 0
+    },
+    cleared: {
+        type: Boolean,
+        default: false
     }
 });
 

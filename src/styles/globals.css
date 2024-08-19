@@ -41,6 +41,75 @@ body {
     /* Ensure the pseudo-element is behind the content */
 }
 
+/* src/styles/globals.css */
+.navbar {
+    background-color: #333;
+    color: #fff;
+    padding: 1rem;
+}
+
+.navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar-brand a {
+    color: #fff;
+    font-size: 1.5rem;
+    text-decoration: none;
+}
+
+.navbar-toggle {
+    display: none;
+    cursor: pointer;
+}
+
+.hamburger {
+    width: 25px;
+    height: 3px;
+    background-color: #fff;
+    margin: 5px 0;
+}
+
+.navbar-menu {
+    display: flex;
+    gap: 1rem;
+}
+
+.navbar-item {
+    color: #fff;
+    text-decoration: none;
+    font-size: 1rem;
+}
+
+.navbar-item:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .navbar-toggle {
+        display: block;
+    }
+
+    .navbar-menu {
+        display: none;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .navbar-menu.is-active {
+        display: flex;
+    }
+
+    .navbar-item {
+        padding: 0.5rem 0;
+    }
+}
+
+
+
+
 @keyframes marquee {
     0% {
         transform: translateX(100%);

@@ -41,10 +41,6 @@ export default function Home() {
                         <UpdateForm onCancel={handleCancel} />
                     )}
                 </div>
-                <div></div>
-                <Link href='/'>Home Page</Link>
-                <Link href='/media-gallery'>M.G</Link>
-                <Link href='/friend-search'>Friends</Link>
                 {session && (
                     <div><SignOutButton /></div>
                 )}

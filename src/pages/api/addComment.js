@@ -2,6 +2,7 @@ import { connectToMongoose } from '@/lib/db';
 import MediaItem from '@/models/MediaItem';
 import { requireAuth } from '@/middleware/auth';
 
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method not allowed' });

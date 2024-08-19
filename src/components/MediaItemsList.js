@@ -8,7 +8,7 @@ const MediaItemsList = ({ newMediaItem }) => {
     const [mediaItems, setMediaItems] = useState([]);
     const [groupBy, setGroupBy] = useState('mediaType');
     const [keyParentTitles, setKeyParentTitles] = useState({});
-    const [keyParentProgress, setKeyParentProgress] = useState({});
+    const [lockedItems, setLockedItems] = useState({});
     const dispatch = useDispatch();
 
     useEffect(() => {
@@ -17,6 +17,15 @@ const MediaItemsList = ({ newMediaItem }) => {
                 const response = await axios.get('/api/getMediaItems');
                 const items = response.data.mediaItems;
                 setMediaItems(items);
+
+                // Fetch locked items
+                const lockedResponse = await axios.get('/api/getLockedItems');
+                const lockedItemsData = lockedResponse.data.lockedItems;
+                const lockedItemsMap = lockedItemsData.reduce((acc, item) => {
+                    acc[item.lockedItem] = item;
+                    return acc;
+                }, {});
+                setLockedItems(lockedItemsMap);
 
                 // Fetch key parent titles for item IDs
                 const keyParentIds = items.map(item => item.keyParent).filter(id => id && !isCategoryOrMediaType(id));
@@ -27,14 +36,6 @@ const MediaItemsList = ({ newMediaItem }) => {
                     return acc;
                 }, {});
                 setKeyParentTitles(keyParentTitlesMap);
-
-                // Fetch key parent progress
-                const keyParentProgressMap = keyParentResponses.reduce((acc, res) => {
-                    const item = res.data.mediaItem;
-                    acc[item._id] = item.completedDuration;
-                    return acc;
-                }, {});
-                setKeyParentProgress(keyParentProgressMap);
             } catch (error) {
                 console.error("Failed to fetch media items:", error);
             }
@@ -125,8 +126,8 @@ const MediaItemsList = ({ newMediaItem }) => {
     };
 
     const getProgressWidth = (item) => {
-        if (item.locked && item.keyParent) {
-            return item.keyParentProgress;
+        if (lockedItems[item._id]) {
+            return lockedItems[item._id].percentComplete;
         }
         return item.percentComplete;
     };
@@ -203,12 +204,12 @@ const MediaItemsList = ({ newMediaItem }) => {
                                     <MarqueeTitle title={item.title} />
                                 </div>
                                 <p className='text-xs'>{formatDuration(item.duration)}</p>
-                                {item.locked && item.keyParent && (
-                                    <p className="text-red-500 text-xs">Locked Behind: {getKeyParentTitle(item.keyParent)}</p>
+                                {lockedItems[item._id] && (
+                                    <p className="text-red-500 text-xs">Locked Behind: {getKeyParentTitle(lockedItems[item._id].keyParent)}</p>
                                 )}
                                 <div className="w-full h-2 bg-opacity-50 bg-[#0c0c0c] mt-2">
                                     <div
-                                        className={`h-full ${item.locked ? 'bg-red-500' : 'bg-[#803af1]'}`}
+                                        className={`h-full ${lockedItems[item._id] ? 'bg-red-500' : 'bg-[#803af1]'}`}
                                         style={{ width: `${getProgressWidth(item)}%` }}
                                     ></div>
                                 </div>

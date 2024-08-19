@@ -98,14 +98,14 @@ const useFormState = (item) => {
             [name]: type === 'checkbox' ? checked : value,
         }));
 
-        if (name === 'keyParent') {
-            const selectedItem = incompleteMediaItems.find(item => item._id === value);
-            setSelectedKeyParent(selectedItem);
-            setFormData((prevData) => ({
-                ...prevData,
-                keyParent: selectedItem ? selectedItem.title : value // Save title if media item is selected
-            }));
-        }
+        /*         if (name === 'keyParent') {
+                    const selectedItem = incompleteMediaItems.find(item => item._id === value);
+                    setSelectedKeyParent(selectedItem);
+                    setFormData((prevData) => ({
+                        ...prevData,
+                        keyParent: selectedItem ? selectedItem.title : value // Save title if media item is selected
+                    }));
+                } */
     };
 
     return {

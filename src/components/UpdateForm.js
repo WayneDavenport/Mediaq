@@ -3,10 +3,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { clearSelectedMediaItem } from '@/store/slices/selectedMediaItemSlice';
 import useFormState from '@/hooks/useFormState';
 import FormField from '@/components/FormField';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const UpdateForm = ({ onCancel }) => {
     const dispatch = useDispatch();
     const item = useSelector((state) => state.selectedMediaItem);
+    const session = useSelector((state) => state.session);
+    const readingSpeed = session?.user?.readingSpeed || 20; // pages per 30 minutes
+
     const {
         formData,
         mediaTypes,
@@ -20,32 +25,85 @@ const UpdateForm = ({ onCancel }) => {
         setFormData
     } = useFormState(item);
 
-    const getInitialFormData = () => ({
-        id: '',
-        title: '',
-        duration: '',
-        category: '',
-        mediaType: '',
-        description: '',
-        additionalFields: {},
-        percentComplete: 0,
-        completedDuration: 0,
-        queueNumber: 0
-    });
+    const [locked, setLocked] = useState(false);
+    const [keyParent, setKeyParent] = useState('');
+    const [goalTime, setGoalTime] = useState(0);
+    const [goalPages, setGoalPages] = useState(0);
+    const [goalEpisodes, setGoalEpisodes] = useState(0);
+
+    const handleLockChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        if (name === 'locked') {
+            setLocked(checked);
+        } else if (name === 'keyParent') {
+            const selectedItem = incompleteMediaItems.find(item => item._id === value);
+            setKeyParent(selectedItem ? selectedItem.title : value);
+            setGoalTime(selectedItem ? selectedItem.duration : 0);
+            setGoalPages(selectedItem && selectedItem.mediaType === 'Book' ? selectedItem.additionalFields.pageCount : 0);
+            setGoalEpisodes(selectedItem && selectedItem.mediaType === 'Show' ? selectedItem.additionalFields.episodes : 0);
+        } else if (name === 'goalPages') {
+            setGoalPages(Number(value));
+            setGoalTime(Math.round((Number(value) / readingSpeed) * 30)); // Calculate time based on reading speed
+        } else if (name === 'goalEpisodes') {
+            setGoalEpisodes(Number(value));
+            setGoalTime(selectedKeyParent ? Math.round((Number(value) / selectedKeyParent.additionalFields.episodes) * selectedKeyParent.duration) : goalTime);
+        } else {
+            setGoalTime(Number(value));
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Calculate differences
+            const durationDiff = formData.completedDuration - item.completedDuration;
+            const percentCompleteDiff = formData.percentComplete - item.percentComplete;
+            const pagesCompleteDiff = (formData.additionalFields.pagesCompleted || 0) - (item.additionalFields.pagesCompleted || 0);
+            const episodesCompleteDiff = (formData.additionalFields.episodesCompleted || 0) - (item.additionalFields.episodesCompleted || 0);
+
             const response = await fetch('/api/updateItem', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    durationDiff,
+                    percentCompleteDiff,
+                    pagesCompleteDiff,
+                    episodesCompleteDiff
+                }),
             });
 
             if (response.ok) {
-                console.log('Media item updated successfully');
+                if (locked) {
+                    const lockedItemResponse = await fetch('/api/updateLockedItem', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            lockedItem: formData.id,
+                            lockedItemName: formData.title,
+                            keyParent,
+                            goalTime,
+                            goalPages,
+                            goalEpisodes,
+                            timeComplete: formData.completedDuration,
+                            percentComplete: (formData.completedDuration / goalTime) * 100,
+                            pagesComplete: formData.additionalFields.pagesCompleted || 0,
+                            episodesComplete: formData.additionalFields.episodesCompleted || 0
+                        }),
+                    });
+
+                    if (lockedItemResponse.ok) {
+                        console.log('Locked item created successfully');
+                    } else {
+                        const errorData = await lockedItemResponse.json();
+                        console.error('Error creating locked item:', errorData.message);
+                    }
+                }
+
                 dispatch(clearSelectedMediaItem());
                 setFormData(getInitialFormData());
             } else {
@@ -74,21 +132,55 @@ const UpdateForm = ({ onCancel }) => {
 
     const markAsComplete = async (id) => {
         try {
+            const itemToUpdate = formData;
+
+            if (!itemToUpdate) {
+                console.error('Item not found');
+                return;
+            }
+
+            // Calculate differences
+            const durationDiff = itemToUpdate.duration - item.completedDuration;
+            const percentCompleteDiff = 100 - item.percentComplete;
+            const pagesCompleteDiff = (itemToUpdate.additionalFields.pagesCompleted || itemToUpdate.additionalFields.pageCount || 0) - (item.additionalFields.pagesCompleted || 0);
+            const episodesCompleteDiff = (itemToUpdate.additionalFields.episodesCompleted || itemToUpdate.additionalFields.episodes || 0) - (item.additionalFields.episodesCompleted || 0);
+
             const updatedData = {
-                ...formData,
+                ...itemToUpdate,
                 percentComplete: 100,
-                completedDuration: formData.duration,
+                completedDuration: itemToUpdate.duration,
                 complete: true,
             };
 
             console.log('Updating item:', updatedData);
 
-            const response = await axios.put('/api/updateItem', updatedData);
+            const response = await axios.put('/api/updateItem', {
+                ...updatedData,
+                durationDiff,
+                percentCompleteDiff,
+                pagesCompleteDiff,
+                episodesCompleteDiff
+            });
 
             if (response.status === 200) {
                 console.log('Item marked as complete:', response.data.item);
                 dispatch(clearSelectedMediaItem());
                 setFormData(getInitialFormData());
+
+                // Update locked items
+                const lockedItemsResponse = await axios.get('/api/getLockedItems');
+                const lockedItems = lockedItemsResponse.data.lockedItems;
+
+                for (const lockedItem of lockedItems) {
+                    if (lockedItem.keyParent === id || lockedItem.keyParent === itemToUpdate.mediaType || lockedItem.keyParent === itemToUpdate.category) {
+                        lockedItem.timeComplete += durationDiff;
+                        lockedItem.pagesComplete += pagesCompleteDiff;
+                        lockedItem.episodesComplete += episodesCompleteDiff;
+                        lockedItem.percentComplete = (lockedItem.timeComplete / lockedItem.goalTime) * 100;
+
+                        await axios.put('/api/updateLockedItem', lockedItem);
+                    }
+                }
             } else {
                 console.error('Failed to mark item as complete:', response.data.message);
             }
@@ -190,38 +282,129 @@ const UpdateForm = ({ onCancel }) => {
                     <span>{formatCompletion()}</span>
                 </div>
                 <FormField label="Queue Number" name="queueNumber" value={formData.queueNumber} onChange={handleChange} type="number" min="1" max={maxQueueNumber} />
-                {/* Inert fields for goal completion time, key parent, and locking */}
-                <div style={{ display: 'none' }}>
+                <div>
                     <label className="block text-gray-700">Locked:</label>
                     <input
                         type="checkbox"
                         name="locked"
-                        checked={false}
-                        onChange={() => { }}
+                        checked={locked}
+                        onChange={handleLockChange}
                         className="mr-2"
                     />
                 </div>
-                <div style={{ display: 'none' }}>
-                    <label className="block text-gray-700">Key Parent:</label>
-                    <select
-                        name="keyParent"
-                        value=""
-                        onChange={() => { }}
-                        className="border p-2 w-full rounded"
-                    >
-                        <option value="">Select Key Parent</option>
-                    </select>
-                </div>
-                <div style={{ display: 'none' }}>
-                    <label className="block text-gray-700">Goal Duration:</label>
-                    <input
-                        type="number"
-                        name="goalDuration"
-                        value={0}
-                        onChange={() => { }}
-                        className="border p-2 w-full rounded"
-                    />
-                </div>
+                {locked && (
+                    <>
+                        <div>
+                            <label className="block text-gray-700">Key Parent:</label>
+                            <select
+                                name="keyParent"
+                                value={keyParent}
+                                onChange={handleLockChange}
+                                className="border p-2 w-full rounded text-white-700 bg-[#222227] bg-opacity-20"
+                            >
+                                <option value="">Select Key Parent</option>
+                                <optgroup label="Media Types">
+                                    {mediaTypes.map((type) => (
+                                        <option key={type} value={type}>{type}</option>
+                                    ))}
+                                </optgroup>
+                                <optgroup label="Categories">
+                                    {categories.map((category) => (
+                                        <option key={category} value={category}>{category}</option>
+                                    ))}
+                                </optgroup>
+                                <optgroup label="Incomplete Media Items">
+                                    {incompleteMediaItems.map((item) => (
+                                        <option key={item._id} value={item._id}>{item.title}</option>
+                                    ))}
+                                </optgroup>
+                            </select>
+                        </div>
+                        {selectedKeyParent && (
+                            <div>
+                                <label className="block text-gray-700">
+                                    {selectedKeyParent.mediaType === 'Book' ? 'Goal Pages:' : 'Goal Time:'}
+                                </label>
+                                {selectedKeyParent.mediaType === 'Book' ? (
+                                    <>
+                                        <input
+                                            type="number"
+                                            name="goalPages"
+                                            min="0"
+                                            max={10000}
+                                            value={goalPages}
+                                            onChange={handleLockChange}
+                                            className="w-full text-white-700 bg-[#222227] bg-opacity-20"
+                                        />
+                                        <span>
+                                            {goalPages} pages ({Math.round((goalPages / readingSpeed) * 30)} minutes)
+                                        </span>
+                                    </>
+                                ) : selectedKeyParent.mediaType === 'Show' ? (
+                                    <>
+                                        <input
+                                            type="range"
+                                            name="goalEpisodes"
+                                            min="0"
+                                            max={selectedKeyParent.additionalFields.episodes}
+                                            value={goalEpisodes}
+                                            onChange={handleLockChange}
+                                            className="w-full "
+                                        />
+                                        <span>
+                                            {goalEpisodes} episodes ({Math.round((goalEpisodes / selectedKeyParent.additionalFields.episodes) * selectedKeyParent.duration)} minutes)
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <input
+                                            type="number"
+                                            name="goalTime"
+                                            value={goalTime}
+                                            onChange={handleLockChange}
+                                            className="border p-2 w-full rounded"
+                                        />
+                                        <span>{goalTime} minutes</span>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                        {!selectedKeyParent && (
+                            <div>
+                                <label className="block text-gray-700">
+                                    {keyParent === 'Book' ? 'Goal Pages & Time:' : 'Goal Time:'}
+                                </label>
+                                {keyParent === 'Book' ? (
+                                    <>
+                                        <input
+                                            type="number"
+                                            name="goalPages"
+                                            min="0"
+                                            max={10000}
+                                            value={goalPages}
+                                            onChange={handleLockChange}
+                                            className="w-full text-white-700 bg-[#222227] bg-opacity-20"
+                                        />
+                                        <span>
+                                            {goalPages} pages ({Math.round((goalPages / readingSpeed) * 30)} minutes)
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <input
+                                            type="number"
+                                            name="goalTime"
+                                            value={goalTime}
+                                            onChange={handleLockChange}
+                                            className="border p-2 w-full rounded text-white-700 bg-[#222227] bg-opacity-20"
+                                        />
+                                        <span>{goalTime} minutes</span>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </>
+                )}
                 <div className="flex space-x-4">
                     <button type="submit" className="bg-blue-500 text-white p-2 rounded mt-2">Update</button>
                     <button type="button" onClick={onCancel} className="bg-gray-500 text-white p-2 rounded mt-2">Cancel</button>

@@ -10,7 +10,10 @@ export default async function handler(req, res) {
     }
 
     await requireAuth(req, res, async () => {
-        const { title, duration, category, mediaType, description, additionalFields, percentComplete, completedDuration, complete, locked, keyParent, goalTime, goalPages, goalEpisodes } = req.body;
+        const { title, duration, category, mediaType,
+            description, additionalFields, percentComplete,
+            completedDuration, complete, lockedItemName, locked, keyParent,
+            goalTime, goalPages, goalEpisodes } = req.body;
 
         if (!title || !duration || !category || !mediaType) {
             return res.status(422).json({
@@ -50,6 +53,7 @@ export default async function handler(req, res) {
             if (locked) {
                 const newLockedItem = new LockedItem({
                     lockedItem: result._id,
+                    lockedItemName,
                     keyParent,
                     goalTime,
                     goalPages,
@@ -57,7 +61,8 @@ export default async function handler(req, res) {
                     timeComplete: completedDuration,
                     percentComplete,
                     pagesComplete: additionalFields.pagesCompleted || 0,
-                    episodesComplete: additionalFields.episodesCompleted || 0
+                    episodesComplete: additionalFields.episodesCompleted || 0,
+                    cleared
                 });
 
                 console.log("Saving new locked item to database...");

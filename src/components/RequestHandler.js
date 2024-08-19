@@ -50,8 +50,8 @@ const RequestHandler = () => {
                 receivedInvites.map((invite, index) => (
                     <div key={index}>
                         <p>{invite.email}</p>
-                        <button onClick={() => handleAcceptInvite(invite.email)}>Accept</button>
-                        <button onClick={() => handleDeclineInvite(invite.email)}>Decline</button>
+                        <button className="bg-green-500 text-white p-2 rounded m-2" onClick={() => handleAcceptInvite(invite.email)}>Accept</button>
+                        <button className="bg-red-500 text-white p-2 rounded m-2" onClick={() => handleDeclineInvite(invite.email)}>Decline</button>
                     </div>
                 ))
             ) : (

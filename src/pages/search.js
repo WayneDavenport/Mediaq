@@ -75,8 +75,8 @@ const Search = () => {
 
     return (
         <div className="container mx-auto p-4">
-            <h2 className="text-2xl font-bold mb-4">Add Custom</h2>
-            <MediaForm onSubmit={handleFormSubmit} />
+            {/*             <h2 className="text-2xl font-bold mb-4">Add Custom</h2>
+             <MediaForm onSubmit={handleFormSubmit} />  */}
             <br /><br />
             <h1 className="text-2xl text-white font-bold mb-4">Search</h1>
 
@@ -99,7 +99,8 @@ const Search = () => {
                     </div>
                 )}
             </div>
-            <Link href='/user-main' className="bg-green-500 text-white p-2 rounded mt-2" >Dashboard</Link>
+            <br /><br />
+            <Link href='/user-main' className="bg-green-500 text-white p-2 rounded mt-8" >Dashboard</Link>
         </div>
     );
 };

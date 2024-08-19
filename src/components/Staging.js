@@ -38,6 +38,7 @@ const Staging = ({ onSubmit }) => {
                 description: stagingItem.description || '',
                 additionalFields: stagingItem.additionalFields || {},
                 locked: false,
+                lockedItemName: stagingItem.title,
                 keyParent: '',
                 goalTime: 0,
                 goalPages: 0,
@@ -214,41 +215,51 @@ const Staging = ({ onSubmit }) => {
                                 <option value="">Select Key Parent</option>
                                 <optgroup label="Media Types">
                                     {mediaTypes.map((type) => (
-                                        <option key={type} value={type}>{type}</option>
+                                        <option key={type} value={type}>
+                                            {type}
+                                        </option>
                                     ))}
                                 </optgroup>
                                 <optgroup label="Categories">
                                     {categories.map((category) => (
-                                        <option key={category} value={category}>{category}</option>
+                                        <option key={category} value={category}>
+                                            {category}
+                                        </option>
                                     ))}
                                 </optgroup>
                                 <optgroup label="Incomplete Media Items">
                                     {incompleteMediaItems.map((item) => (
-                                        <option key={item._id} value={item._id}>{item.title}</option>
+                                        <option key={item._id} value={item._id}>
+                                            {item.title}
+                                        </option>
                                     ))}
                                 </optgroup>
                             </select>
                         </div>
+
                         {selectedKeyParent && (
-                            <>
-                                {selectedKeyParent.mediaType === 'Book' && (
-                                    <div>
-                                        <label className="block text-gray-700">Goal Pages:</label>
+                            <div>
+                                <label className="block text-gray-700">
+                                    {selectedKeyParent.mediaType === 'Book' ? 'Goal Pages:' : 'Goal Time:'}
+                                </label>
+                                {selectedKeyParent.mediaType === 'Book' ? (
+                                    <>
                                         <input
-                                            type="range"
+                                            type="number"
                                             name="goalPages"
                                             min="0"
-                                            max={selectedKeyParent.additionalFields.pageCount}
+                                            max={10000}
                                             value={formData.goalPages}
                                             onChange={handleGoalChange}
                                             className="w-full"
                                         />
-                                        <span>{formData.goalPages} pages ({Math.round((formData.goalPages / readingSpeed) * 30)} minutes)</span>
-                                    </div>
-                                )}
-                                {selectedKeyParent.mediaType === 'Show' && (
-                                    <div>
-                                        <label className="block text-gray-700">Goal Episodes:</label>
+                                        <span>
+                                            {formData.goalPages} pages (
+                                            {Math.round((formData.goalPages / readingSpeed) * 30)} minutes)
+                                        </span>
+                                    </>
+                                ) : selectedKeyParent.mediaType === 'Show' ? (
+                                    <>
                                         <input
                                             type="range"
                                             name="goalEpisodes"
@@ -258,44 +269,70 @@ const Staging = ({ onSubmit }) => {
                                             onChange={handleGoalChange}
                                             className="w-full"
                                         />
-                                        <span>{formData.goalEpisodes} episodes ({Math.round((formData.goalEpisodes / selectedKeyParent.additionalFields.episodes) * selectedKeyParent.duration)} minutes)</span>
-                                    </div>
+                                        <span>
+                                            {formData.goalEpisodes} episodes (
+                                            {Math.round(
+                                                (formData.goalEpisodes /
+                                                    selectedKeyParent.additionalFields.episodes) *
+                                                selectedKeyParent.duration
+                                            )}{' '}
+                                            minutes)
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <input
+                                            type="number"
+                                            name="goalTime"
+                                            value={formData.goalTime}
+                                            onChange={handleGoalChange}
+                                            className="border p-2 w-full rounded"
+                                        />
+                                        <span>{formData.goalTime} minutes</span>
+                                    </>
                                 )}
-
-                            </>
+                            </div>
                         )}
                         {!selectedKeyParent && (
                             <div>
-                                <label className="block text-gray-700">Goal Time:</label>
-                                <input
-                                    type="number"
-                                    name="goalTime"
-                                    value={formData.goalTime}
-                                    onChange={handleGoalChange}
-                                    className="border p-2 w-full rounded"
-                                />
-                                <span>{formData.goalTime} minutes</span>
+                                <label className="block text-gray-700">
+                                    {formData.keyParent === 'Book'
+                                        ? 'Goal Pages & Time:'
+                                        : 'Goal Time:'}
+                                </label>
+                                {formData.keyParent === 'Book' ? (
+                                    <>
+                                        <input
+                                            type="number"
+                                            name="goalPages"
+                                            min="0"
+                                            max={10000}
+                                            value={formData.goalPages}
+                                            onChange={handleGoalChange}
+                                            className="w-full"
+                                        />
+                                        <span>
+                                            {formData.goalPages} pages (
+                                            {Math.round((formData.goalPages / readingSpeed) * 30)} minutes)
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <input
+                                            type="number"
+                                            name="goalTime"
+                                            value={formData.goalTime}
+                                            onChange={handleGoalChange}
+                                            className="border p-2 w-full rounded"
+                                        />
+                                        <span>{formData.goalTime} minutes</span>
+                                    </>
+                                )}
                             </div>
-                        )}
-                        {formData.keyParent === 'Book' && (
-                            <>                                    <div>
-                                <label className="block text-gray-700">Goal Pages:</label>
-                                <input
-                                    type="number"
-                                    name="goalPages"
-                                    min="0"
-                                    max={10000}
-                                    value={formData.goalPages}
-                                    onChange={handleGoalChange}
-                                    className="w-full"
-                                />
-                                <span>{formData.goalPages} pages ({Math.round((formData.goalPages / readingSpeed) * 30)} minutes)</span>
-                            </div>
-                            </>
-
                         )}
                     </>
                 )}
+
                 <div className="flex space-x-4">
                     <button type="submit" className="bg-blue-500 text-white p-2 rounded mt-2">Submit</button>
                 </div>
