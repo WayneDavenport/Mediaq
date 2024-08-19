@@ -40,6 +40,7 @@ const MovieSearch = () => {
         const additionalFields = {
             cast: item.credits?.cast?.slice(0, 3).map(cast => cast.name).join(', '),
             director: item.credits?.crew?.find(crew => crew.job === 'Director')?.name,
+            imageUrl: `https://image.tmdb.org/t/p/w500${item.poster_path}`, // Add image URL here
         };
 
         const formData = {

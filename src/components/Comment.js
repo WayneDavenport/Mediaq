@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { addReply } from '@/store/slices/mediaItemSlice';
+import axios from 'axios';
 import styles from './Comment.module.css';
 
 const Comment = ({ comment, mediaItemId }) => {
     const [replyText, setReplyText] = useState('');
     const [showReplyForm, setShowReplyForm] = useState(false);
-    const dispatch = useDispatch();
 
-    const handleReplySubmit = (e) => {
+    const handleReplySubmit = async (e) => {
         e.preventDefault();
-        dispatch(addReply({ mediaItemId, commentId: comment._id, text: replyText }));
-        setReplyText('');
-        setShowReplyForm(false);
+        try {
+            const response = await axios.post('/api/addReply', { mediaItemId, commentId: comment._id, text: replyText });
+            if (response.status === 200) {
+                setReplyText('');
+                setShowReplyForm(false);
+            }
+        } catch (error) {
+            console.error('Error adding reply:', error);
+        }
     };
 
     return (
@@ -31,11 +35,11 @@ const Comment = ({ comment, mediaItemId }) => {
                     <button className={styles.button} type="submit">Submit</button>
                 </form>
             )}
-            {comment.replies && comment.replies.map((reply) => (
+            {/*             {comment.replies && comment.replies.map((reply) => (
                 <div key={reply._id} className={styles.reply}>
                     <p>{reply.text}</p>
                 </div>
-            ))}
+            ))} */}
         </div>
     );
 };

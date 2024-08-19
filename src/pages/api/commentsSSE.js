@@ -1,68 +1,34 @@
 // src/pages/api/commentsSSE.js
+import { connectToMongoose } from '@/lib/db';
+import MediaItem from '@/models/MediaItem';
+import { subscribe, unsubscribe } from '@/lib/pubsub';
+
 let clients = [];
 
-const addClient = (res) => {
-    clients.push(res);
+const sendComments = async () => {
+    const mediaItems = await MediaItem.find().select('comments');
+    const data = `data: ${JSON.stringify(mediaItems)}\n\n`;
+    clients.forEach(client => client.res.write(data));
 };
-
-const removeClient = (res) => {
-    clients = clients.filter(client => client !== res);
-};
-
-const sendToAllClients = (data) => {
-    clients.forEach(client => client.write(`data: ${JSON.stringify(data)}\n\n`));
-};
-
-export { addClient, removeClient, sendToAllClients };
 
 export default async function handler(req, res) {
-    if (req.method === 'GET') {
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-        res.flushHeaders();
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
-        addClient(res);
+    await connectToMongoose();
 
-        req.on('close', () => {
-            removeClient(res);
-        });
-    } else if (req.method === 'POST') {
-        await requireAuth(req, res, async () => {
-            const { mediaId, userId, content, parentId } = req.body;
+    clients.push({ req, res });
 
-            if (!mediaId || !userId || !content) {
-                return res.status(422).json({ message: 'Invalid input' });
-            }
+    const listener = () => sendComments();
+    subscribe('commentsUpdated', listener);
 
-            try {
-                await connectToMongoose();
+    req.on('close', () => {
+        clients = clients.filter(client => client.req !== req);
+        unsubscribe('commentsUpdated', listener);
+        res.end();
+    });
 
-                const mediaItem = await MediaItem.findById(mediaId);
-
-                if (!mediaItem) {
-                    return res.status(404).json({ message: 'Media item not found' });
-                }
-
-                const newComment = {
-                    userId,
-                    content,
-                    parentId,
-                    createdAt: new Date(),
-                };
-
-                mediaItem.comments.push(newComment);
-                await mediaItem.save();
-
-                sendToAllClients(newComment);
-
-                res.status(201).json(newComment);
-            } catch (error) {
-                console.error('Failed to save comment:', error);
-                res.status(500).json({ message: 'Internal server error' });
-            }
-        });
-    } else {
-        res.status(405).json({ message: 'Method not allowed' });
-    }
+    // Send initial comments
+    sendComments();
 }

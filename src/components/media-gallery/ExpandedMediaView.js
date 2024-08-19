@@ -1,31 +1,56 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchMediaItem } from '@/store/slices/mediaItemSlice';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import CommentList from '../CommentList';
 import styles from './MediaGallery.module.css';
 
 const ExpandedMediaView = ({ item, onClose }) => {
-    const dispatch = useDispatch();
-    const mediaItem = useSelector((state) => state.mediaItem);
+    const [mediaItem, setMediaItem] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        dispatch(fetchMediaItem(item._id));
-    }, [dispatch, item._id]);
+        const fetchMediaItem = async () => {
+            try {
+                const response = await axios.get(`/api/getMediaItemById?id=${item._id}`);
+                setMediaItem(response.data);
+                setLoading(false);
+            } catch (error) {
+                setError(error);
+                setLoading(false);
+            }
+        };
+
+        fetchMediaItem();
+
+        const eventSource = new EventSource('/api/commentsSSE');
+
+        eventSource.onmessage = (event) => {
+            const newComments = JSON.parse(event.data);
+            setMediaItem((prevMediaItem) => ({
+                ...prevMediaItem,
+                comments: newComments
+            }));
+        };
+
+        return () => {
+            eventSource.close();
+        };
+    }, [item._id]);
 
     return (
         <div className={styles.expandedMediaView}>
             <button onClick={onClose} className={styles.backButton}>Back</button>
-            {mediaItem.loading && <p>Loading...</p>}
-            {mediaItem.error && <p>Error loading media item</p>}
-            {mediaItem.data && (
+            {loading && <p>Loading...</p>}
+            {error && <p>Error loading media item</p>}
+            {mediaItem && (
                 <>
-                    <img src={mediaItem.data.imageUrl} alt={mediaItem.data.title} className={styles.expandedImage} />
+                    <img src={mediaItem.imageUrl} alt={mediaItem.title} className={styles.expandedImage} />
                     <div className={styles.details}>
-                        <h2>{mediaItem.data.title}</h2>
-                        <p>{mediaItem.data.description}</p>
+                        <h2>{mediaItem.title}</h2>
+                        <p>{mediaItem.description}</p>
                         {/* Add more details as needed */}
                     </div>
-                    <CommentList comments={mediaItem.data.comments} mediaItemId={mediaItem.data._id} />
+                    <CommentList comments={mediaItem.comments} mediaItemId={mediaItem._id} />
                 </>
             )}
         </div>

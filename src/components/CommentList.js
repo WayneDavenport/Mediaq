@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { addComment } from '@/store/slices/mediaItemSlice';
+import axios from 'axios';
 import Comment from './Comment';
 import styles from './CommentList.module.css';
 
 const CommentList = ({ comments, mediaItemId }) => {
     const [commentText, setCommentText] = useState('');
-    const dispatch = useDispatch();
 
-    const handleCommentSubmit = (e) => {
+    const handleCommentSubmit = async (e) => {
         e.preventDefault();
-        dispatch(addComment({ mediaItemId, text: commentText }));
-        setCommentText('');
+        try {
+            const response = await axios.post('/api/addComment', { mediaItemId, text: commentText });
+            if (response.status === 200) {
+                setCommentText('');
+            }
+        } catch (error) {
+            console.error('Error adding comment:', error);
+        }
     };
 
     return (

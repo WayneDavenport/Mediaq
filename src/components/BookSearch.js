@@ -40,6 +40,7 @@ const BookSearch = () => {
             authors: item.authors?.join(', '),
             publisher: item.publisher,
             pageCount: parseInt(item.pageCount),
+            isbn: item.isbn
         };
 
         const formData = {

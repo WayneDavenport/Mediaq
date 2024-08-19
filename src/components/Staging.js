@@ -47,22 +47,18 @@ const Staging = ({ onSubmit }) => {
         }
     }, [stagingItem]);
 
-    const [mediaTypes, setMediaTypes] = useState([]);
     const [categories, setCategories] = useState([]);
     const [incompleteMediaItems, setIncompleteMediaItems] = useState([]);
     const [selectedKeyParent, setSelectedKeyParent] = useState(null);
 
     useEffect(() => {
-        const fetchMediaItems = async () => {
+        const fetchCategories = async () => {
             try {
                 const response = await axios.get('/api/getMediaItems');
                 const mediaItems = response.data.mediaItems;
 
-                // Extract unique media types and categories
-                const uniqueMediaTypes = [...new Set(mediaItems.map(item => item.mediaType))];
+                // Extract unique categories
                 const uniqueCategories = [...new Set(mediaItems.map(item => item.category))];
-
-                setMediaTypes(uniqueMediaTypes);
                 setCategories(uniqueCategories);
                 setIncompleteMediaItems(mediaItems.filter(item => !item.complete));
             } catch (error) {
@@ -70,7 +66,7 @@ const Staging = ({ onSubmit }) => {
             }
         };
 
-        fetchMediaItems();
+        fetchCategories();
     }, []);
 
     const handleChange = (e) => {
@@ -122,6 +118,8 @@ const Staging = ({ onSubmit }) => {
         onSubmit(formData);
     };
 
+    const presetCategories = ['fun', 'learning', 'hobby', 'productivity', 'general'];
+
     return (
         <div className="p-4 border rounded shadow">
             <h2 className="text-xl font-bold mb-4">Review and Customize</h2>
@@ -155,6 +153,9 @@ const Staging = ({ onSubmit }) => {
                         className="border p-2 w-full rounded"
                     >
                         <option value="">Select Category</option>
+                        {presetCategories.map(category => (
+                            <option key={category} value={category}>{category}</option>
+                        ))}
                         {categories.map(category => (
                             <option key={category} value={category}>{category}</option>
                         ))}
@@ -162,17 +163,13 @@ const Staging = ({ onSubmit }) => {
                 </div>
                 <div>
                     <label className="block text-gray-700">Media Type:</label>
-                    <select
+                    <input
+                        type="text"
                         name="mediaType"
                         value={formData.mediaType}
-                        onChange={handleChange}
+                        readOnly
                         className="border p-2 w-full rounded"
-                    >
-                        <option value="">Select Media Type</option>
-                        {mediaTypes.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                        ))}
-                    </select>
+                    />
                 </div>
                 <div>
                     <label className="block text-gray-700">Description:</label>
@@ -213,20 +210,6 @@ const Staging = ({ onSubmit }) => {
                                 className="border p-2 w-full rounded"
                             >
                                 <option value="">Select Key Parent</option>
-                                <optgroup label="Media Types">
-                                    {mediaTypes.map((type) => (
-                                        <option key={type} value={type}>
-                                            {type}
-                                        </option>
-                                    ))}
-                                </optgroup>
-                                <optgroup label="Categories">
-                                    {categories.map((category) => (
-                                        <option key={category} value={category}>
-                                            {category}
-                                        </option>
-                                    ))}
-                                </optgroup>
                                 <optgroup label="Incomplete Media Items">
                                     {incompleteMediaItems.map((item) => (
                                         <option key={item._id} value={item._id}>

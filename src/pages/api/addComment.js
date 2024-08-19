@@ -1,7 +1,8 @@
+// src/pages/api/addComment.js
 import { connectToMongoose } from '@/lib/db';
 import MediaItem from '@/models/MediaItem';
 import { requireAuth } from '@/middleware/auth';
-
+import { publish } from '@/lib/pubsub'; // Import the publish function
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -28,6 +29,9 @@ export default async function handler(req, res) {
 
             mediaItem.comments.push(comment);
             await mediaItem.save();
+
+            // Publish event to notify SSE endpoint
+            publish('commentsUpdated');
 
             res.status(200).json(mediaItem);
         } catch (error) {
