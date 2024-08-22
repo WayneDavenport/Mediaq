@@ -36,6 +36,8 @@ const VideoGameSearch = () => {
             publisher: item.publishers?.map(publisher => publisher.name).join(', '),
             developers: item.developers?.map(developer => developer.name).join(', '),
             coverArt: item.background_image, // Add cover art
+            gameId: item.id
+
         };
 
         const formData = {

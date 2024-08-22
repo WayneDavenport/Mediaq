@@ -21,6 +21,7 @@ const useFormState = (item) => {
     const [incompleteMediaItems, setIncompleteMediaItems] = useState([]);
     const [selectedKeyParent, setSelectedKeyParent] = useState(null);
     const [backgroundArt, setBackgroundArt] = useState('');
+    const [backdropArt, setBackdropArt] = useState('');
     const [maxQueueNumber, setMaxQueueNumber] = useState(0);
 
     useEffect(() => {
@@ -59,8 +60,9 @@ const useFormState = (item) => {
 
     useEffect(() => {
         const fetchArt = async () => {
-            const art = await fetchBackgroundArt(formData.mediaType, formData.title, formData.additionalFields);
-            setBackgroundArt(art);
+            const { posterPath, backdropPath } = await fetchBackgroundArt(formData.mediaType, formData.title, formData.additionalFields);
+            setBackgroundArt(posterPath);
+            setBackdropArt(backdropPath);
         };
 
         fetchArt();
@@ -97,15 +99,6 @@ const useFormState = (item) => {
             ...prevData,
             [name]: type === 'checkbox' ? checked : value,
         }));
-
-        /*         if (name === 'keyParent') {
-                    const selectedItem = incompleteMediaItems.find(item => item._id === value);
-                    setSelectedKeyParent(selectedItem);
-                    setFormData((prevData) => ({
-                        ...prevData,
-                        keyParent: selectedItem ? selectedItem.title : value // Save title if media item is selected
-                    }));
-                } */
     };
 
     return {
@@ -115,6 +108,7 @@ const useFormState = (item) => {
         incompleteMediaItems,
         selectedKeyParent,
         backgroundArt,
+        backdropArt,
         maxQueueNumber,
         handleSliderChange,
         handleChange,

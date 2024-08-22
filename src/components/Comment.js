@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import io from 'socket.io-client';
 import styles from './Comment.module.css';
+
+const socket = io(); // Initialize socket connection
 
 const Comment = ({ comment, mediaItemId }) => {
     const [replyText, setReplyText] = useState('');
@@ -13,6 +16,8 @@ const Comment = ({ comment, mediaItemId }) => {
             if (response.status === 200) {
                 setReplyText('');
                 setShowReplyForm(false);
+                // Emit event to server to trigger WebSocket update
+                socket.emit('replyAdded', mediaItemId);
             }
         } catch (error) {
             console.error('Error adding reply:', error);
@@ -35,11 +40,11 @@ const Comment = ({ comment, mediaItemId }) => {
                     <button className={styles.button} type="submit">Submit</button>
                 </form>
             )}
-            {/*             {comment.replies && comment.replies.map((reply) => (
+            {comment.replies && comment.replies.map((reply) => (
                 <div key={reply._id} className={styles.reply}>
                     <p>{reply.text}</p>
                 </div>
-            ))} */}
+            ))}
         </div>
     );
 };

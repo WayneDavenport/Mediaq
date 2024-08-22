@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import io from 'socket.io-client';
 import Comment from './Comment';
 import styles from './CommentList.module.css';
+
+const socket = io(); // Initialize socket connection
 
 const CommentList = ({ comments, mediaItemId }) => {
     const [commentText, setCommentText] = useState('');
@@ -12,6 +15,8 @@ const CommentList = ({ comments, mediaItemId }) => {
             const response = await axios.post('/api/addComment', { mediaItemId, text: commentText });
             if (response.status === 200) {
                 setCommentText('');
+                // Emit event to server to trigger WebSocket update
+                socket.emit('commentAdded', mediaItemId);
             }
         } catch (error) {
             console.error('Error adding comment:', error);

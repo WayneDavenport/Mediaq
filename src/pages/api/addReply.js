@@ -2,7 +2,7 @@
 import { connectToMongoose } from '@/lib/db';
 import MediaItem from '@/models/MediaItem';
 import { requireAuth } from '@/middleware/auth';
-import { publish } from '@/lib/pubsub'; // Import the publish function
+import { broadcastComments } from '@/lib/socketServer'; // Import the broadcastComments function
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -34,8 +34,8 @@ export default async function handler(req, res) {
             comment.replies.push(reply);
             await mediaItem.save();
 
-            // Publish event to notify SSE endpoint
-            publish('commentsUpdated');
+            // Broadcast comments to WebSocket clients
+            await broadcastComments();
 
             res.status(200).json(mediaItem);
         } catch (error) {

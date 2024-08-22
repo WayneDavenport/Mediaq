@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { clearSelectedMediaItem } from '@/store/slices/selectedMediaItemSlice';
 import useFormState from '@/hooks/useFormState';
 import FormField from '@/components/FormField';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 
 const UpdateForm = ({ onCancel }) => {
@@ -259,7 +259,7 @@ const UpdateForm = ({ onCancel }) => {
     };
 
     return (
-        <div className="p-4 border rounded shadow background-image-container" style={{ '--background-image-url': `url(${backgroundArt})` }}>
+        <div className="p-4 border rounded shadow background-image-container" style={{ backgroundImage: `url(${backgroundArt})` }}>
             <h2 className="text-xl font-bold mb-4">Update Media Item</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <FormField label="Title" name="title" value={formData.title} onChange={handleChange} />

@@ -1,3 +1,4 @@
+// src/utils/formUtils.js
 import axios from 'axios';
 
 export const fetchMediaItems = async () => {
@@ -15,7 +16,7 @@ export const fetchBackgroundArt = async (mediaType, title, additionalFields) => 
         if (mediaType === 'Book' && additionalFields.isbn) {
             const response = await axios.get(`https://covers.openlibrary.org/b/isbn/${additionalFields.isbn}-L.jpg`);
             if (response.status === 200) {
-                return response.config.url;
+                return { posterPath: response.config.url, backdropPath: '' };
             }
         } else if (mediaType === 'Movie' || mediaType === 'Show') {
             const response = await axios.get('/api/tmdb', {
@@ -26,17 +27,17 @@ export const fetchBackgroundArt = async (mediaType, title, additionalFields) => 
             });
             const results = response.data.results;
             if (results.length > 0) {
-                const backdropPath = results[0].backdrop_path;
-                if (backdropPath) {
-                    return `https://image.tmdb.org/t/p/w500${response.data.results[0].poster_path}`;
-                }
+                const posterPath = results[0].poster_path ? `https://image.tmdb.org/t/p/w500${results[0].poster_path}` : '';
+                const backdropPath = results[0].backdrop_path ? `https://image.tmdb.org/t/p/w1280${results[0].backdrop_path}` : '';
+                return { posterPath, backdropPath };
             }
-        } else if (mediaType === 'VideoGame' && additionalFields.coverArt) {
-            return additionalFields.coverArt;
+        } else if (mediaType === 'VideoGame' && additionalFields.gameId) {
+            const response = await axios.get(`/api/rawgImages?gameId=${additionalFields.gameId}`);
+            const { posterPath, backdropPath } = response.data;
+            return { posterPath, backdropPath };
         }
     } catch (error) {
         console.error("Failed to fetch background art:", error);
     }
-    return '';
+    return { posterPath: '', backdropPath: '' };
 };
-
