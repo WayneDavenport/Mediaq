@@ -1,5 +1,4 @@
-// src/hooks/useFormState.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchMediaItems, fetchBackgroundArt } from '@/utils/formUtils';
 
 const useFormState = (item) => {
@@ -58,15 +57,15 @@ const useFormState = (item) => {
         fetchData();
     }, []);
 
-    useEffect(() => {
-        const fetchArt = async () => {
-            const { posterPath, backdropPath } = await fetchBackgroundArt(formData.mediaType, formData.title, formData.additionalFields);
-            setBackgroundArt(posterPath);
-            setBackdropArt(backdropPath);
-        };
+    const fetchArt = useCallback(async () => {
+        const { posterPath, backdropPath } = await fetchBackgroundArt(formData.mediaType, formData.title,);
+        setBackgroundArt(posterPath);
+        setBackdropArt(backdropPath);
+    }, [formData.mediaType, formData.title,]);
 
+    useEffect(() => {
         fetchArt();
-    }, [formData.mediaType, formData.title, formData.additionalFields]);
+    }, [fetchArt]);
 
     const handleSliderChange = (e) => {
         const value = Number(e.target.value);

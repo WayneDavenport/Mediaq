@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import store from "@/store/store";
 import Navbar from '../components/Navbar';
 import axios from "axios";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 
 
 export default function App({ Component, pageProps }) {

@@ -52,7 +52,7 @@ const MediaGallery = () => {
     }, []);
 
     return (
-        <div className="media-gallery p-4">
+        <div className="media-gallery bg-stone-900 p-4">
             {Object.keys(categories).map((category) => (
                 <MediaRow key={category} title={category} items={categories[category]} />
             ))}

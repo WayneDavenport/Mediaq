@@ -117,7 +117,7 @@ const Staging = ({ onSubmit }) => {
         e.preventDefault();
         onSubmit(formData);
     };
-
+    const mediaTypes = ['Book', 'Movie', 'Show', 'VideoGame']
     const presetCategories = ['fun', 'learning', 'hobby', 'productivity', 'general'];
 
     return (
@@ -210,7 +210,21 @@ const Staging = ({ onSubmit }) => {
                                 className="border p-2 w-full rounded"
                             >
                                 <option value="">Select Key Parent</option>
-                                <optgroup label="Incomplete Media Items">
+                                <optgroup label="Media Types">
+                                    {mediaTypes.map((type) => (
+                                        <option key={type} value={type}>
+                                            {type}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                                <optgroup label="Categories">
+                                    {categories.map((category) => (
+                                        <option key={category} value={category}>
+                                            {category}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                                <optgroup label="Your Media Items">
                                     {incompleteMediaItems.map((item) => (
                                         <option key={item._id} value={item._id}>
                                             {item.title}

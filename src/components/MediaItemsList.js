@@ -1,8 +1,12 @@
-// src/components/MediaItemsList.js
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { setSelectedMediaItem } from '@/store/slices/selectedMediaItemSlice';
+import styles from './MediaItemsList.module.css';
+import Link from "next/link";
+import io from 'socket.io-client';
+
+const socket = io(); // Initialize socket connection
 
 const MediaItemsList = ({ newMediaItem }) => {
     const [mediaItems, setMediaItems] = useState([]);
@@ -42,6 +46,38 @@ const MediaItemsList = ({ newMediaItem }) => {
         };
 
         fetchMediaItems();
+
+        // Listen for WebSocket events
+        socket.on('itemUpdated', async (data) => {
+            const updatedItem = JSON.parse(data);
+            setMediaItems(prevItems => prevItems.map(item => item._id === updatedItem._id ? updatedItem : item));
+
+            // Fetch updated locked items
+            const lockedResponse = await axios.get('/api/getLockedItems');
+            const lockedItemsData = lockedResponse.data.lockedItems;
+            const lockedItemsMap = lockedItemsData.reduce((acc, item) => {
+                acc[item.lockedItem] = item;
+                return acc;
+            }, {});
+            setLockedItems(lockedItemsMap);
+
+            // Fetch updated key parent titles for the specific updated item
+            const keyParentIds = [updatedItem.keyParent].filter(id => id && !isCategoryOrMediaType(id));
+            const uniqueKeyParentIds = [...new Set(keyParentIds)];
+            const keyParentResponses = await Promise.all(uniqueKeyParentIds.map(id => axios.get(`/api/getMediaItems?id=${id}`)));
+            const keyParentTitlesMap = keyParentResponses.reduce((acc, res) => {
+                acc[res.data.mediaItem._id] = res.data.mediaItem.title;
+                return acc;
+            }, {});
+            setKeyParentTitles(prevTitles => ({
+                ...prevTitles,
+                ...keyParentTitlesMap
+            }));
+        });
+
+        return () => {
+            socket.off('itemUpdated');
+        };
     }, []);
 
     useEffect(() => {
@@ -157,8 +193,12 @@ const MediaItemsList = ({ newMediaItem }) => {
     };
 
     return (
-        <div className="media-items-list p-4">
-            <div className="mb-4">
+        <div className={styles.mediaItemsList}>
+            <div className={styles.header}>
+                <h2>Click to Edit</h2>
+                <div className={styles.search}><Link href="/search">+</Link></div>
+            </div>
+            <div className={styles.groupByOptions}>
                 <label className="mr-4">
                     <input
                         type="radio"
@@ -185,31 +225,31 @@ const MediaItemsList = ({ newMediaItem }) => {
                         value="queueOrder"
                         checked={groupBy === 'queueOrder'}
                         onChange={handleGroupByChange}
-                        className="mr-2"
+                        className="queueOrder"
                     />
                     Queue Order
                 </label>
             </div>
-            <div className="max-h-[32rem] overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={styles.mediaItemsGrid}>
                 {Object.keys(activeMediaItems).map(group => (
-                    <div key={group} className="mb-6">
-                        <h2 className="text-xl font-bold mb-2">{group}</h2>
+                    <div key={group} className={styles.mediaItemGroup}>
+                        <h2 className={styles.groupTitle}>{group}</h2>
                         {activeMediaItems[group].map(item => (
                             <div
                                 onClick={() => dispatch(setSelectedMediaItem(item))}
                                 key={item._id}
-                                className="media-item-thumbnail flex flex-col justify-between w-80 bg-[#222227] text-white rounded-lg shadow-lg p-4 mb-4 transition-transform transform hover:scale-105"
+                                className={styles.mediaItemThumbnail}
                             >
-                                <div className="flex items-center justify-between">
+                                <div className={styles.titleContainer}>
                                     <MarqueeTitle title={item.title} />
                                 </div>
-                                <p className='text-xs'>{formatDuration(item.duration)}</p>
+                                <p className={styles.duration}>{formatDuration(item.duration)}</p>
                                 {lockedItems[item._id] && (
-                                    <p className="text-red-500 text-xs">Locked Behind: {getKeyParentTitle(lockedItems[item._id].keyParent)}</p>
+                                    <p className={styles.lockedBehind}>Locked Behind: {getKeyParentTitle(lockedItems[item._id].keyParent)}</p>
                                 )}
-                                <div className="w-full h-2 bg-opacity-50 bg-[#0c0c0c] mt-2">
+                                <div className={styles.progressBar}>
                                     <div
-                                        className={`h-full ${lockedItems[item._id] ? 'bg-red-500' : 'bg-[#803af1]'}`}
+                                        className={`${styles.progressFill} ${lockedItems[item._id] ? styles.lockedProgressFill : styles.unlockedProgressFill}`}
                                         style={{ width: `${getProgressWidth(item)}%` }}
                                     ></div>
                                 </div>

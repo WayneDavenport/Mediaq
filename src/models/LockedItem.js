@@ -40,10 +40,6 @@ const LockedItemSchema = new mongoose.Schema({
     episodesComplete: {
         type: Number,
         default: 0
-    },
-    cleared: {
-        type: Boolean,
-        default: false
     }
 });
 

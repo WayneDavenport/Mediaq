@@ -26,6 +26,10 @@ export const initSocketServer = (server) => {
             await broadcastComments(mediaItemId);
         });
 
+        socket.on('itemUpdated', async (itemId) => {
+            await broadcastItemUpdate(itemId);
+        });
+
         socket.on('disconnect', () => {
             console.log('Client disconnected');
         });
@@ -40,4 +44,14 @@ export const broadcastComments = async (mediaItemId) => {
     const data = JSON.stringify(mediaItem.comments);
 
     io.emit('commentsUpdated', data);
+};
+
+export const broadcastItemUpdate = async (itemId) => {
+    if (!io) return;
+
+    await connectToMongoose();
+    const mediaItem = await MediaItem.findById(itemId);
+    const data = JSON.stringify(mediaItem);
+
+    io.emit('itemUpdated', data);
 };

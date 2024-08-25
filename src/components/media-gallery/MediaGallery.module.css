@@ -1,5 +1,6 @@
 .mediaRow {
     margin-bottom: 2rem;
+    margin-left: 2%;
     /* Tailwind's mb-8 */
 }
 
@@ -13,13 +14,14 @@
     /* Tailwind's mb-4 */
 }
 
+
 .mediaItems {
     display: flex;
-    overflow-x: auto;
-    gap: 1rem;
-    /* Tailwind's space-x-4 */
-    white-space: nowrap;
-    /* Prevent items from wrapping to the next line */
+    align-items: center;
+
+    width: 98%;
+
+
 }
 
 .mediaThumb {

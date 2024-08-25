@@ -4,3 +4,18 @@
     background-position: center;
     background-repeat: no-repeat;
 }
+
+.title {
+    font-size: 4.4rem;
+    text-shadow: 2px 4px #000000;
+    font-weight: bold;
+    margin-bottom: 2.4rem;
+}
+
+.search {
+    background-color: #803af1;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    box-shadow: 4px 3px 2px 1px rgba(0, 0, 0, 0.42);
+}

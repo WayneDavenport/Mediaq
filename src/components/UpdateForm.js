@@ -1,10 +1,15 @@
 // src/components/UpdateForm.js
+import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearSelectedMediaItem } from '@/store/slices/selectedMediaItemSlice';
 import useFormState from '@/hooks/useFormState';
 import FormField from '@/components/FormField';
-import { useState } from 'react';
 import axios from 'axios';
+import io from 'socket.io-client';
+import { debounce } from 'lodash';
+import styles from './UpdateForm.module.css';
+
+const socket = io(); // Initialize socket connection
 
 const UpdateForm = ({ onCancel }) => {
     const dispatch = useDispatch();
@@ -30,6 +35,7 @@ const UpdateForm = ({ onCancel }) => {
     const [goalTime, setGoalTime] = useState(0);
     const [goalPages, setGoalPages] = useState(0);
     const [goalEpisodes, setGoalEpisodes] = useState(0);
+    const [isEditing, setIsEditing] = useState(false);
 
     const handleLockChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -51,6 +57,17 @@ const UpdateForm = ({ onCancel }) => {
             setGoalTime(Number(value));
         }
     };
+
+    const debouncedEmitItemUpdated = debounce((itemId) => {
+        socket.emit('itemUpdated', itemId);
+    }, 500); // Adjust the debounce delay as needed
+
+    const debouncedHandleSliderChange = useCallback(
+        debounce((e) => {
+            handleSliderChange(e);
+        }, 300), // Adjust the debounce delay as needed
+        [handleSliderChange]
+    );
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -104,8 +121,12 @@ const UpdateForm = ({ onCancel }) => {
                     }
                 }
 
+                // Emit WebSocket event
+                debouncedEmitItemUpdated(formData.id);
+
                 dispatch(clearSelectedMediaItem());
                 setFormData(getInitialFormData());
+                setIsEditing(false);
             } else {
                 const errorData = await response.json();
                 console.error('Error updating media item:', errorData.message);
@@ -212,6 +233,8 @@ const UpdateForm = ({ onCancel }) => {
         return `${completed} out of ${total} ${unit} (${percentComplete.toFixed(2)}%) - ${completedDuration.toFixed(2)} out of ${duration} minutes`;
     };
 
+
+
     const moveToTop = async () => {
         try {
             const updatedData = {
@@ -258,17 +281,34 @@ const UpdateForm = ({ onCancel }) => {
         }
     };
 
+    if (!isEditing) {
+        return (
+            <div className={styles.container}>
+                <div className="flex">
+                    <img src={backgroundArt} alt={formData.title} className={styles.heroImage} />
+                    <div className={styles.marginLeft}>
+                        <h2 className={styles.textLarge}>{formData.title}</h2>
+                        <p className={styles.textMedium}>{formData.duration} minutes</p>
+                        <p className={styles.textMedium}>{formData.category}</p>
+                    </div>
+                </div>
+                <p className={styles.marginTop}>{formData.description}</p>
+                <button onClick={() => setIsEditing(true)} className={styles.textBlue}>Edit</button>
+            </div>
+        );
+    }
+
     return (
-        <div className="p-4 border rounded shadow background-image-container" style={{ backgroundImage: `url(${backgroundArt})` }}>
-            <h2 className="text-xl font-bold mb-4">Update Media Item</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className={styles.container}>
+            <h2 className={styles.title}>Update Media Item</h2>
+            <form onSubmit={handleSubmit} className={styles.form}>
                 <FormField label="Title" name="title" value={formData.title} onChange={handleChange} />
                 <FormField label="Duration" name="duration" value={formData.duration} onChange={handleChange} />
                 <FormField label="Category" name="category" value={formData.category} onChange={handleChange} />
                 <FormField label="Media Type" name="mediaType" value={formData.mediaType} onChange={handleChange} />
                 <FormField label="Description" name="description" value={formData.description} onChange={handleChange} type="textarea" />
                 <div>
-                    <label className="block text-gray-700">Percent Complete:</label>
+                    <label className={styles.label}>Percent Complete:</label>
                     <input
                         type="range"
                         name="percentComplete"
@@ -277,13 +317,13 @@ const UpdateForm = ({ onCancel }) => {
                         step="1"
                         value={formData.mediaType === 'Book' ? formData.additionalFields.pagesCompleted : formData.mediaType === 'Show' ? formData.additionalFields.episodesCompleted : formData.percentComplete}
                         onChange={handleSliderChange}
-                        className="w-full"
+                        className={styles.input}
                     />
                     <span>{formatCompletion()}</span>
                 </div>
                 <FormField label="Queue Number" name="queueNumber" value={formData.queueNumber} onChange={handleChange} type="number" min="1" max={maxQueueNumber} />
                 <div>
-                    <label className="block text-gray-700">Locked:</label>
+                    <label className={styles.label}>Locked:</label>
                     <input
                         type="checkbox"
                         name="locked"
@@ -295,12 +335,12 @@ const UpdateForm = ({ onCancel }) => {
                 {locked && (
                     <>
                         <div>
-                            <label className="block text-gray-700">Key Parent:</label>
+                            <label className={styles.label}>Key Parent:</label>
                             <select
                                 name="keyParent"
                                 value={keyParent}
                                 onChange={handleLockChange}
-                                className="border p-2 w-full rounded text-white-700 bg-[#222227] bg-opacity-20"
+                                className={`${styles.input} text-white-700 bg-[#222227] bg-opacity-20`}
                             >
                                 <option value="">Select Key Parent</option>
                                 <optgroup label="Media Types">
@@ -322,7 +362,7 @@ const UpdateForm = ({ onCancel }) => {
                         </div>
                         {selectedKeyParent && (
                             <div>
-                                <label className="block text-gray-700">
+                                <label className={styles.label}>
                                     {selectedKeyParent.mediaType === 'Book' ? 'Goal Pages:' : 'Goal Time:'}
                                 </label>
                                 {selectedKeyParent.mediaType === 'Book' ? (
@@ -334,7 +374,7 @@ const UpdateForm = ({ onCancel }) => {
                                             max={10000}
                                             value={goalPages}
                                             onChange={handleLockChange}
-                                            className="w-full text-white-700 bg-[#222227] bg-opacity-20"
+                                            className={`${styles.input} text-white-700 bg-[#222227] bg-opacity-20`}
                                         />
                                         <span>
                                             {goalPages} pages ({Math.round((goalPages / readingSpeed) * 30)} minutes)
@@ -349,7 +389,7 @@ const UpdateForm = ({ onCancel }) => {
                                             max={selectedKeyParent.additionalFields.episodes}
                                             value={goalEpisodes}
                                             onChange={handleLockChange}
-                                            className="w-full "
+                                            className={styles.input}
                                         />
                                         <span>
                                             {goalEpisodes} episodes ({Math.round((goalEpisodes / selectedKeyParent.additionalFields.episodes) * selectedKeyParent.duration)} minutes)
@@ -362,7 +402,7 @@ const UpdateForm = ({ onCancel }) => {
                                             name="goalTime"
                                             value={goalTime}
                                             onChange={handleLockChange}
-                                            className="border p-2 w-full rounded"
+                                            className={styles.input}
                                         />
                                         <span>{goalTime} minutes</span>
                                     </>
@@ -371,7 +411,7 @@ const UpdateForm = ({ onCancel }) => {
                         )}
                         {!selectedKeyParent && (
                             <div>
-                                <label className="block text-gray-700">
+                                <label className={styles.label}>
                                     {keyParent === 'Book' ? 'Goal Pages & Time:' : 'Goal Time:'}
                                 </label>
                                 {keyParent === 'Book' ? (
@@ -383,7 +423,7 @@ const UpdateForm = ({ onCancel }) => {
                                             max={10000}
                                             value={goalPages}
                                             onChange={handleLockChange}
-                                            className="w-full text-white-700 bg-[#222227] bg-opacity-20"
+                                            className={`${styles.input} text-white-700 bg-[#222227] bg-opacity-20`}
                                         />
                                         <span>
                                             {goalPages} pages ({Math.round((goalPages / readingSpeed) * 30)} minutes)
@@ -396,7 +436,7 @@ const UpdateForm = ({ onCancel }) => {
                                             name="goalTime"
                                             value={goalTime}
                                             onChange={handleLockChange}
-                                            className="border p-2 w-full rounded text-white-700 bg-[#222227] bg-opacity-20"
+                                            className={`${styles.input} text-white-700 bg-[#222227] bg-opacity-20`}
                                         />
                                         <span>{goalTime} minutes</span>
                                     </>
@@ -405,15 +445,15 @@ const UpdateForm = ({ onCancel }) => {
                         )}
                     </>
                 )}
-                <div className="flex space-x-4">
-                    <button type="submit" className="bg-blue-500 text-white p-2 rounded mt-2">Update</button>
-                    <button type="button" onClick={onCancel} className="bg-gray-500 text-white p-2 rounded mt-2">Cancel</button>
-                    <button type="button" onClick={() => handleDelete(formData.id)} className="bg-red-500 text-white p-2 rounded mt-2">Delete</button>
+                <div className={styles.flex}>
+                    <button type="submit" className={styles.button}>Update</button>
+                    <button type="button" onClick={onCancel} className={`${styles.button} ${styles.buttonCancel}`}>Cancel</button>
+                    <button type="button" onClick={() => handleDelete(formData.id)} className={`${styles.button} ${styles.buttonDelete}`}>Delete</button>
                     {!formData.complete && (
-                        <button type="button" onClick={() => markAsComplete(formData.id)} className="bg-green-500 text-white p-2 rounded mt-2">Mark as Complete</button>
+                        <button type="button" onClick={() => markAsComplete(formData.id)} className={`${styles.button} ${styles.buttonComplete}`}>Mark as Complete</button>
                     )}
-                    <button type="button" onClick={moveToTop} className="bg-yellow-500 text-white p-2 rounded mt-2">Move to Top</button>
-                    <button type="button" onClick={moveToBottom} className="bg-yellow-500 text-white p-2 rounded mt-2">Move to Bottom</button>
+                    <button type="button" onClick={moveToTop} className={`${styles.button} ${styles.buttonMove}`}>Move to Top</button>
+                    <button type="button" onClick={moveToBottom} className={`${styles.button} ${styles.buttonMove}`}>Move to Bottom</button>
                 </div>
             </form>
         </div>

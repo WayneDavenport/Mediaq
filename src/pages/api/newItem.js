@@ -62,7 +62,6 @@ export default async function handler(req, res) {
                     percentComplete,
                     pagesComplete: additionalFields.pagesCompleted || 0,
                     episodesComplete: additionalFields.episodesCompleted || 0,
-                    cleared
                 });
 
                 console.log("Saving new locked item to database...");
