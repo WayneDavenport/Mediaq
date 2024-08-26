@@ -1,15 +1,13 @@
 // src/components/UpdateForm.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearSelectedMediaItem } from '@/store/slices/selectedMediaItemSlice';
 import useFormState from '@/hooks/useFormState';
+import useFetchArt from '@/hooks/useFetchArt';
 import FormField from '@/components/FormField';
 import axios from 'axios';
-import io from 'socket.io-client';
 import { debounce } from 'lodash';
 import styles from './UpdateForm.module.css';
-
-const socket = io(); // Initialize socket connection
 
 const UpdateForm = ({ onCancel }) => {
     const dispatch = useDispatch();
@@ -23,12 +21,13 @@ const UpdateForm = ({ onCancel }) => {
         categories,
         incompleteMediaItems,
         selectedKeyParent,
-        backgroundArt,
         maxQueueNumber,
         handleSliderChange,
         handleChange,
         setFormData
     } = useFormState(item);
+
+    const { backgroundArt, backdropArt } = useFetchArt(formData.mediaType, formData.title, formData.additionalFields);
 
     const [locked, setLocked] = useState(false);
     const [keyParent, setKeyParent] = useState('');
@@ -58,16 +57,6 @@ const UpdateForm = ({ onCancel }) => {
         }
     };
 
-    const debouncedEmitItemUpdated = debounce((itemId) => {
-        socket.emit('itemUpdated', itemId);
-    }, 500); // Adjust the debounce delay as needed
-
-    const debouncedHandleSliderChange = useCallback(
-        debounce((e) => {
-            handleSliderChange(e);
-        }, 300), // Adjust the debounce delay as needed
-        [handleSliderChange]
-    );
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -112,17 +101,23 @@ const UpdateForm = ({ onCancel }) => {
                             episodesComplete: formData.additionalFields.episodesCompleted || 0
                         }),
                     });
-
                     if (lockedItemResponse.ok) {
-                        console.log('Locked item created successfully');
+                        const lockedItemData = await lockedItemResponse.json();
+                        console.log('Locked item updated:', lockedItemData.lockedItem);
                     } else {
                         const errorData = await lockedItemResponse.json();
                         console.error('Error creating locked item:', errorData.message);
                     }
+                } else {
+                    // Check if the updated item is a key parent for any locked items
+                    const lockedItemsResponse = await fetch(`/api/getLockedItems?keyParent=${formData.id}`);
+                    if (lockedItemsResponse.ok) {
+                        const lockedItems = await lockedItemsResponse.json();
+                        if (lockedItems.length > 0) {
+                            console.log('Affected locked items:', lockedItems);
+                        }
+                    }
                 }
-
-                // Emit WebSocket event
-                debouncedEmitItemUpdated(formData.id);
 
                 dispatch(clearSelectedMediaItem());
                 setFormData(getInitialFormData());
@@ -233,8 +228,6 @@ const UpdateForm = ({ onCancel }) => {
         return `${completed} out of ${total} ${unit} (${percentComplete.toFixed(2)}%) - ${completedDuration.toFixed(2)} out of ${duration} minutes`;
     };
 
-
-
     const moveToTop = async () => {
         try {
             const updatedData = {
@@ -296,6 +289,7 @@ const UpdateForm = ({ onCancel }) => {
                 <button onClick={() => setIsEditing(true)} className={styles.textBlue}>Edit</button>
             </div>
         );
+
     }
 
     return (

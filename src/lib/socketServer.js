@@ -25,10 +25,10 @@ export const initSocketServer = (server) => {
         socket.on('replyAdded', async (mediaItemId) => {
             await broadcastComments(mediaItemId);
         });
-
-        socket.on('itemUpdated', async (itemId) => {
-            await broadcastItemUpdate(itemId);
-        });
+        /* 
+                socket.on('itemUpdated', async (itemId) => {
+                    await broadcastItemUpdate(itemId);
+                }); */
 
         socket.on('disconnect', () => {
             console.log('Client disconnected');

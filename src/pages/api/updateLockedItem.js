@@ -2,7 +2,6 @@
 import { connectToMongoose } from '@/lib/db';
 import LockedItem from '@/models/LockedItem';
 import { requireAuth } from '@/middleware/auth';
-import { broadcastItemUpdate } from '@/lib/socketServer';
 
 export default async function handler(req, res) {
     await connectToMongoose();
@@ -35,7 +34,6 @@ export default async function handler(req, res) {
                 existingLockedItem.episodesComplete = episodesComplete;
 
                 await existingLockedItem.save();
-                await broadcastItemUpdate(lockedItem); // Emit WebSocket event
                 return res.status(200).json({ message: 'Locked item updated!', lockedItem: existingLockedItem });
             } else {
                 // Create new locked item
@@ -54,7 +52,6 @@ export default async function handler(req, res) {
                 });
 
                 await newLockedItem.save();
-                await broadcastItemUpdate(lockedItem); // Emit WebSocket event
                 return res.status(201).json({ message: 'Locked item created!', lockedItem: newLockedItem });
             }
         } catch (error) {

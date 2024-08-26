@@ -14,7 +14,7 @@ export const fetchMediaItems = async () => {
 export const fetchBackgroundArt = async (mediaType, title, additionalFields) => {
     try {
         if (mediaType === 'Book' && additionalFields.isbn) {
-            const response = await axios.get(`https://covers.openlibrary.org/b/isbn/${additionalFields.isbn}-L.jpg`);
+            const response = await axios.get(`https://covers.openlibrary.org/b/isbn/${additionalFields.isbn}-M.jpg`);
             if (response.status === 200) {
                 return { posterPath: response.config.url, backdropPath: '' };
             }

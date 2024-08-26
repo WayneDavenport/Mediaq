@@ -1,5 +1,6 @@
+// src/hooks/useFormState.js
 import { useState, useEffect, useCallback } from 'react';
-import { fetchMediaItems, fetchBackgroundArt } from '@/utils/formUtils';
+import { fetchMediaItems } from '@/utils/formUtils';
 
 const useFormState = (item) => {
     const [formData, setFormData] = useState({
@@ -19,8 +20,6 @@ const useFormState = (item) => {
     const [categories, setCategories] = useState([]);
     const [incompleteMediaItems, setIncompleteMediaItems] = useState([]);
     const [selectedKeyParent, setSelectedKeyParent] = useState(null);
-    const [backgroundArt, setBackgroundArt] = useState('');
-    const [backdropArt, setBackdropArt] = useState('');
     const [maxQueueNumber, setMaxQueueNumber] = useState(0);
 
     useEffect(() => {
@@ -57,20 +56,12 @@ const useFormState = (item) => {
         fetchData();
     }, []);
 
-    const fetchArt = useCallback(async () => {
-        const { posterPath, backdropPath } = await fetchBackgroundArt(formData.mediaType, formData.title,);
-        setBackgroundArt(posterPath);
-        setBackdropArt(backdropPath);
-    }, [formData.mediaType, formData.title,]);
-
-    useEffect(() => {
-        fetchArt();
-    }, [fetchArt]);
-
     const handleSliderChange = (e) => {
         const value = Number(e.target.value);
         let percentComplete, completedDuration;
         let updatedAdditionalFields = { ...formData.additionalFields };
+        delete updatedAdditionalFields.coverArt;
+        delete updatedAdditionalFields.imageUrl;
 
         if (formData.mediaType === 'Book') {
             updatedAdditionalFields.pagesCompleted = value;
@@ -92,6 +83,7 @@ const useFormState = (item) => {
         }));
     };
 
+
     const handleChange = async (e) => {
         const { name, value, type, checked } = e.target;
         setFormData((prevData) => ({
@@ -106,8 +98,6 @@ const useFormState = (item) => {
         categories,
         incompleteMediaItems,
         selectedKeyParent,
-        backgroundArt,
-        backdropArt,
         maxQueueNumber,
         handleSliderChange,
         handleChange,

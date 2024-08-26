@@ -65,6 +65,7 @@ const TvSearch = () => {
             crew: item.credits?.crew?.slice(0, 3).map(crew => crew.name).join(', '),
             episodes: parseInt(item.number_of_episodes),
             imageUrl: `https://image.tmdb.org/t/p/w500${item.poster_path}`, // Add image URL here
+
         };
 
         const formData = {
@@ -74,6 +75,8 @@ const TvSearch = () => {
             mediaType: 'Show',
             description: item.overview,
             additionalFields: additionalFields,
+
+
         };
 
         dispatch(setStagingItem(formData));

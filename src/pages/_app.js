@@ -7,7 +7,7 @@ import Navbar from '../components/Navbar';
 import axios from "axios";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-
+/* import { ModalProvider } from '@/context/ModalContext'; */
 
 export default function App({ Component, pageProps }) {
 
@@ -19,8 +19,10 @@ export default function App({ Component, pageProps }) {
   return (
     <Provider store={store}>
       <SessionProvider session={pageProps.session}>
+        {/* <ModalProvider> */}
         <Navbar />
         <Component {...pageProps} />
+        {/* </ModalProvider> */}
       </SessionProvider>
     </Provider>
   );

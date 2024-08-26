@@ -4,9 +4,6 @@ import { useDispatch } from 'react-redux';
 import { setSelectedMediaItem } from '@/store/slices/selectedMediaItemSlice';
 import styles from './MediaItemsList.module.css';
 import Link from "next/link";
-import io from 'socket.io-client';
-
-const socket = io(); // Initialize socket connection
 
 const MediaItemsList = ({ newMediaItem }) => {
     const [mediaItems, setMediaItems] = useState([]);
@@ -46,38 +43,6 @@ const MediaItemsList = ({ newMediaItem }) => {
         };
 
         fetchMediaItems();
-
-        // Listen for WebSocket events
-        socket.on('itemUpdated', async (data) => {
-            const updatedItem = JSON.parse(data);
-            setMediaItems(prevItems => prevItems.map(item => item._id === updatedItem._id ? updatedItem : item));
-
-            // Fetch updated locked items
-            const lockedResponse = await axios.get('/api/getLockedItems');
-            const lockedItemsData = lockedResponse.data.lockedItems;
-            const lockedItemsMap = lockedItemsData.reduce((acc, item) => {
-                acc[item.lockedItem] = item;
-                return acc;
-            }, {});
-            setLockedItems(lockedItemsMap);
-
-            // Fetch updated key parent titles for the specific updated item
-            const keyParentIds = [updatedItem.keyParent].filter(id => id && !isCategoryOrMediaType(id));
-            const uniqueKeyParentIds = [...new Set(keyParentIds)];
-            const keyParentResponses = await Promise.all(uniqueKeyParentIds.map(id => axios.get(`/api/getMediaItems?id=${id}`)));
-            const keyParentTitlesMap = keyParentResponses.reduce((acc, res) => {
-                acc[res.data.mediaItem._id] = res.data.mediaItem.title;
-                return acc;
-            }, {});
-            setKeyParentTitles(prevTitles => ({
-                ...prevTitles,
-                ...keyParentTitlesMap
-            }));
-        });
-
-        return () => {
-            socket.off('itemUpdated');
-        };
     }, []);
 
     useEffect(() => {

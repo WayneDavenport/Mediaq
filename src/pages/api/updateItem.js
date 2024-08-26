@@ -4,7 +4,6 @@ import MediaItem from '@/models/MediaItem';
 import LockedItem from '@/models/LockedItem';
 import ClearedItem from '@/models/ClearedItem';
 import { requireAuth } from '@/middleware/auth';
-import { broadcastItemUpdate } from '@/lib/socketServer';
 
 export default async function handler(req, res) {
     if (req.method !== 'PUT') {
@@ -51,7 +50,7 @@ export default async function handler(req, res) {
             // Update locked items
             const lockedItems = await LockedItem.find({
                 $or: [
-                    { keyParent: id },
+                    { keyParent: title },
                     { keyParent: mediaType },
                     { keyParent: category }
                 ]
@@ -83,9 +82,6 @@ export default async function handler(req, res) {
                     await lockedItem.save();
                 }
             }
-
-            // Emit WebSocket event
-            await broadcastItemUpdate(id);
 
             res.status(200).json({ message: 'Updated item!', item: result });
         } catch (error) {

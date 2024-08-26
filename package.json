@@ -14,7 +14,7 @@
     "axios": "^1.6.8",
     "bcrypt": "^5.1.1",
     "express": "^4.19.2",
-    "framer-motion": "^11.3.24",
+    "framer-motion": "^11.3.30",
     "http": "^0.0.1-security",
     "lodash": "^4.17.21",
     "mongodb": "^6.6.2",
