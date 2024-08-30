@@ -18,7 +18,8 @@ export default function Home() {
           ) : (
             <>
               <p className="text-lg text-gray-600 max-w-xl ">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.orem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.orem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.orem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                Welcome to Mediaq(working-title), your new go-to digital hub for organizing and planning your media consumption across books, movies, music, and more. Whether you're looking to entertain, educate, or enhance your business skills, MediaPlanner is designed to help you keep track of all your media interests in one convenient place.
+                --------This is the pre-pre-alpha version but feedback and suggestions are welcome. Forgive the jank, im working on it.------
               </p>
               <div className="  space-x-8  ">
                 {session ? (
