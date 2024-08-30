@@ -14,7 +14,7 @@ const FriendZone = ({ friendsMediaQueues }) => {
                     </div>
                 ))
             ) : (
-                <p className="text-white">No friends' media queues available</p>
+                <p className="text-white">No friends&apos; media queues available</p>
             )}
         </div>
     );
