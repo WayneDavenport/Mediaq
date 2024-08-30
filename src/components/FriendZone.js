@@ -9,7 +9,7 @@ const FriendZone = ({ friendsMediaQueues }) => {
             {friendsMediaQueues.length > 0 ? (
                 friendsMediaQueues.map((friendQueue, index) => (
                     <div key={index} className="mb-8">
-                        <h3 className="text-xl text-white font-semibold mb-2">{friendQueue.email}'s Queue</h3>
+                        <h3 className="text-xl text-white font-semibold mb-2">{friendQueue.email}&apos;s Queue</h3>
                         <MediaRow title="Queue" items={friendQueue.mediaItems} />
                     </div>
                 ))
