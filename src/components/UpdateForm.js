@@ -2,11 +2,11 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearSelectedMediaItem } from '@/store/slices/selectedMediaItemSlice';
+import { showModal } from '@/store/slices/modalSlice';
 import useFormState from '@/hooks/useFormState';
 import useFetchArt from '@/hooks/useFetchArt';
 import FormField from '@/components/FormField';
 import axios from 'axios';
-import { debounce } from 'lodash';
 import styles from './UpdateForm.module.css';
 
 const UpdateForm = ({ onCancel }) => {
@@ -57,77 +57,148 @@ const UpdateForm = ({ onCancel }) => {
         }
     };
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         try {
             // Calculate differences
-            const durationDiff = formData.completedDuration - item.completedDuration;
-            const percentCompleteDiff = formData.percentComplete - item.percentComplete;
-            const pagesCompleteDiff = (formData.additionalFields.pagesCompleted || 0) - (item.additionalFields.pagesCompleted || 0);
-            const episodesCompleteDiff = (formData.additionalFields.episodesCompleted || 0) - (item.additionalFields.episodesCompleted || 0);
+            const differences = calculateDifferences(formData, item);
 
-            const response = await fetch('/api/updateItem', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    durationDiff,
-                    percentCompleteDiff,
-                    pagesCompleteDiff,
-                    episodesCompleteDiff
-                }),
-            });
+            // Update the main media item
+            const updateResponse = await updateMediaItem(formData, differences);
 
-            if (response.ok) {
+            if (updateResponse.ok) {
+                let lockedItems = [];
+
                 if (locked) {
-                    const lockedItemResponse = await fetch('/api/updateLockedItem', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            lockedItem: formData.id,
-                            lockedItemName: formData.title,
-                            keyParent,
-                            goalTime,
-                            goalPages,
-                            goalEpisodes,
-                            timeComplete: formData.completedDuration,
-                            percentComplete: (formData.completedDuration / goalTime) * 100,
-                            pagesComplete: formData.additionalFields.pagesCompleted || 0,
-                            episodesComplete: formData.additionalFields.episodesCompleted || 0
-                        }),
-                    });
-                    if (lockedItemResponse.ok) {
-                        const lockedItemData = await lockedItemResponse.json();
-                        console.log('Locked item updated:', lockedItemData.lockedItem);
-                    } else {
-                        const errorData = await lockedItemResponse.json();
-                        console.error('Error creating locked item:', errorData.message);
-                    }
+                    // Handle locked item update
+                    const lockedItemData = await handleLockedItemUpdate(formData, differences);
+                    lockedItems = lockedItemData ? [lockedItemData.lockedItem] : [];
                 } else {
-                    // Check if the updated item is a key parent for any locked items
-                    const lockedItemsResponse = await fetch(`/api/getLockedItems?keyParent=${formData.id}`);
-                    if (lockedItemsResponse.ok) {
-                        const lockedItems = await lockedItemsResponse.json();
-                        if (lockedItems.length > 0) {
-                            console.log('Affected locked items:', lockedItems);
-                        }
-                    }
+                    // First, update the locked items in the database
+                    await checkAndUpdateDependentLockedItems(formData.id);
+
+                    // Then, fetch the locked items to populate the modal
+                    const lockedItemsResponse = await checkAndPopulateLockedItems(formData.id);
+                    lockedItems = lockedItemsResponse.lockedItems || []; // Extract the array
                 }
 
+                // Fetch corresponding MediaItem data for each lockedItem
+                const lockedItemsWithMediaData = await Promise.all(
+                    lockedItems.map(async (lockedItem) => {
+                        const mediaItemResponse = await fetch(`/api/getMediaItemById?id=${lockedItem.lockedItem}`);
+                        const mediaItem = await mediaItemResponse.json();
+                        return {
+                            ...lockedItem,
+                            mediaItem, // Attach the corresponding MediaItem data
+                        };
+                    })
+                );
+
+                // Log the lockedItems to verify the data
+                console.log('Final Locked Items with Media Data:', lockedItemsWithMediaData);
+
+                // Clear the selected media item and reset the form
                 dispatch(clearSelectedMediaItem());
-                setFormData(getInitialFormData());
                 setIsEditing(false);
+
+                // Store the data in Redux state
+                dispatch(showModal({
+                    updatedItem: {
+                        title: formData.title,
+                        percentComplete: formData.percentComplete,
+                    },
+                    lockedItems: lockedItemsWithMediaData, // Pass the lockedItems with MediaItem data
+                }));
             } else {
-                const errorData = await response.json();
+                const errorData = await updateResponse.json();
                 console.error('Error updating media item:', errorData.message);
             }
         } catch (error) {
             console.error('Error updating media item:', error);
+        }
+    };
+
+
+
+
+
+
+    const calculateDifferences = (formData, item) => {
+        return {
+            durationDiff: formData.completedDuration - item.completedDuration,
+            percentCompleteDiff: formData.percentComplete - item.percentComplete,
+            pagesCompleteDiff: (formData.additionalFields.pagesCompleted || 0) - (item.additionalFields.pagesCompleted || 0),
+            episodesCompleteDiff: (formData.additionalFields.episodesCompleted || 0) - (item.additionalFields.episodesCompleted || 0),
+        };
+    };
+
+    const updateMediaItem = async (formData, differences) => {
+        return await fetch('/api/updateItem', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ...formData,
+                ...differences,
+            }),
+        });
+    };
+
+    const handleLockedItemUpdate = async (formData, differences) => {
+        const lockedItemResponse = await fetch('/api/updateLockedItem', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                lockedItem: formData.id,
+                lockedItemName: formData.title,
+                keyParent,
+                goalTime,
+                goalPages,
+                goalEpisodes,
+                timeComplete: formData.completedDuration,
+                percentComplete: (formData.completedDuration / goalTime) * 100,
+                pagesComplete: formData.additionalFields.pagesCompleted || 0,
+                episodesComplete: formData.additionalFields.episodesCompleted || 0,
+            }),
+        });
+
+        if (lockedItemResponse.ok) {
+            const lockedItemData = await lockedItemResponse.json();
+            console.log('Locked item updated:', lockedItemData.lockedItem);
+        } else {
+            const errorData = await lockedItemResponse.json();
+            console.error('Error creating locked item:', errorData.message);
+        }
+    };
+
+    const checkAndUpdateDependentLockedItems = async (itemId) => {
+        const lockedItemsResponse = await fetch(`/api/getLockedItems?keyParent=${itemId}`);
+        if (lockedItemsResponse.ok) {
+            const lockedItems = await lockedItemsResponse.json();
+            if (lockedItems.length > 0) {
+                console.log('Affected locked items:', lockedItems);
+            }
+        }
+    };
+
+    const checkAndPopulateLockedItems = async (itemId) => {
+        try {
+            // Fetch locked items that depend on the main item
+            const lockedItemsResponse = await fetch(`/api/getLockedItems?keyParent=${itemId}`);
+            if (lockedItemsResponse.ok) {
+                const lockedItems = await lockedItemsResponse.json();
+                return lockedItems;
+            } else {
+                console.error('Error fetching locked items:', await lockedItemsResponse.text());
+                return [];
+            }
+        } catch (error) {
+            console.error('Error fetching locked items:', error);
+            return [];
         }
     };
 
@@ -274,6 +345,7 @@ const UpdateForm = ({ onCancel }) => {
         }
     };
 
+
     if (!isEditing) {
         return (
             <div className={styles.container}>
@@ -287,9 +359,9 @@ const UpdateForm = ({ onCancel }) => {
                 </div>
                 <p className={styles.marginTop}>{formData.description}</p>
                 <button onClick={() => setIsEditing(true)} className={styles.textBlue}>Edit</button>
+
             </div>
         );
-
     }
 
     return (
@@ -448,6 +520,7 @@ const UpdateForm = ({ onCancel }) => {
                     )}
                     <button type="button" onClick={moveToTop} className={`${styles.button} ${styles.buttonMove}`}>Move to Top</button>
                     <button type="button" onClick={moveToBottom} className={`${styles.button} ${styles.buttonMove}`}>Move to Bottom</button>
+
                 </div>
             </form>
         </div>

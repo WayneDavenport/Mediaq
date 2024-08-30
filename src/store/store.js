@@ -3,6 +3,8 @@ import searchReducer from './slices/searchSlice';
 import selectedMediaItemReducer from './slices/selectedMediaItemSlice';
 import mediaItemReducer from './slices/mediaItemSlice';
 import lockFormReducer from './slices/lockFormSlice';
+import modalReducer from './slices/modalSlice';
+
 
 const store = configureStore({
     reducer: {
@@ -10,6 +12,9 @@ const store = configureStore({
         selectedMediaItem: selectedMediaItemReducer,
         mediaItem: mediaItemReducer,
         lockForm: lockFormReducer,
+        modal: modalReducer,
+
+
         // other reducers...
     },
 });
