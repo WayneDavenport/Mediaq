@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Comment from './Comment';
 import styles from './CommentList.module.css';
+import supabase from '@/lib/supabaseClient';
 
 const CommentList = ({ mediaItemId }) => {
     const [comments, setComments] = useState([]);
@@ -19,6 +20,29 @@ const CommentList = ({ mediaItemId }) => {
 
         fetchComments();
 
+    }, [mediaItemId]);
+
+    useEffect(() => {
+        const subscription = supabase
+            .channel('public:comments') // Use the public channel
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'comments',
+                    filter: `media_item_id=eq.${mediaItemId}`
+                },
+                (payload) => {
+                    console.log('New comment received:', payload);
+                    setComments(prevComments => [...prevComments, payload.new]);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            subscription.unsubscribe();
+        };
     }, [mediaItemId]);
 
     const handleCommentSubmit = async (e) => {

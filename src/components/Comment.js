@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import styles from './Comment.module.css';
+import supabase from '@/lib/supabaseClient';
 
 const Comment = ({ comment }) => {
     const [replies, setReplies] = useState([]);
@@ -19,6 +20,9 @@ const Comment = ({ comment }) => {
         fetchReplies();
     }, [comment.id]);
 
+
+
+
     const handleAddReply = async (e) => {
         e.preventDefault();
         try {
@@ -31,6 +35,29 @@ const Comment = ({ comment }) => {
             console.error('Error adding reply:', error);
         }
     };
+
+    useEffect(() => {
+        const subscription = supabase
+            .channel('public:replies') // Use the public channel
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'replies',
+                    filter: `comment_id=eq.${comment.id}`
+                },
+                (payload) => {
+                    console.log('New reply received:', payload);
+                    setReplies(prevReplies => [...prevReplies, payload.new]);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [comment.id]);
 
     return (
         <div className={styles.comment}>
