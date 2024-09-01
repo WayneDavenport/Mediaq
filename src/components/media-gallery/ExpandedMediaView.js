@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import io from 'socket.io-client';
 import CommentList from '../CommentList';
 import styles from './MediaGallery.module.css';
 
@@ -23,19 +22,7 @@ const ExpandedMediaView = ({ item, onClose }) => {
 
         fetchMediaItem();
 
-        const socket = io(); // Connect to the same port as the Next.js server
 
-        socket.on('commentsUpdated', (data) => {
-            const newComments = JSON.parse(data);
-            setMediaItem((prevMediaItem) => ({
-                ...prevMediaItem,
-                comments: newComments
-            }));
-        });
-
-        return () => {
-            socket.disconnect();
-        };
     }, [item._id]);
 
     return (
@@ -51,7 +38,7 @@ const ExpandedMediaView = ({ item, onClose }) => {
                         <p>{mediaItem.description}</p>
                         {/* Add more details as needed */}
                     </div>
-                    <CommentList comments={mediaItem.comments} mediaItemId={mediaItem._id} />
+                    <CommentList mediaItemId={mediaItem._id} />
                 </>
             )}
         </div>

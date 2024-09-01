@@ -1,13 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import io from 'socket.io-client';
 import Comment from './Comment';
 import styles from './CommentList.module.css';
 
-const socket = io(); // Initialize socket connection
-
-const CommentList = ({ comments, mediaItemId }) => {
+const CommentList = ({ mediaItemId }) => {
+    const [comments, setComments] = useState([]);
     const [commentText, setCommentText] = useState('');
+
+    useEffect(() => {
+        const fetchComments = async () => {
+            try {
+                const { data } = await axios.get(`/api/getComments?mediaItemId=${mediaItemId}`);
+                setComments(data);
+            } catch (error) {
+                console.error('Error fetching comments:', error);
+            }
+        };
+
+        fetchComments();
+
+    }, [mediaItemId]);
 
     const handleCommentSubmit = async (e) => {
         e.preventDefault();
@@ -15,8 +27,7 @@ const CommentList = ({ comments, mediaItemId }) => {
             const response = await axios.post('/api/addComment', { mediaItemId, text: commentText });
             if (response.status === 200) {
                 setCommentText('');
-                // Emit event to server to trigger WebSocket update
-                socket.emit('commentAdded', mediaItemId);
+                setComments([...comments, response.data]);
             }
         } catch (error) {
             console.error('Error adding comment:', error);
@@ -35,8 +46,8 @@ const CommentList = ({ comments, mediaItemId }) => {
                 />
                 <button className={styles.button} type="submit">Submit</button>
             </form>
-            {comments && comments.map((comment) => (
-                <Comment key={comment._id} comment={comment} mediaItemId={mediaItemId} />
+            {comments.map((comment) => (
+                comment && <Comment key={comment.id} comment={comment} />
             ))}
         </div>
     );
