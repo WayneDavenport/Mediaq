@@ -1,8 +1,6 @@
 // src/pages/api/addReply.js
-import { connectToMongoose } from '@/lib/db';
-import MediaItem from '@/models/MediaItem';
+import supabase from '@/lib/supabaseClient';
 import { requireAuth } from '@/middleware/auth';
-import { broadcastComments } from '@/lib/socketServer'; // Import the broadcastComments function
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -11,33 +9,21 @@ export default async function handler(req, res) {
 
     await requireAuth(req, res, async () => {
         try {
-            await connectToMongoose();
+            const { commentId, text } = req.body;
+            const userId = req.user.id; // Assuming req.user.id is the MongoDB ObjectId of the user
 
-            const { mediaItemId, commentId, text } = req.body;
-            const userId = req.user.id;
+            // Insert the new reply into Supabase
+            const { data, error } = await supabase
+                .from('replies')
+                .insert([{ comment_id: commentId, text, user_id: userId }])
+                .single();
 
-            const mediaItem = await MediaItem.findById(mediaItemId);
-            if (!mediaItem) {
-                return res.status(404).json({ message: 'Media item not found' });
+            if (error) {
+                console.error("Failed to add reply:", error);
+                return res.status(500).json({ message: 'Internal server error' });
             }
 
-            const comment = mediaItem.comments.id(commentId);
-            if (!comment) {
-                return res.status(404).json({ message: 'Comment not found' });
-            }
-
-            const reply = {
-                userId,
-                text
-            };
-
-            comment.replies.push(reply);
-            await mediaItem.save();
-
-            // Broadcast comments to WebSocket clients
-            await broadcastComments();
-
-            res.status(200).json(mediaItem);
+            res.status(200).json(data);
         } catch (error) {
             console.error("Failed to add reply:", error);
             res.status(500).json({ message: 'Internal server error' });
