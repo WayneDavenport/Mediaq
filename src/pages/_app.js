@@ -11,10 +11,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
 export default function App({ Component, pageProps }) {
-  useEffect(() => {
-    // Initialize the socket server
-    axios.get('/api/initSocket');
-  }, []);
+
 
   return (
     <Provider store={store}>

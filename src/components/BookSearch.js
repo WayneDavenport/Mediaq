@@ -1,6 +1,6 @@
 // src/components/BookSearch.js
 import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { setSearchResults, setStagingItem } from '@/store/slices/searchSlice';
 import { useSession } from 'next-auth/react';
 
@@ -24,10 +24,21 @@ const BookSearch = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Fetch data from Google Books API
             const response = await fetch(`/api/googleBooks?query=${searchParams.query}&author=${searchParams.author}`);
             const data = await response.json();
-            setResults(data.books);
-            dispatch(setSearchResults(data.books));
+
+            // Map the results to include Open Library cover art
+            const resultsWithCovers = data.books.map(book => {
+                const isbn = book.isbn;
+                return {
+                    ...book,
+                    coverUrl: isbn ? `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg` : null,
+                };
+            });
+
+            setResults(resultsWithCovers);
+            dispatch(setSearchResults(resultsWithCovers));
         } catch (error) {
             console.error('Error fetching data:', error);
         }
@@ -40,7 +51,8 @@ const BookSearch = () => {
             authors: item.authors?.join(', '),
             publisher: item.publisher,
             pageCount: parseInt(item.pageCount),
-            isbn: item.isbn
+            isbn: item.isbn,
+            imageUrl: item.coverUrl, // Use the cover URL from Open Library
         };
 
         const formData = {
@@ -81,6 +93,9 @@ const BookSearch = () => {
                 {results.map((result, index) => (
                     <div key={index} className="border p-4 rounded shadow">
                         <h3 className="text-xl font-semibold">{result.title}</h3>
+                        {result.coverUrl && (
+                            <img src={result.coverUrl} alt={result.title} className="w-32 h-auto mb-2" /> // Display book cover art
+                        )}
                         <p className="text-gray-700">{result.description}</p>
                         <p className="text-gray-500">Authors: {result.authors?.join(', ')}</p>
                         <p className="text-gray-500">Publisher: {result.publisher}</p>

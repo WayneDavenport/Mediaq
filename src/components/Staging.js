@@ -1,12 +1,14 @@
 // src/components/Staging.js
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { clearSearchItem } from '@/store/slices/searchSlice';
 import axios from 'axios';
 
 const Staging = ({ onSubmit }) => {
     const stagingItem = useSelector((state) => state.search.stagingItem);
     const session = useSelector((state) => state.session);
     const readingSpeed = session?.user?.readingSpeed || 20; // pages per 30 minutes
+    const dispatch = useDispatch();
 
     const [formData, setFormData] = useState({
         title: '',
@@ -116,7 +118,15 @@ const Staging = ({ onSubmit }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         onSubmit(formData);
+        dispatch(clearSearchItem()); // Clear the staging item after submission
     };
+    const handleClear = () => {
+        dispatch(clearSearchItem());
+    }
+
+    if (!stagingItem) {
+        return null; // If there's no staging item, don't render the component
+    }
     const mediaTypes = ['Book', 'Movie', 'Show', 'VideoGame']
     const presetCategories = ['fun', 'learning', 'hobby', 'productivity', 'general'];
 
@@ -332,6 +342,9 @@ const Staging = ({ onSubmit }) => {
 
                 <div className="flex space-x-4">
                     <button type="submit" className="bg-blue-500 text-white p-2 rounded mt-2">Submit</button>
+                </div>
+                <div className="flex space-x-4">
+                    <button type="button" onClick={handleClear} className="bg-blue-500 text-white p-2 rounded mt-2">Clear</button>
                 </div>
             </form>
         </div>

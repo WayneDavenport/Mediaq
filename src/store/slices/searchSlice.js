@@ -1,4 +1,4 @@
-// src/store/searchSlice.js
+// src/store/slices/searchSlice.js
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
@@ -16,9 +16,12 @@ const searchSlice = createSlice({
         setStagingItem(state, action) {
             state.stagingItem = action.payload;
         },
+        clearSearchItem(state) {
+            state.stagingItem = null; // Clear the stagingItem
+        },
     },
 });
 
-export const { setSearchResults, setStagingItem } = searchSlice.actions;
+export const { setSearchResults, setStagingItem, clearSearchItem } = searchSlice.actions;
 
 export default searchSlice.reducer;

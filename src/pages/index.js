@@ -1,47 +1,62 @@
+// index.js
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import SignInForm from "@/components/SignInForm";
 import Link from "next/link";
 import SignOutButton from "@/components/SignOutButton";
+import styles from "./index.module.css";
+import Image from "next/image";
 
 export default function Home() {
   const { data: session } = useSession();
   const [showSignInForm, setShowSignInForm] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex  ">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 p-8">
-        <div className="flex flex-col  items-start space-x-12 space-y-10">
-          <h1 className="text-9xl mx-10 font-bold text-gray-800 mt-20 mb-8">Mediaq</h1>
+    <div className={styles.container}>
+      <div className={styles.grid}>
+        <div className={styles.artPlaceholder}>
+          <Image
+            src="/images/heroVhs.webp"
+            alt="Hero VHS Image"
+            layout="fill"
+            objectFit="cover"
+          />
+        </div>
+        <div className={styles.content}>
+          <h1 className={styles.heading}>Mediaq</h1>
           {showSignInForm ? (
-            <SignInForm />
+            <div className="formBox">
+              <SignInForm />
+            </div>
           ) : (
             <>
-              <p className="text-lg text-gray-600 max-w-xl ">
-                Welcome to Mediaq, your new go-to digital hub for organizing and planning your media consumption across books, movies, music, and more. Whether you are looking to entertain, educate, or enhance your business skills, MediaPlanner is designed to help you keep track of all your media interests in one convenient place.
-                --------This is the pre-pre-alpha version but feedback and suggestions are welcome. Forgive the jank, im working on it.------
+              <p className={styles.description}>
+                Welcome to Mediaq, your ultimate digital hub for organizing and planning your media consumption across books, movies, music, and more. Whether you&apos;re looking to entertain, educate, or enhance your business skills, Mediaq is designed to help you keep track of all your media interests in one convenient place. Explore a vast library of content using data from TMDB for movies, RAWG for games, Open Library, and Google Books for books. Fill your queue with everything you plan or want to watch, read, or play. Connect with friends and see what they&apos;re enjoying, making it easier to share recommendations and discover new favorites. Organize your media effortlessly and never lose track of your interests. Stay updated with the latest releases and trends in your favorite categories. Join Mediaq now and transform the way you manage your media consumption!
               </p>
-              <div className="  space-x-8  ">
+              <div className={styles.actions}>
                 {session ? (
                   <SignOutButton />
-                ) : (<button
-                  onClick={() => setShowSignInForm(true)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded"
-                >
-                  Sign In
-                </button>)}
+                ) : (
+                  <button
+                    onClick={() => setShowSignInForm(true)}
+                    className={styles.signInButton}
+                  >
+                    Sign In
+                  </button>
+                )}
                 <span>or</span>
-                {session ? (<Link className="px-4 py-2 bg-green-500 text-white rounded" href='/user-main'>Dashboard</Link>) : (<Link
-                  href="/create-user" className="px-4 py-2 bg-green-500 text-white rounded">
-                  Sign Up
-                </Link>)}
+                {session ? (
+                  <Link className={styles.dashboardButton} href="/user-main">
+                    Dashboard
+                  </Link>
+                ) : (
+                  <Link href="/create-user" className={styles.signUpButton}>
+                    Sign Up
+                  </Link>
+                )}
               </div>
             </>
           )}
-        </div>
-        <div className="flex items-center justify-center" >
-          {/* Placeholder for the art */}
-          <div className="w-full h-96 bg-gray-300 rounded-lg"></div>
         </div>
       </div>
     </div>

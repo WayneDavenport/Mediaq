@@ -10,6 +10,7 @@ const MovieSearch = () => {
         include_adult: false,
     });
     const [results, setResults] = useState([]);
+    const [page, setPage] = useState(1); // Add state for pagination
     const dispatch = useDispatch();
 
     const handleInputChange = (e) => {
@@ -23,7 +24,7 @@ const MovieSearch = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(`/api/tmdb?mediaType=movie&query=${searchParams.query}&language=${searchParams.language}&include_adult=${searchParams.include_adult}`);
+            const response = await fetch(`/api/tmdb?mediaType=movie&query=${searchParams.query}&language=${searchParams.language}&include_adult=${searchParams.include_adult}&page=${page}`);
             const data = await response.json();
             const filteredResults = data.results.filter(result =>
                 result.media_type !== 'tv' && result.title && result.overview
@@ -53,6 +54,14 @@ const MovieSearch = () => {
         };
 
         dispatch(setStagingItem(formData));
+    };
+
+    const handleNextPage = () => {
+        setPage(prevPage => prevPage + 1);
+    };
+
+    const handlePreviousPage = () => {
+        setPage(prevPage => Math.max(prevPage - 1, 1));
     };
 
     return (
@@ -92,6 +101,9 @@ const MovieSearch = () => {
                 {results.map((result) => (
                     <div key={result.id} className="border p-4 rounded shadow">
                         <h3 className="text-xl font-semibold">{result.title}</h3>
+                        {result.poster_path && (
+                            <img src={`https://image.tmdb.org/t/p/w500${result.poster_path}`} alt={result.title} className="w-32 h-auto mb-2" /> // Display poster art
+                        )}
                         <p className="text-gray-700">{result.overview}</p>
                         <p className="text-gray-500">Release Date: {result.release_date}</p>
                         <p className="text-gray-500">Language: {result.original_language}</p>
@@ -118,6 +130,10 @@ const MovieSearch = () => {
                         <button onClick={() => handleAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
                     </div>
                 ))}
+            </div>
+            <div className="flex justify-between mt-4">
+                <button onClick={handlePreviousPage} className="bg-gray-500 text-white p-2 rounded">Previous</button>
+                <button onClick={handleNextPage} className="bg-gray-500 text-white p-2 rounded">Next</button>
             </div>
         </div>
     );

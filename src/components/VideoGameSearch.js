@@ -35,9 +35,8 @@ const VideoGameSearch = () => {
         const additionalFields = {
             publisher: item.publishers?.map(publisher => publisher.name).join(', '),
             developers: item.developers?.map(developer => developer.name).join(', '),
-            coverArt: item.background_image, // Add cover art
+            coverArt: item.background_image, // Use the background image as cover art
             gameId: item.id
-
         };
 
         const formData = {
@@ -70,6 +69,9 @@ const VideoGameSearch = () => {
                 {results.map((result, index) => (
                     <div key={index} className="border p-4 rounded shadow">
                         <h3 className="text-xl font-semibold">{result.name}</h3>
+                        {result.background_image && (
+                            <img src={result.background_image} alt={result.name} className="w-32 h-auto mb-2" /> // Display cover art
+                        )}
                         <p className="text-gray-500">Description: {result.description_raw}</p>
                         <p className="text-gray-500">Publisher: {result.publishers?.map(publisher => publisher.name).join(', ')}</p>
                         <p className="text-gray-500">Developer: {result.developers?.map(developer => developer.name).join(', ')}</p>

@@ -10,6 +10,7 @@ const TvSearch = () => {
         include_adult: false,
     });
     const [results, setResults] = useState([]);
+    const [page, setPage] = useState(1); // Add state for pagination
     const dispatch = useDispatch();
 
     const handleInputChange = (e) => {
@@ -39,7 +40,7 @@ const TvSearch = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(`/api/tmdb?mediaType=tv&query=${searchParams.query}&language=${searchParams.language}&include_adult=${searchParams.include_adult}`);
+            const response = await fetch(`/api/tmdb?mediaType=tv&query=${searchParams.query}&language=${searchParams.language}&include_adult=${searchParams.include_adult}&page=${page}`);
             const data = await response.json();
             const filteredResults = await Promise.all(data.results.filter(result =>
                 result.media_type !== 'movie' && result.name && result.overview
@@ -65,7 +66,6 @@ const TvSearch = () => {
             crew: item.credits?.crew?.slice(0, 3).map(crew => crew.name).join(', '),
             episodes: parseInt(item.number_of_episodes),
             imageUrl: `https://image.tmdb.org/t/p/w500${item.poster_path}`, // Add image URL here
-
         };
 
         const formData = {
@@ -75,11 +75,17 @@ const TvSearch = () => {
             mediaType: 'Show',
             description: item.overview,
             additionalFields: additionalFields,
-
-
         };
 
         dispatch(setStagingItem(formData));
+    };
+
+    const handleNextPage = () => {
+        setPage(prevPage => prevPage + 1);
+    };
+
+    const handlePreviousPage = () => {
+        setPage(prevPage => Math.max(prevPage - 1, 1));
     };
 
     return (
@@ -119,6 +125,9 @@ const TvSearch = () => {
                 {results.map((result) => (
                     <div key={result.id} className="border p-4 rounded shadow">
                         <h3 className="text-xl font-semibold">{result.name}</h3>
+                        {result.poster_path && (
+                            <img src={`https://image.tmdb.org/t/p/w500${result.poster_path}`} alt={result.name} className="w-32 h-auto mb-2" /> // Display poster art
+                        )}
                         <p className="text-gray-700">{result.overview}</p>
                         <p className="text-gray-700">Number of Episodes: {result.number_of_episodes}</p>
                         <p className="text-gray-500">First Air Date: {result.first_air_date}</p>
@@ -146,6 +155,10 @@ const TvSearch = () => {
                         <button onClick={() => handleAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
                     </div>
                 ))}
+            </div>
+            <div className="flex justify-between mt-4">
+                <button onClick={handlePreviousPage} className="bg-gray-500 text-white p-2 rounded">Previous</button>
+                <button onClick={handleNextPage} className="bg-gray-500 text-white p-2 rounded">Next</button>
             </div>
         </div>
     );
