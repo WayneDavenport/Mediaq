@@ -42,7 +42,7 @@ export const authOptions = {
                     // Fetch media items for the user
                     const mediaItems = await MediaItem.find({ userId: user._id });
 
-                    return { id: user._id, email: user.email, readingSpeed: user.readingSpeed, mediaItems }; // Include reading speed and media items
+                    return { id: user._id, email: user.email, readingSpeed: user.readingSpeed, username: user.username, mediaItems }; // Include reading speed and media items
                 } catch (error) {
                     console.error("Authentication error:", error);
                     return null;
@@ -60,6 +60,7 @@ export const authOptions = {
             if (user) {
                 token.id = user.id; // Include user ID in the token
                 token.email = user.email;
+                token.username = user.username;
                 token.readingSpeed = user.readingSpeed; // Include reading speed in the token
                 /* token.mediaItems = user.mediaItems; */ // Include media items in the token
             }
@@ -67,7 +68,8 @@ export const authOptions = {
             return token;
         },
         session: async ({ session, token }) => {
-            session.user.id = token.id; // Include user ID in the session
+            session.user.id = token.id;
+            session.user.username = token.username; // Include user ID in the session
             session.user.email = token.email;
             session.user.readingSpeed = token.readingSpeed; // Include reading speed in the session
             /* session.user.mediaItems = token.mediaItems; */ // Include media items in the session

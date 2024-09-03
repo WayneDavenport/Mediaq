@@ -1,3 +1,4 @@
+// src/components/MediaItemsList.js
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
@@ -157,13 +158,20 @@ const MediaItemsList = ({ newMediaItem }) => {
         return `${hours}h ${minutes}m`;
     };
 
+    const isEmpty = Object.keys(activeMediaItems).length === 0;
+
     return (
         <div className={styles.mediaItemsList}>
             <div className={styles.header}>
-                <h2>Click to Edit</h2>
+                {isEmpty ? (
+                    <h2>Click the "+" Button to Add Items =&gt; </h2>
+                ) : (
+                    <h2>Click to Edit</h2>
+                )}
                 <div className={styles.search}><Link href="/search">+</Link></div>
             </div>
-            <div className={styles.groupByOptions}>
+
+            {!isEmpty && (<div className={styles.groupByOptions}>
                 <label className="mr-4">
                     <input
                         type="radio"
@@ -194,34 +202,39 @@ const MediaItemsList = ({ newMediaItem }) => {
                     />
                     Queue Order
                 </label>
-            </div>
+            </div>)}
+
             <div className={styles.mediaItemsGrid}>
-                {Object.keys(activeMediaItems).map(group => (
-                    <div key={group} className={styles.mediaItemGroup}>
-                        <h2 className={styles.groupTitle}>{group}</h2>
-                        {activeMediaItems[group].map(item => (
-                            <div
-                                onClick={() => dispatch(setSelectedMediaItem(item))}
-                                key={item._id}
-                                className={styles.mediaItemThumbnail}
-                            >
-                                <div className={styles.titleContainer}>
-                                    <MarqueeTitle title={item.title} />
+                {isEmpty ? (
+                    <p>Manage and update your media items here. Update your progress, lock items, and add notes.</p>
+                ) : (
+                    Object.keys(activeMediaItems).map(group => (
+                        <div key={group} className={styles.mediaItemGroup}>
+                            <h2 className={styles.groupTitle}>{group}</h2>
+                            {activeMediaItems[group].map(item => (
+                                <div
+                                    onClick={() => dispatch(setSelectedMediaItem(item))}
+                                    key={item._id}
+                                    className={styles.mediaItemThumbnail}
+                                >
+                                    <div className={styles.titleContainer}>
+                                        <MarqueeTitle title={item.title} />
+                                    </div>
+                                    <p className={styles.duration}>{formatDuration(item.duration)}</p>
+                                    {lockedItems[item._id] && (
+                                        <p className={styles.lockedBehind}>Locked Behind: {getKeyParentTitle(lockedItems[item._id].keyParent)}</p>
+                                    )}
+                                    <div className={styles.progressBar}>
+                                        <div
+                                            className={`${styles.progressFill} ${lockedItems[item._id] ? styles.lockedProgressFill : styles.unlockedProgressFill}`}
+                                            style={{ width: `${getProgressWidth(item)}%` }}
+                                        ></div>
+                                    </div>
                                 </div>
-                                <p className={styles.duration}>{formatDuration(item.duration)}</p>
-                                {lockedItems[item._id] && (
-                                    <p className={styles.lockedBehind}>Locked Behind: {getKeyParentTitle(lockedItems[item._id].keyParent)}</p>
-                                )}
-                                <div className={styles.progressBar}>
-                                    <div
-                                        className={`${styles.progressFill} ${lockedItems[item._id] ? styles.lockedProgressFill : styles.unlockedProgressFill}`}
-                                        style={{ width: `${getProgressWidth(item)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ))}
+                            ))}
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );

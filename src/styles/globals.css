@@ -59,7 +59,8 @@ h1 {
 
 .navbar-brand a {
     color: #fff;
-    font-size: 1.5rem;
+    font-size: 2rem;
+    font-family: 'Special Elite', sans-serif;
     text-decoration: none;
 }
 

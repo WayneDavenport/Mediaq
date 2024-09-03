@@ -1,22 +1,19 @@
 // src/pages/user-main.js
-import Link from "next/link";
+import { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import { clearSelectedMediaItem } from '@/store/slices/selectedMediaItemSlice';
 import { fetchBackgroundArt } from '@/utils/formUtils';
-
 import SignOutButton from "@/components/SignOutButton";
 import MediaItemsList from "@/components/MediaItemsList";
 import UpdateForm from "@/components/UpdateForm";
-import MediaStats from "@/components/MediaStats";
 import MediaQueueStats from '@/components/MediaQueueStats';
 import styles from './user-main.module.css';
 
 export default function Home() {
     const { data: session } = useSession();
     const [backgroundImage, setBackgroundImage] = useState('');
-    const [optimisticMediaItem, setOptimisticMediaItem] = useState(null);
+    const [isMobile, setIsMobile] = useState(false);
     const editingItem = useSelector((state) => state.selectedMediaItem);
     const dispatch = useDispatch();
 
@@ -37,25 +34,46 @@ export default function Home() {
         fetchBackgroundImage();
     }, [editingItem]);
 
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 1024);
+        };
+
+        handleResize(); // Check on initial load
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     return (
         <div className={`container mx-auto p-4 text-white ${styles.backgroundImage}`} style={{ backgroundImage: `url(${backgroundImage})` }}>
             <div>
-                <h1 className={styles.title}>Dashboard</h1>
+                <h1 className={styles.title}>{session?.user?.username}&apos;s Dashboard</h1>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className={styles.gridContainer}>
                 <div className="flex flex-col gap-8">
-                    <MediaItemsList newMediaItem={optimisticMediaItem} />
+                    <MediaItemsList />
                     <MediaQueueStats />
                 </div>
                 <div>
                     {editingItem && (
-                        <UpdateForm onCancel={handleCancel} />
+                        isMobile ? (
+                            <div className={styles.updateFormModal}>
+                                <div className={styles.updateFormContainer}>
+                                    <UpdateForm onCancel={handleCancel} />
+                                </div>
+                            </div>
+                        ) : (
+                            <UpdateForm onCancel={handleCancel} />
+                        )
                     )}
                 </div>
-                {session && (
-                    <div><SignOutButton /></div>
-                )}
             </div>
+            {session && (
+                <div><SignOutButton /></div>
+            )}
         </div>
     );
 }

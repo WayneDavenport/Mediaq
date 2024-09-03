@@ -1,10 +1,12 @@
 // src/components/SignUpForm.js
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import styles from './SignUpForm.module.css'; // Import the CSS module
 
 const SignUpForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [username, setUsername] = useState(''); // New state for username
     const [readingSpeed, setReadingSpeed] = useState(20); // Default value for reading speed
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
@@ -15,8 +17,15 @@ const SignUpForm = () => {
         setError(null);
         setSuccess(null);
 
-        if (!email || !password) {
-            setError('Email and password are required.');
+        if (!email || !password || !username) {
+            setError('Email, username, and password are required.');
+            return;
+        }
+
+        // Basic validation for username
+        const usernameRegex = /^[a-zA-Z0-9_]{3,15}$/;
+        if (!usernameRegex.test(username)) {
+            setError('Username must be 3-15 characters long and can only contain letters, numbers, and underscores.');
             return;
         }
 
@@ -26,7 +35,7 @@ const SignUpForm = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password, readingSpeed }),
+                body: JSON.stringify({ email, password, username, readingSpeed }),
             });
 
             const data = await response.json();
@@ -38,6 +47,7 @@ const SignUpForm = () => {
             setSuccess('User created successfully!');
             setEmail('');
             setPassword('');
+            setUsername(''); // Reset username
             setReadingSpeed(20); // Reset to default value
             router.push('/');
         } catch (error) {
@@ -46,13 +56,12 @@ const SignUpForm = () => {
     };
 
     return (
-        <div className='text-white'>
+        <div className={styles.card}>
             <h1>Sign Up</h1>
             <form onSubmit={handleSubmit}>
-                <div>
+                <div className={styles.formGroup}>
                     <label htmlFor="email">Email:</label>
                     <input
-                        className='text-black'
                         type="email"
                         id="email"
                         value={email}
@@ -60,10 +69,19 @@ const SignUpForm = () => {
                         required
                     />
                 </div>
-                <div>
+                <div className={styles.formGroup}>
+                    <label htmlFor="username">Username:</label>
+                    <input
+                        type="text"
+                        id="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                    />
+                </div>
+                <div className={styles.formGroup}>
                     <label htmlFor="password">Password:</label>
                     <input
-                        className='text-black'
                         type="password"
                         id="password"
                         value={password}
@@ -71,7 +89,7 @@ const SignUpForm = () => {
                         required
                     />
                 </div>
-                <div>
+                <div className={styles.rangeGroup}>
                     <label htmlFor="readingSpeed">Reading Speed (pages per 30 min):</label>
                     <input
                         type="range"
@@ -83,10 +101,10 @@ const SignUpForm = () => {
                     />
                     <span>{readingSpeed} pages/30 min</span>
                 </div>
-                <button type="submit">Sign Up</button>
+                <button type="submit" className={styles.button}>Sign Up</button>
             </form>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            {success && <p style={{ color: 'green' }}>{success}</p>}
+            {error && <p className={`${styles.message} ${styles.error}`}>{error}</p>}
+            {success && <p className={`${styles.message} ${styles.success}`}>{success}</p>}
         </div>
     );
 };

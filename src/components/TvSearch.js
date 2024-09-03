@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setSearchResults, setStagingItem } from '@/store/slices/searchSlice';
+import styles from './search.module.css';
 
 const TvSearch = () => {
     const [searchParams, setSearchParams] = useState({
@@ -89,9 +90,9 @@ const TvSearch = () => {
     };
 
     return (
-        <div className="p-4">
-            <h1 className="text-2xl font-bold mb-4">Search TV Shows</h1>
-            <form onSubmit={handleSubmit} className="mb-4">
+        <div className={styles.container}>
+            <h1 className={styles.heading}>Search TV Shows</h1>
+            <form onSubmit={handleSubmit} className={styles.form}>
                 <input
                     type="text"
                     name="query"
@@ -99,7 +100,7 @@ const TvSearch = () => {
                     value={searchParams.query}
                     onChange={handleInputChange}
                     required
-                    className="border p-2 mb-2 w-full"
+                    className={styles.input}
                 />
                 <input
                     type="text"
@@ -107,43 +108,43 @@ const TvSearch = () => {
                     placeholder="Language"
                     value={searchParams.language}
                     onChange={handleInputChange}
-                    className="border p-2 mb-2 w-full"
+                    className={styles.input}
                 />
-                <label className="flex items-center mb-2">
+                <label className={styles.checkboxLabel}>
                     <input
                         type="checkbox"
                         name="include_adult"
                         checked={searchParams.include_adult}
                         onChange={handleInputChange}
-                        className="mr-2"
+                        className={styles.checkbox}
                     />
                     Include Adult Content
                 </label>
-                <button type="submit" className="bg-blue-500 text-white p-2 rounded">Search</button>
+                <button type="submit" className={styles.button}>Search</button>
             </form>
-            <div className="space-y-4">
+            <div className={styles.resultsContainer}>
                 {results.map((result) => (
-                    <div key={result.id} className="border p-4 rounded shadow">
-                        <h3 className="text-xl font-semibold">{result.name}</h3>
+                    <div key={result.id} className={styles.resultItem}>
+                        <h3 className={styles.resultTitle}>{result.name}</h3>
                         {result.poster_path && (
-                            <img src={`https://image.tmdb.org/t/p/w500${result.poster_path}`} alt={result.name} className="w-32 h-auto mb-2" /> // Display poster art
+                            <img src={`https://image.tmdb.org/t/p/w500${result.poster_path}`} alt={result.name} className={styles.resultImage} />
                         )}
-                        <p className="text-gray-700">{result.overview}</p>
-                        <p className="text-gray-700">Number of Episodes: {result.number_of_episodes}</p>
-                        <p className="text-gray-500">First Air Date: {result.first_air_date}</p>
-                        <p className="text-gray-500">Language: {result.original_language}</p>
-                        <p className="text-gray-500">Vote Average: {result.vote_average}</p>
-                        <p className="text-gray-500">Vote Count: {result.vote_count}</p>
+                        <p className={styles.resultOverview}>{result.overview}</p>
+                        <p className={styles.resultInfo}>Number of Episodes: {result.number_of_episodes}</p>
+                        <p className={styles.resultInfo}>First Air Date: {result.first_air_date}</p>
+                        <p className={styles.resultInfo}>Language: {result.original_language}</p>
+                        <p className={styles.resultInfo}>Vote Average: {result.vote_average}</p>
+                        <p className={styles.resultInfo}>Vote Count: {result.vote_count}</p>
                         {result.credits && (
-                            <div className="mt-4">
-                                <h4 className="font-semibold">Cast:</h4>
-                                <ul className="list-disc list-inside">
+                            <div className={styles.resultCredits}>
+                                <h4 className={styles.resultCreditsTitle}>Cast:</h4>
+                                <ul className={styles.resultCreditsList}>
                                     {result.credits.cast.slice(0, 3).map((castMember) => (
                                         <li key={castMember.cast_id}>{castMember.name} as {castMember.character}</li>
                                     ))}
                                 </ul>
-                                <h4 className="font-semibold mt-2">Crew:</h4>
-                                <ul className="list-disc list-inside">
+                                <h4 className={styles.resultCreditsTitle}>Crew:</h4>
+                                <ul className={styles.resultCreditsList}>
                                     {result.credits.crew
                                         .filter((crewMember) => crewMember.job === 'Director' || crewMember.job === 'Producer')
                                         .map((crewMember) => (
@@ -152,13 +153,13 @@ const TvSearch = () => {
                                 </ul>
                             </div>
                         )}
-                        <button onClick={() => handleAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
+                        <button onClick={() => handleAdd(result)} className={styles.addButton}>Add</button>
                     </div>
                 ))}
             </div>
-            <div className="flex justify-between mt-4">
-                <button onClick={handlePreviousPage} className="bg-gray-500 text-white p-2 rounded">Previous</button>
-                <button onClick={handleNextPage} className="bg-gray-500 text-white p-2 rounded">Next</button>
+            <div className={styles.pagination}>
+                <button onClick={handlePreviousPage} className={styles.paginationButton}>Previous</button>
+                <button onClick={handleNextPage} className={styles.paginationButton}>Next</button>
             </div>
         </div>
     );

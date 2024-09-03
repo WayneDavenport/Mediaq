@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setSearchResults, setStagingItem } from '@/store/slices/searchSlice';
 import { useSession } from 'next-auth/react';
+import styles from './search.module.css';
 
 const BookSearch = () => {
     const [searchParams, setSearchParams] = useState({
@@ -68,16 +69,17 @@ const BookSearch = () => {
     };
 
     return (
-        <div className="p-4">
-            <h1 className="text-2xl font-bold mb-4">Search Books</h1>
-            <form onSubmit={handleSubmit} className="mb-4">
+        <div className={styles.container}>
+            <h1 className={styles.heading}>Search Books</h1>
+            <form onSubmit={handleSubmit} className={styles.form}>
                 <input
                     type="text"
                     name="query"
                     placeholder="Title"
                     value={searchParams.query}
                     onChange={handleInputChange}
-                    className="border p-2 mb-2 w-full text-white-700 bg-[#222227]"
+                    required
+                    className={styles.input}
                 />
                 <input
                     type="text"
@@ -85,22 +87,22 @@ const BookSearch = () => {
                     placeholder="Author"
                     value={searchParams.author}
                     onChange={handleInputChange}
-                    className="border p-2 mb-2 w-full text-white-700 bg-[#222227]"
+                    className={styles.input}
                 />
-                <button type="submit" className="bg-blue-500 text-white p-2 rounded">Search</button>
+                <button type="submit" className={styles.button}>Search</button>
             </form>
-            <div className="space-y-4">
+            <div className={styles.resultsContainer}>
                 {results.map((result, index) => (
-                    <div key={index} className="border p-4 rounded shadow">
-                        <h3 className="text-xl font-semibold">{result.title}</h3>
+                    <div key={index} className={styles.resultItem}>
+                        <h3 className={styles.resultTitle}>{result.title}</h3>
                         {result.coverUrl && (
-                            <img src={result.coverUrl} alt={result.title} className="w-32 h-auto mb-2" /> // Display book cover art
+                            <img src={result.coverUrl} alt={result.title} className={styles.resultImage} />
                         )}
-                        <p className="text-gray-700">{result.description}</p>
-                        <p className="text-gray-500">Authors: {result.authors?.join(', ')}</p>
-                        <p className="text-gray-500">Publisher: {result.publisher}</p>
-                        <p className="text-gray-500">Page Count: {parseInt(result.pageCount)}</p>
-                        <button onClick={() => handleAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
+                        <p className={styles.resultOverview}>{result.description}</p>
+                        <p className={styles.resultInfo}>Authors: {result.authors?.join(', ')}</p>
+                        <p className={styles.resultInfo}>Publisher: {result.publisher}</p>
+                        <p className={styles.resultInfo}>Page Count: {parseInt(result.pageCount)}</p>
+                        <button onClick={() => handleAdd(result)} className={styles.addButton}>Add</button>
                     </div>
                 ))}
             </div>

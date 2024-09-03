@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setSearchResults, setStagingItem } from '@/store/slices/searchSlice';
+import styles from './search.module.css';
 
 const VideoGameSearch = () => {
     const [searchParams, setSearchParams] = useState({
@@ -52,30 +53,31 @@ const VideoGameSearch = () => {
     };
 
     return (
-        <div className="p-4">
-            <h1 className="text-2xl font-bold mb-4">Search Video Games</h1>
-            <form onSubmit={handleSubmit} className="mb-4">
+        <div className={styles.container}>
+            <h1 className={styles.heading}>Search Video Games</h1>
+            <form onSubmit={handleSubmit} className={styles.form}>
                 <input
                     type="text"
                     name="query"
                     placeholder="Title"
                     value={searchParams.query}
                     onChange={handleInputChange}
-                    className="border p-2 mb-2 w-full"
+                    required
+                    className={styles.input}
                 />
-                <button type="submit" className="bg-blue-500 text-white p-2 rounded">Search</button>
+                <button type="submit" className={styles.button}>Search</button>
             </form>
-            <div className="space-y-4">
+            <div className={styles.resultsContainer}>
                 {results.map((result, index) => (
-                    <div key={index} className="border p-4 rounded shadow">
-                        <h3 className="text-xl font-semibold">{result.name}</h3>
+                    <div key={index} className={styles.resultItem}>
+                        <h3 className={styles.resultTitle}>{result.name}</h3>
                         {result.background_image && (
-                            <img src={result.background_image} alt={result.name} className="w-32 h-auto mb-2" /> // Display cover art
+                            <img src={result.background_image} alt={result.name} className={styles.resultImage} />
                         )}
-                        <p className="text-gray-500">Description: {result.description_raw}</p>
-                        <p className="text-gray-500">Publisher: {result.publishers?.map(publisher => publisher.name).join(', ')}</p>
-                        <p className="text-gray-500">Developer: {result.developers?.map(developer => developer.name).join(', ')}</p>
-                        <button onClick={() => handleAdd(result)} className="bg-green-500 text-white p-2 rounded mt-2">Add</button>
+                        <p className={styles.resultOverview}>Description: {result.description_raw}</p>
+                        <p className={styles.resultInfo}>Publisher: {result.publishers?.map(publisher => publisher.name).join(', ')}</p>
+                        <p className={styles.resultInfo}>Developer: {result.developers?.map(developer => developer.name).join(', ')}</p>
+                        <button onClick={() => handleAdd(result)} className={styles.addButton}>Add</button>
                     </div>
                 ))}
             </div>

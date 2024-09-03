@@ -8,11 +8,19 @@ export default async function handler(req, res) {
         return res.status(405).json({ message: 'Method not allowed' });
     }
 
-    const { email, password, readingSpeed } = req.body;
+    const { email, password, username, readingSpeed } = req.body;
 
-    if (!email || !email.includes('@') || !password || password.trim().length < 7) {
+    if (!email || !email.includes('@') || !password || password.trim().length < 7 || !username) {
         return res.status(422).json({
-            message: 'Invalid input - password should also be at least 7 characters long.'
+            message: 'Invalid input - password should be at least 7 characters long, and username is required.',
+        });
+    }
+
+    // Basic validation for username
+    const usernameRegex = /^[a-zA-Z0-9_]{3,15}$/;
+    if (!usernameRegex.test(username)) {
+        return res.status(422).json({
+            message: 'Invalid username - must be 3-15 characters long and can only contain letters, numbers, and underscores.',
         });
     }
 
@@ -28,6 +36,7 @@ export default async function handler(req, res) {
         const newUser = new User({
             email: email,
             password: hashedPassword,
+            username: username, // Add username to the new user
             readingSpeed: readingSpeed || 20, // Default to 20 if not provided
         });
 

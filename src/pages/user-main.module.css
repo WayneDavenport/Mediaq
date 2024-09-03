@@ -1,21 +1,81 @@
 /* src/pages/user-main.module.css */
+
 .backgroundImage {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    min-height: 100vh;
+    /* Ensure the background covers the full height */
 }
 
 .title {
-    font-size: 4.4rem;
+    font-size: 2.4rem;
+    /* Smaller font size for mobile */
     text-shadow: 2px 4px #000000;
     font-weight: bold;
-    margin-bottom: 2.4rem;
+    margin-bottom: 1.2rem;
+    text-align: center;
+    /* Center the title on mobile */
 }
 
-.search {
-    background-color: #803af1;
-    width: 4rem;
-    height: 4rem;
-    border-radius: 50%;
-    box-shadow: 4px 3px 2px 1px rgba(0, 0, 0, 0.42);
+@media (min-width: 768px) {
+    .title {
+        font-size: 4.4rem;
+        /* Larger font size for desktop */
+        margin-bottom: 2.4rem;
+    }
+}
+
+.gridContainer {
+    display: grid;
+    grid-template-columns: 1fr;
+    /* Default to 1 column */
+    gap: 8px;
+}
+
+@media (min-width: 1024px) {
+    .gridContainer {
+        grid-template-columns: 1fr 1fr;
+        /* 2 columns on larger screens */
+        gap: 8px;
+    }
+}
+
+.updateFormModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.updateFormContainer {
+    background-color: #1A1A1B;
+    padding: 2rem;
+    border-radius: 1rem;
+    width: 90%;
+    max-width: 500px;
+}
+
+@media (min-width: 1024px) {
+    .updateFormModal {
+        position: static;
+        background-color: transparent;
+        display: block;
+        width: auto;
+        height: auto;
+    }
+
+    .updateFormContainer {
+        background-color: transparent;
+        padding: 0;
+        border-radius: 0;
+        width: auto;
+        max-width: none;
+    }
 }

@@ -9,17 +9,30 @@ import Modal from '../components/Modal';
 import axios from "axios";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { useSession } from 'next-auth/react';
 
-export default function App({ Component, pageProps }) {
-
-
+function MyApp({ Component, pageProps }) {
   return (
     <Provider store={store}>
       <SessionProvider session={pageProps.session}>
-        <Navbar />
-        <Component {...pageProps} />
-        <Modal />
+        <Layout>
+          <Component {...pageProps} />
+          <Modal />
+        </Layout>
       </SessionProvider>
     </Provider>
   );
 }
+
+function Layout({ children }) {
+  const { status } = useSession();
+
+  return (
+    <>
+      {status === "authenticated" && <Navbar />}
+      {children}
+    </>
+  );
+}
+
+export default MyApp;

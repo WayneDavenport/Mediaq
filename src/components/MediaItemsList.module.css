@@ -55,12 +55,15 @@
     margin-bottom: 1rem;
 }
 
+/* src/components/MediaItemsList.module.css */
+
 .mediaItemsGrid {
     max-height: 42rem;
     overflow-y: auto;
     border-radius: 1rem;
     display: grid;
     grid-template-columns: repeat(1, minmax(0, 1fr));
+    /* Default to 1 column */
     padding: 1rem;
     gap: 2rem;
 }
@@ -68,6 +71,7 @@
 @media (min-width: 768px) {
     .mediaItemsGrid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        /* 2 columns on tablets and up */
     }
 }
 

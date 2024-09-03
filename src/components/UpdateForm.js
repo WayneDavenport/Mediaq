@@ -15,6 +15,7 @@ const UpdateForm = ({ onCancel }) => {
     const session = useSelector((state) => state.session);
     const readingSpeed = session?.user?.readingSpeed || 20; // pages per 30 minutes
 
+
     const {
         formData,
         mediaTypes,
@@ -35,6 +36,12 @@ const UpdateForm = ({ onCancel }) => {
     const [goalPages, setGoalPages] = useState(0);
     const [goalEpisodes, setGoalEpisodes] = useState(0);
     const [isEditing, setIsEditing] = useState(false);
+
+    const truncateDescription = (description) => {
+        const maxLength = 100;
+        return description.length > maxLength ?
+            `${description.substring(0, maxLength)}...` : description;
+    };
 
     const handleLockChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -357,7 +364,7 @@ const UpdateForm = ({ onCancel }) => {
                         <p className={styles.textMedium}>{formData.category}</p>
                     </div>
                 </div>
-                <p className={styles.marginTop}>{formData.description}</p>
+                <p className={styles.description}>{formData.description}</p>
                 <button onClick={() => setIsEditing(true)} className={styles.textBlue}>Edit</button>
 
             </div>
@@ -520,7 +527,6 @@ const UpdateForm = ({ onCancel }) => {
                     )}
                     <button type="button" onClick={moveToTop} className={`${styles.button} ${styles.buttonMove}`}>Move to Top</button>
                     <button type="button" onClick={moveToBottom} className={`${styles.button} ${styles.buttonMove}`}>Move to Bottom</button>
-
                 </div>
             </form>
         </div>

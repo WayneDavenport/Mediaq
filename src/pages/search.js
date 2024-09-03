@@ -93,7 +93,7 @@ const Search = () => {
                     {mediaType === 'book' && <BookSearch />}
                     {mediaType === 'videoGame' && <VideoGameSearch />}
                 </div>
-                {stagingItem && (
+                {!stagingItem ? (<div className="text-white text-2xl h-8 align-middle justify-center"><p>Search here for any books, movies, shows, or video games to add to your media queue!</p></div>) : (
                     <div>
                         <Staging onSubmit={handleSubmit} />
                     </div>
