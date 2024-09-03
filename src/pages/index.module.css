@@ -13,33 +13,11 @@
     margin-left: 8%;
 }
 
-@media (min-width: 768px) {
-    .container {
-        width: 98%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
 
-    .grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-
-    }
-
-    .content {
-        align-self: center;
-
-
-        margin-top: 2.5rem;
-        margin-bottom: 2rem;
-    }
-}
 
 .artPlaceholder {
     position: relative;
-    display: none;
+    display: flex;
     justify-content: center;
     align-self: center;
     width: 100%;
@@ -47,6 +25,7 @@
     border-radius: 0.5rem;
     overflow: hidden;
 }
+
 
 .content {
     display: flex;
@@ -95,4 +74,48 @@
 .signUpButton,
 .dashboardButton {
     background-color: #10B981;
+}
+
+
+@media (min-width: 768px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+
+    }
+}
+
+@media (max-width: 768px) {
+    .artPlaceholder {
+        display: none;
+    }
+
+    .container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        margin-left: 0%;
+
+    }
+
+    .heading {
+        font-size: 6rem;
+        font-weight: bold;
+        color: whitesmoke;
+        margin-top: 2rem;
+
+    }
+
+    .description {
+        font-size: 1rem;
+
+    }
+
+    .actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        gap: 2rem;
+    }
 }
