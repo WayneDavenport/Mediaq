@@ -54,7 +54,7 @@ export default function Home() {
             </div>
             <div className={styles.gridContainer}>
                 <div className="flex flex-col gap-8">
-                    <MediaItemsList />
+                    {(!editingItem || !isMobile) && <MediaItemsList />}
                     <MediaQueueStats />
                 </div>
                 <div>

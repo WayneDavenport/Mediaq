@@ -57,14 +57,22 @@
 .actions {
     display: flex;
     gap: 2rem;
+    color: whitesmoke;
 }
 
+.cancel,
 .signInButton,
 .signUpButton,
 .dashboardButton {
     padding: 0.5rem 1rem;
     color: #FFFFFF;
     border-radius: 0.25rem;
+}
+
+.cancel {
+    background-color: rgb(255, 136, 0);
+
+
 }
 
 .signInButton {
@@ -115,7 +123,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-
         gap: 2rem;
     }
 }

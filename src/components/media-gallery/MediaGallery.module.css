@@ -119,3 +119,45 @@
     /* Tailwind's rounded-lg */
     cursor: pointer;
 }
+
+@media (max-width: 768px) {
+
+    .expandedMediaView {
+        position: relative;
+        width: 100%;
+        max-height: 100%;
+        display: flex;
+        flex-direction: column;
+        border-radius: 10px;
+        align-items: center;
+        /* justify-content: center; */
+        background-color: rgba(0, 0, 0, 0.8);
+        padding: 2rem;
+    }
+
+    .details h2 {
+        margin-bottom: 2rem;
+
+    }
+
+    .expandedImage {
+        width: 2rem;
+        /* Same as thumbnail width */
+        height: 3rem;
+        /* Same as thumbnail height */
+        object-fit: cover;
+        border-radius: 0.5rem;
+        /* Tailwind's rounded-lg */
+        margin-bottom: 1rem;
+        /* Tailwind's mb-4 */
+    }
+
+    .description {
+        position: relative;
+        display: flex;
+        max-height: 12rem;
+        overflow-y: auto;
+        margin-bottom: 2rem;
+    }
+
+}

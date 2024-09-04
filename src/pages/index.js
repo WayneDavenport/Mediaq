@@ -27,6 +27,10 @@ export default function Home() {
           {showSignInForm ? (
             <div className="formBox">
               <SignInForm />
+              <button
+                onClick={() => setShowSignInForm(false)}
+                className={styles.cancel}
+              >Cancel</button>
             </div>
           ) : (
             <>

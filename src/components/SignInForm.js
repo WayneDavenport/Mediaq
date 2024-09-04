@@ -23,7 +23,7 @@ function SignInForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 mb-4">
             <div>
                 <label htmlFor="email" className="block text-gray-700">Email:</label>
                 <input

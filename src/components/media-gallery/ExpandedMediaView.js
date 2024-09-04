@@ -35,7 +35,7 @@ const ExpandedMediaView = ({ item, onClose }) => {
                     <img src={mediaItem.imageUrl} alt={mediaItem.title} className={styles.expandedImage} />
                     <div className={styles.details}>
                         <h2>{mediaItem.title}</h2>
-                        <p>{mediaItem.description}</p>
+                        <p className={styles.description}>{mediaItem.description}</p>
                         {/* Add more details as needed */}
                     </div>
                     <CommentList mediaItemId={mediaItem._id} />
