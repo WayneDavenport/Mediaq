@@ -55,7 +55,7 @@
     background-color: #f59e0b;
 }
 
-.flex {
+.buttons {
     display: flex;
     gap: 0.5rem;
     /* Reduce gap between buttons */
@@ -97,6 +97,7 @@
 @media (max-width: 768px) {
     .container {
         padding: 0.5rem;
+        overflow-y: auto;
         /* Reduce padding on mobile */
     }
 

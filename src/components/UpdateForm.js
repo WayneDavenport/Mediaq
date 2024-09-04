@@ -518,7 +518,7 @@ const UpdateForm = ({ onCancel }) => {
                         )}
                     </>
                 )}
-                <div className={styles.flex}>
+                <div className={styles.buttons}>
                     <button type="submit" className={styles.button}>Update</button>
                     <button type="button" onClick={onCancel} className={`${styles.button} ${styles.buttonCancel}`}>Cancel</button>
                     <button type="button" onClick={() => handleDelete(formData.id)} className={`${styles.button} ${styles.buttonDelete}`}>Delete</button>
