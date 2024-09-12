@@ -1,84 +1,49 @@
 /* src/pages/user-main.module.css */
 
+/* Background image styles */
 .backgroundImage {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     min-height: 100vh;
-    /* Ensure the background covers the full height */
 }
 
+/* Title styles */
 .title {
     font-size: 2.4rem;
-    /* Smaller font size for mobile */
     text-shadow: 2px 4px #000000;
     font-weight: bold;
     margin-bottom: 1.2rem;
     text-align: center;
-    /* Center the title on mobile */
 }
 
-@media (min-width: 768px) {
-    .title {
-        font-size: 4.4rem;
-        /* Larger font size for desktop */
-        margin-bottom: 2.4rem;
-    }
-}
-
+/* Grid container for layout */
 .gridContainer {
     display: grid;
     grid-template-columns: 1fr;
-    /* Default to 1 column */
     gap: 8px;
 }
 
+/* Form and Stats container (default for mobile) */
+.formAndStatsContainer {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+/* Media query for larger screens (tablets and desktops) */
 @media (min-width: 1024px) {
+    .title {
+        font-size: 4.4rem;
+        margin-bottom: 2.4rem;
+    }
+
     .gridContainer {
         grid-template-columns: 1fr 1fr;
-        /* 2 columns on larger screens */
         gap: 8px;
     }
-}
 
-.updateFormModal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.updateFormContainer {
-    background-color: #1a1a1b00;
-    padding: 2rem;
-    border-radius: 1rem;
-    width: 96%;
-    max-width: 500px;
-    max-height: 98%;
-    overflow-y: auto;
-}
-
-@media (min-width: 1024px) {
-    .updateFormModal {
-        position: static;
-        background-color: transparent;
-        display: block;
-        width: auto;
-        height: auto;
-    }
-
-    .updateFormContainer {
-        background-color: transparent;
-        padding: 0;
-        border-radius: 0;
-        width: auto;
-        max-width: none;
+    .formAndStatsContainer {
+        grid-template-columns: 1fr 1fr;
     }
 }

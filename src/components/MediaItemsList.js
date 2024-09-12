@@ -166,7 +166,7 @@ const MediaItemsList = ({ newMediaItem }) => {
                 {isEmpty ? (
                     <h2>Click the &quot;+&quot; Button to Add Items =&gt; </h2>
                 ) : (
-                    <h2>Click to Edit</h2>
+                    <h2>Media Items</h2>
                 )}
                 <div className={styles.search}><Link href="/search">+</Link></div>
             </div>

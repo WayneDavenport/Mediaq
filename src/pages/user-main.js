@@ -10,6 +10,7 @@ import UpdateForm from "@/components/UpdateForm";
 import MediaQueueStats from '@/components/MediaQueueStats';
 import styles from './user-main.module.css';
 
+// src/pages/user-main.js
 export default function Home() {
     const { data: session } = useSession();
     const [backgroundImage, setBackgroundImage] = useState('');
@@ -54,22 +55,15 @@ export default function Home() {
             </div>
             <div className={styles.gridContainer}>
                 <div className="flex flex-col gap-8">
+                    {/* Hide MediaItemsList on mobile when editingItem is selected */}
                     {(!editingItem || !isMobile) && <MediaItemsList />}
-                    <MediaQueueStats />
+
                 </div>
                 <div>
-                    {editingItem && (
-                        isMobile ? (
-                            <div className={styles.updateFormModal}>
-                                <div className={styles.updateFormContainer}>
-                                    <UpdateForm onCancel={handleCancel} />
-                                </div>
-                            </div>
-                        ) : (
-                            <UpdateForm onCancel={handleCancel} />
-                        )
-                    )}
+                    {editingItem && <UpdateForm onCancel={handleCancel} />}
+
                 </div>
+                <MediaQueueStats />
             </div>
             {session && (
                 <div><SignOutButton /></div>

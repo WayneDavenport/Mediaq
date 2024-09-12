@@ -11,6 +11,7 @@ const BookSearch = () => {
         author: '',
     });
     const [results, setResults] = useState([]);
+    const [error, setError] = useState(''); // State to store error message
     const dispatch = useDispatch();
     const { data: session } = useSession();
 
@@ -20,10 +21,18 @@ const BookSearch = () => {
             ...searchParams,
             [name]: value,
         });
+        setError(''); // Clear error when user starts typing
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Validation: Ensure either 'query' (title) or 'author' is filled
+        if (!searchParams.query && !searchParams.author) {
+            setError('Please enter either a title or an author.');
+            return; // Prevent form submission
+        }
+
         try {
             // Fetch data from Google Books API
             const response = await fetch(`/api/googleBooks?query=${searchParams.query}&author=${searchParams.author}`);
@@ -78,7 +87,6 @@ const BookSearch = () => {
                     placeholder="Title"
                     value={searchParams.query}
                     onChange={handleInputChange}
-                    required
                     className={styles.input}
                 />
                 <input
@@ -89,6 +97,7 @@ const BookSearch = () => {
                     onChange={handleInputChange}
                     className={styles.input}
                 />
+                {error && <p className={styles.error}>{error}</p>} {/* Display error message */}
                 <button type="submit" className={styles.button}>Search</button>
             </form>
             <div className={styles.resultsContainer}>
