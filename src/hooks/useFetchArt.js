@@ -1,23 +1,14 @@
-// src/hooks/useFetchArt.js
-import { useState, useEffect, useCallback } from 'react';
-import { fetchBackgroundArt } from '@/utils/formUtils';
+import { useState, useEffect } from 'react';
 
-const useFetchArt = (mediaType, title, additionalFields) => {
+const useFetchArt = (posterPath, backdropPath) => {
     const [backgroundArt, setBackgroundArt] = useState('');
     const [backdropArt, setBackdropArt] = useState('');
 
-    const fetchArt = useCallback(async () => {
-        const { posterPath, backdropPath } = await fetchBackgroundArt(mediaType, title, {
-            gameId: additionalFields.gameId,
-            isbn: additionalFields.isbn
-        });
+    useEffect(() => {
+        // Set the art paths directly from the provided paths
         setBackgroundArt(posterPath);
         setBackdropArt(backdropPath);
-    }, [mediaType, title, additionalFields.gameId, additionalFields.isbn]);
-
-    useEffect(() => {
-        fetchArt();
-    }, [fetchArt]);
+    }, [posterPath, backdropPath]);
 
     return { backgroundArt, backdropArt };
 };

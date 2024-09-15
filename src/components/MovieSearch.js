@@ -42,7 +42,6 @@ const MovieSearch = () => {
         const additionalFields = {
             cast: item.credits?.cast?.slice(0, 3).map(cast => cast.name).join(', '),
             director: item.credits?.crew?.find(crew => crew.job === 'Director')?.name,
-            imageUrl: `https://image.tmdb.org/t/p/w500${item.poster_path}`, // Add image URL here
         };
 
         const formData = {
@@ -51,6 +50,8 @@ const MovieSearch = () => {
             category: '', // Default category or let the user choose later
             mediaType: 'Movie',
             description: item.overview,
+            posterPath: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : '',
+            backdropPath: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : '',
             additionalFields: additionalFields,
         };
 

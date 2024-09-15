@@ -11,8 +11,8 @@ export default async function handler(req, res) {
 
     await requireAuth(req, res, async () => {
         const { title, duration, category, mediaType,
-            description, additionalFields, percentComplete,
-            completedDuration, complete, lockedItemName, locked, keyParent,
+            description, additionalFields, percentComplete, posterPath,
+            backdropPath, completedDuration, complete, lockedItemName, locked, keyParent,
             goalTime, goalPages, goalEpisodes } = req.body;
 
         if (!title || !duration || !category || !mediaType) {
@@ -36,6 +36,8 @@ export default async function handler(req, res) {
                 category,
                 mediaType,
                 description,
+                posterPath,
+                backdropPath,
                 additionalFields,
                 percentComplete,
                 completedDuration,

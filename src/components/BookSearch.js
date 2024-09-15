@@ -71,6 +71,7 @@ const BookSearch = () => {
             category: '', // Default category or let the user choose later
             mediaType: 'Book',
             description: item.description,
+            posterPath: item.coverUrl,
             additionalFields: additionalFields,
         };
 

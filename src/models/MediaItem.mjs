@@ -10,8 +10,8 @@ const mediaItemSchema = new mongoose.Schema({
     category: { type: String, required: true },
     mediaType: { type: String, required: true },//
     description: { type: String },
-    coverArt: { type: String },
-    imageUrl: { type: String },
+    posterPath: { type: String },
+    backdropPath: { type: String },
     additionalFields: { type: Map, of: mongoose.Schema.Types.Mixed },
     userEmail: { type: String, required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },

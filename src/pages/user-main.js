@@ -8,6 +8,7 @@ import SignOutButton from "@/components/SignOutButton";
 import MediaItemsList from "@/components/MediaItemsList";
 import UpdateForm from "@/components/UpdateForm";
 import MediaQueueStats from '@/components/MediaQueueStats';
+import useFetchArt from '@/hooks/useFetchArt';
 import styles from './user-main.module.css';
 
 // src/pages/user-main.js
@@ -23,16 +24,11 @@ export default function Home() {
     };
 
     useEffect(() => {
-        const fetchBackgroundImage = async () => {
-            if (editingItem && (editingItem.mediaType === 'Movie' || editingItem.mediaType === 'Show' || editingItem.mediaType === 'VideoGame')) {
-                const { backdropPath } = await fetchBackgroundArt(editingItem.mediaType, editingItem.title, editingItem.additionalFields);
-                setBackgroundImage(backdropPath);
-            } else {
-                setBackgroundImage('');
-            }
-        };
-
-        fetchBackgroundImage();
+        if (editingItem && (editingItem.mediaType === 'Movie' || editingItem.mediaType === 'Show' || editingItem.mediaType === 'VideoGame')) {
+            setBackgroundImage(editingItem.backdropPath || '');
+        } else {
+            setBackgroundImage('');
+        }
     }, [editingItem]);
 
     useEffect(() => {

@@ -66,7 +66,6 @@ const TvSearch = () => {
             network: item.networks?.map(network => network.name).join(', '),
             crew: item.credits?.crew?.slice(0, 3).map(crew => crew.name).join(', '),
             episodes: parseInt(item.number_of_episodes),
-            imageUrl: `https://image.tmdb.org/t/p/w500${item.poster_path}`, // Add image URL here
         };
 
         const formData = {
@@ -75,6 +74,8 @@ const TvSearch = () => {
             category: '', // Default category or let the user choose later
             mediaType: 'Show',
             description: item.overview,
+            posterPath: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : '',
+            backdropPath: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : '',
             additionalFields: additionalFields,
         };
 

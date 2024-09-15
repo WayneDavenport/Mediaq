@@ -46,6 +46,8 @@ const VideoGameSearch = () => {
             category: '', // Default category or let the user choose later
             mediaType: 'VideoGame',
             description: item.description_raw,
+            posterPath: item.background_image,
+            backdropPath: item.background_image_additional,
             additionalFields: additionalFields,
         };
 

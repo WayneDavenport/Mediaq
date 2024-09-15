@@ -28,8 +28,7 @@ const UpdateForm = ({ onCancel }) => {
         setFormData
     } = useFormState(item);
 
-    const { backgroundArt, backdropArt } = useFetchArt(formData.mediaType, formData.title, formData.additionalFields);
-
+    const { backgroundArt, backdropArt } = useFetchArt(item.posterPath, item.backdropPath);
     const [locked, setLocked] = useState(false);
     const [keyParent, setKeyParent] = useState('');
     const [goalTime, setGoalTime] = useState(0);
