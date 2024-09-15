@@ -22,13 +22,17 @@ export const fetchBackgroundArt = async (mediaType, title, additionalFields) => 
             const response = await axios.get('/api/tmdb', {
                 params: {
                     query: title,
-                    mediaType: mediaType.toLowerCase()
+                    mediaType: mediaType.toLowerCase() // Ensure correct media type is passed
                 }
             });
             const results = response.data.results;
-            if (results.length > 0) {
-                const posterPath = results[0].poster_path ? `https://image.tmdb.org/t/p/w500${results[0].poster_path}` : '';
-                const backdropPath = results[0].backdrop_path ? `https://image.tmdb.org/t/p/w1280${results[0].backdrop_path}` : '';
+
+            // Filter results to ensure only the correct media type is used
+            const filteredResults = results.filter(result => result.media_type === mediaType.toLowerCase());
+
+            if (filteredResults.length > 0) {
+                const posterPath = filteredResults[0].poster_path ? `https://image.tmdb.org/t/p/w500${filteredResults[0].poster_path}` : '';
+                const backdropPath = filteredResults[0].backdrop_path ? `https://image.tmdb.org/t/p/w1280${filteredResults[0].backdrop_path}` : '';
                 return { posterPath, backdropPath };
             }
         } else if (mediaType === 'VideoGame' && additionalFields.gameId) {

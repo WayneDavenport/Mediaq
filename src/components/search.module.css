@@ -1,4 +1,7 @@
 /* src/components/SearchForm.module.css */
+.wholeContainer {
+    background-color: #6b7280;
+}
 
 .container {
     background-color: #0A0A0B;
@@ -9,6 +12,14 @@
     margin: 2rem auto;
     color: whitesmoke;
 }
+
+.gridContainer {
+    background-color: #803af1;
+    margin: 2rem auto;
+    padding: 2rem;
+    max-width: 600px;
+}
+
 
 .heading {
     font-size: 2rem;

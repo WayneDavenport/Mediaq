@@ -42,11 +42,10 @@ const Search = () => {
     };
 
     return (
-        <div className={styles.container}>
+        <div className={styles.whole}>
             <h1 className={styles.heading}>Search</h1>
 
             <div className={styles.gridContainer}>
-                {/* Hide search components on mobile when stagingItem is active */}
                 {!stagingItem && (
                     <div className={styles.searchComponents}>
                         <select value={mediaType} onChange={handleMediaTypeChange} className={styles.select}>
@@ -62,7 +61,6 @@ const Search = () => {
                     </div>
                 )}
 
-                {/* Staging component */}
                 {stagingItem ? (
                     <div className={styles.stagingContainer}>
                         <Staging onSubmit={handleSubmit} />
