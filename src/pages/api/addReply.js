@@ -11,11 +11,12 @@ export default async function handler(req, res) {
         try {
             const { commentId, text } = req.body;
             const userId = req.user.id; // Assuming req.user.id is the MongoDB ObjectId of the user
+            const userName = req.user.username;
 
             // Insert the new reply into Supabase
             const { data, error } = await supabase
                 .from('replies')
-                .insert([{ comment_id: commentId, text, user_id: userId }])
+                .insert([{ comment_id: commentId, text, user_id: userId, user_name: userName }])
                 .single();
 
             if (error) {

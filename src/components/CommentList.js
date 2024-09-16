@@ -19,7 +19,6 @@ const CommentList = ({ mediaItemId }) => {
         };
 
         fetchComments();
-
     }, [mediaItemId]);
 
     useEffect(() => {

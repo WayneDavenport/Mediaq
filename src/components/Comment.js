@@ -20,9 +20,6 @@ const Comment = ({ comment }) => {
         fetchReplies();
     }, [comment.id]);
 
-
-
-
     const handleAddReply = async (e) => {
         e.preventDefault();
         try {
@@ -61,11 +58,19 @@ const Comment = ({ comment }) => {
 
     return (
         <div className={styles.comment}>
-            {comment && <p>{comment.text}</p>}
+            {comment && (
+                <p>
+                    <strong>{comment.user_name}:</strong> {comment.text}
+                </p>
+            )}
             <div className={styles.replies}>
                 {replies.map(reply => (
                     <div key={reply.id} className={styles.reply}>
-                        {reply && reply.text}
+                        {reply && (
+                            <p>
+                                <strong>{reply.user_name}:</strong> {reply.text}
+                            </p>
+                        )}
                     </div>
                 ))}
             </div>

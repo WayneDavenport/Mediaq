@@ -8,7 +8,13 @@ export async function requireAuth(req, res, next) {
         return res.status(401).json({ message: "Unauthorized" });
     }
 
-    req.user = { id: session.user.id, email: session.user.email };
+    // Assuming the session object contains the username
+    req.user = {
+        id: session.user.id,
+        email: session.user.email,
+        username: session.user.username // Include username from session
+    };
+
     console.log("User authenticated:", req.user); // Debug log
     next();
 }

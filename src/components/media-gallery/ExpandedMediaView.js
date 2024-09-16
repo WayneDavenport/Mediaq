@@ -32,7 +32,7 @@ const ExpandedMediaView = ({ item, onClose }) => {
             {error && <p>Error loading media item</p>}
             {mediaItem && (
                 <>
-                    <img src={mediaItem.imageUrl} alt={mediaItem.title} className={styles.expandedImage} />
+                    <img src={mediaItem.posterPath} alt={mediaItem.title} className={styles.expandedImage} />
                     <div className={styles.details}>
                         <h2>{mediaItem.title}</h2>
                         <p className={styles.description}>{mediaItem.description}</p>

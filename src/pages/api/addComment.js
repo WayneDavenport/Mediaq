@@ -9,13 +9,15 @@ export default async function handler(req, res) {
 
     await requireAuth(req, res, async () => {
         try {
+
             const { mediaItemId, text } = req.body;
             const userId = req.user.id; // Assuming req.user.id is the MongoDB ObjectId of the user
+            const userName = req.user.username;
 
             // Insert the new comment into Supabase
             const { data, error } = await supabase
                 .from('comments')
-                .insert([{ media_item_id: mediaItemId, text, user_id: userId }])
+                .insert([{ media_item_id: mediaItemId, text, user_id: userId, user_name: userName }])
                 .single();
 
             if (error) {
