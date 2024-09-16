@@ -24,7 +24,7 @@ const Comment = ({ comment }) => {
         e.preventDefault();
         try {
             const response = await axios.post('/api/addReply', { commentId: comment.id, text: replyText });
-            if (response.status === 200) {
+            if (response.status === 200 && response.data) {
                 setReplies([...replies, response.data]);
                 setReplyText(''); // Clear the input field after submission
             }
