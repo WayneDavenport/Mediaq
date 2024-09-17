@@ -62,7 +62,7 @@
 
 .mediaItemsGrid {
     max-height: 42rem;
-    overflow-y: auto;
+
     border-radius: 1rem;
     display: grid;
     grid-template-columns: repeat(1, minmax(0, 1fr));

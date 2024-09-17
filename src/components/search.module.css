@@ -1,6 +1,6 @@
 /* src/components/SearchForm.module.css */
 .wholeContainer {
-    background-color: #6b7280;
+    background-color: var(--color-background-secondary);
 }
 
 .container {
@@ -10,11 +10,11 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     max-width: 600px;
     margin: 2rem auto;
-    color: whitesmoke;
+    color: var(--color-text-primary);
 }
 
 .gridContainer {
-    background-color: #803af1;
+    background-color: var(--color-background-accent);
     margin: 2rem auto;
     padding: 2rem;
     max-width: 600px;
@@ -25,8 +25,9 @@
     font-size: 2rem;
     margin-bottom: 1.5rem;
     text-align: center;
-    color: whitesmoke;
+    color: var(--color-text-primary);
 }
+
 
 .form {
     margin-bottom: 1.5rem;
@@ -37,8 +38,8 @@
     padding: 0.75rem;
     border-radius: 0.5rem;
     border: 1px solid #803af181;
-    background-color: #1A1A1B;
-    color: whitesmoke;
+    background-color: var(--color-background-input);
+    color: var(--color-text-primary);
     margin-bottom: 1rem;
 }
 
@@ -63,8 +64,8 @@
     padding: 0.75rem;
     border-radius: 0.5rem;
     border: none;
-    background-color: #803af181;
-    color: whitesmoke;
+    background-color: var(--color-button-primary);
+    color: var(--color-text-primary);
     font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
@@ -72,7 +73,7 @@
 }
 
 .button:hover {
-    background-color: #803af1;
+    background-color: var(--color-button-hover);
 }
 
 .resultsContainer {
@@ -105,13 +106,13 @@
 .resultOverview {
     font-size: 1rem;
     margin-bottom: 0.5rem;
-    color: #d1d5db;
+    color: var(--color-text-secondary);
     /* Light gray text */
 }
 
 .resultInfo {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--color-text-tertiary);
     /* Gray text */
     margin-bottom: 0.25rem;
 }

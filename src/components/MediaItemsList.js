@@ -5,6 +5,8 @@ import { useDispatch } from 'react-redux';
 import { setSelectedMediaItem } from '@/store/slices/selectedMediaItemSlice';
 import styles from './MediaItemsList.module.css';
 import Link from "next/link";
+import { ScrollArea } from "@/components/ui/scroll-area"
+
 
 const MediaItemsList = ({ newMediaItem }) => {
     const [mediaItems, setMediaItems] = useState([]);
@@ -204,38 +206,42 @@ const MediaItemsList = ({ newMediaItem }) => {
                 </label>
             </div>)}
 
-            <div className={styles.mediaItemsGrid}>
-                {isEmpty ? (
-                    <p>Manage and update your media items here. Update your progress, lock items, and add notes.</p>
-                ) : (
-                    Object.keys(activeMediaItems).map(group => (
-                        <div key={group} className={styles.mediaItemGroup}>
-                            <h2 className={styles.groupTitle}>{group}</h2>
-                            {activeMediaItems[group].map(item => (
-                                <div
-                                    onClick={() => dispatch(setSelectedMediaItem(item))}
-                                    key={item._id}
-                                    className={styles.mediaItemThumbnail}
-                                >
-                                    <div className={styles.titleContainer}>
-                                        <MarqueeTitle title={item.title} />
+            <ScrollArea className="h-[calc(100vh-200px)] rounded-md   ">
+
+                <div className={styles.mediaItemsGrid}>
+                    {isEmpty ? (
+                        <p>Manage and update your media items here. Update your progress, lock items, and add notes.</p>
+                    ) : (
+                        Object.keys(activeMediaItems).map(group => (
+                            <div key={group} className={styles.mediaItemGroup}>
+                                <h2 className={styles.groupTitle}>{group}</h2>
+                                {activeMediaItems[group].map(item => (
+                                    <div
+                                        onClick={() => dispatch(setSelectedMediaItem(item))}
+                                        key={item._id}
+                                        className={styles.mediaItemThumbnail}
+                                    >
+                                        <div className={styles.titleContainer}>
+
+                                            <MarqueeTitle title={item.title} />
+                                        </div>
+                                        <p className={styles.duration}>{formatDuration(item.duration)}</p>
+                                        {lockedItems[item._id] && (
+                                            <p className={styles.lockedBehind}>Locked Behind: {getKeyParentTitle(lockedItems[item._id].keyParent)}</p>
+                                        )}
+                                        <div className={styles.progressBar}>
+                                            <div
+                                                className={`${styles.progressFill} ${lockedItems[item._id] ? styles.lockedProgressFill : styles.unlockedProgressFill}`}
+                                                style={{ width: `${getProgressWidth(item)}%` }}
+                                            ></div>
+                                        </div>
                                     </div>
-                                    <p className={styles.duration}>{formatDuration(item.duration)}</p>
-                                    {lockedItems[item._id] && (
-                                        <p className={styles.lockedBehind}>Locked Behind: {getKeyParentTitle(lockedItems[item._id].keyParent)}</p>
-                                    )}
-                                    <div className={styles.progressBar}>
-                                        <div
-                                            className={`${styles.progressFill} ${lockedItems[item._id] ? styles.lockedProgressFill : styles.unlockedProgressFill}`}
-                                            style={{ width: `${getProgressWidth(item)}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ))
-                )}
-            </div>
+                                ))}
+                            </div>
+                        ))
+                    )}
+                </div>
+            </ScrollArea>
         </div>
     );
 };
