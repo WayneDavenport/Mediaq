@@ -4,6 +4,35 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 
+
+/* 
+Note: You might want to consider using a database transaction 
+to ensure all inserts succeed or fail together. 
+Here's how you could modify the POST to use a transaction:
+
+//  Inside the POST try block
+
+const { data: mediaItem, error: mediaError } = await supabase.rpc('create_media_item', {
+    base_data: {
+        title: data.title,
+        media_type: data.media_type,
+        // ... other base fields
+    },
+    type_data: {
+        // Fields specific to the media type (books, movies, etc.)
+        ...data
+    },
+    progress_data: {
+        queue_number: data.queue_number,
+        duration: data.duration,
+        completed_duration: 0,
+        completed: false
+    }
+});
+//You would need to create a corresponding PostgreSQL function in Supabase
+to handle the transaction, but this would ensure data consistency.
+
+ */
 export async function POST(request) {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -12,23 +41,18 @@ export async function POST(request) {
 
     try {
         const data = await request.json();
+        console.log('Received data:', data); // Debug log
 
-        // First, insert the media item
+        // First, insert the base media item
         const { data: mediaItem, error: mediaError } = await supabase
             .from('media_items')
             .insert({
                 title: data.title,
                 media_type: data.media_type,
                 category: data.category,
-                duration: data.duration,
-                completed_duration: 0,
-                percent_complete: 0,
-                completed: false,
                 description: data.description,
                 poster_path: data.poster_path,
                 backdrop_path: data.backdrop_path,
-                queue_number: null,
-                additional: data.additional,
                 user_email: session.user.email,
             })
             .select()
@@ -36,24 +60,122 @@ export async function POST(request) {
 
         if (mediaError) throw mediaError;
 
-        // If the item should be locked, create a lock
-        if (data.locked && mediaItem) {
-            const lockData = {
-                locked_item: mediaItem.id,
-                key_parent: data.key_parent,
-                key_item: data.key_item || null,
-                goal_time: data.goal_time || null,
-                goal_pages: data.goal_pages || null,
-                goal_episodes: data.goal_episodes || null,
-                time_complete: 0,
-                percent_complete: 0,
-                pages_complete: 0,
-                episodes_complete: 0,
-            };
+        // Determine the duration based on media type
+        let duration = data.duration || 0;
+        if (data.media_type === 'movie') {
+            // For movies, use the runtime from TMDB
+            duration = data.runtime || data.duration || 120;
+        } else if (data.media_type === 'game') {
+            // For games, convert hours to minutes
+            duration = (data.average_playtime || data.duration || 4) * 60;
+        }
 
+        // Insert into the appropriate media type table
+        switch (data.media_type) {
+            case 'book':
+                const { error: bookError } = await supabase
+                    .from('books')
+                    .insert({
+                        id: mediaItem.id,
+                        authors: data.authors,
+                        average_rating: data.average_rating,
+                        categories: data.categories,
+                        estimated_reading_time: data.estimated_reading_time,
+                        google_books_id: data.google_books_id,
+                        isbn: data.isbn,
+                        language: data.language,
+                        page_count: data.page_count,
+                        preview_link: data.preview_link,
+                        published_date: data.published_date,
+                        publisher: data.publisher,
+                        ratings_count: data.ratings_count,
+                        reading_speed: data.reading_speed,
+                    });
+                if (bookError) throw bookError;
+                break;
+
+            case 'movie':
+                const { error: movieError } = await supabase
+                    .from('movies')
+                    .insert({
+                        id: mediaItem.id,
+                        director: data.director,
+                        original_language: data.original_language,
+                        release_date: data.release_date,
+                        tmdb_id: data.tmdb_id,
+                        vote_average: data.vote_average,
+                        runtime: duration,
+                    });
+                if (movieError) throw movieError;
+                break;
+
+            case 'game':
+                const { error: gameError } = await supabase
+                    .from('games')
+                    .insert({
+                        id: mediaItem.id,
+                        achievements_count: data.achievements_count,
+                        average_playtime: data.average_playtime,
+                        esrb_rating: data.esrb_rating,
+                        genres: data.genres,
+                        metacritic: data.metacritic,
+                        platforms: data.platforms,
+                        publishers: data.publishers,
+                        rating: data.rating,
+                        rating_count: data.rating_count,
+                        rawg_id: data.rawg_id,
+                        release_date: data.release_date,
+                        website: data.website,
+                    });
+                if (gameError) throw gameError;
+                break;
+
+            case 'tv':
+                const { error: tvError } = await supabase
+                    .from('tv_shows')
+                    .insert({
+                        id: mediaItem.id,
+                        average_runtime: data.average_runtime,
+                        episode_run_times: data.episode_run_times,
+                        original_language: data.original_language,
+                        release_date: data.release_date,
+                        seasons: data.seasons,
+                        tmdb_id: data.tmdb_id,
+                        total_episodes: data.total_episodes,
+                        vote_average: data.vote_average,
+                    });
+                if (tvError) throw tvError;
+                break;
+
+
+        }
+
+        // Create progress tracking entry with the correct duration
+        const { error: progressError } = await supabase
+            .from('user_media_progress')
+            .insert({
+                id: mediaItem.id,
+                queue_number: data.queue_number,
+                duration: duration, // Use the determined duration
+                completed_duration: 0,
+                completed: false,
+            });
+
+        if (progressError) throw progressError;
+
+        // Add lock logic here
+        if (data.locked) {
             const { error: lockError } = await supabase
-                .from('locked_item')
-                .insert(lockData);
+                .from('locked_items')
+                .insert({
+                    user_id: session.user.id,
+                    lock_type: data.lock_type,
+                    key_parent_id: data.key_parent_id,
+                    key_parent_text: data.key_parent_text,
+                    goal_time: data.goal_time,
+                    goal_pages: data.goal_pages,
+                    goal_episodes: data.goal_episodes,
+                });
 
             if (lockError) throw lockError;
         }
@@ -84,7 +206,11 @@ export async function GET(request) {
             .from('media_items')
             .select(`
                 *,
-                locked_item (*)
+                user_media_progress(*),
+                books(*),
+                movies(*),
+                tv_shows(*),
+                games(*)
             `)
             .eq('user_email', session.user.email);
 

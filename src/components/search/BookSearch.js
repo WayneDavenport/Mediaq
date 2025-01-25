@@ -52,26 +52,38 @@ const BookSearch = () => {
     };
 
     const handleAdd = (item) => {
-        const readingSpeed = session?.user?.readingSpeed || 20;
-        const duration = Math.ceil(item.duration / readingSpeed * 30);
+        const readingSpeed = session?.user?.readingSpeed || 30;
+        const estimatedTime = Math.ceil(item.book_details.page_count / readingSpeed);
 
         const formData = {
+            // Base media item data
             title: item.title,
             media_type: 'book',
             category: 'General',
-            duration: duration,
-            completed_duration: 0,
-            percent_complete: 0,
-            completed: false,
             description: item.description,
             poster_path: item.poster_path,
             backdrop_path: item.backdrop_path,
+
+            // Book-specific data from book_details
+            authors: item.book_details.authors,
+            average_rating: item.book_details.average_rating,
+            categories: item.book_details.categories,
+            estimated_reading_time: estimatedTime,
+            google_books_id: item.book_details.google_books_id,
+            isbn: item.book_details.isbn,
+            language: item.book_details.language,
+            page_count: item.book_details.page_count,
+            preview_link: item.book_details.preview_link,
+            published_date: item.book_details.published_date,
+            publisher: item.book_details.publisher,
+            ratings_count: item.book_details.ratings_count,
+            reading_speed: readingSpeed,
+
+            // Progress data
+            duration: item.book_details.page_count, // Use page count as duration
             queue_number: null,
-            additional: {
-                ...item.additional,
-                reading_speed: readingSpeed,
-                estimated_reading_time: duration
-            }
+            completed_duration: 0,
+            completed: false,
         };
 
         setStagingItem(formData);
@@ -113,7 +125,7 @@ const BookSearch = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {results.map((result) => (
-                    <Card key={`book-${result.additional.google_books_id}`}>
+                    <Card key={`book-${result.book_details.google_books_id}`}>
                         <CardContent className="p-4">
                             {result.poster_path && (
                                 <img
@@ -122,29 +134,31 @@ const BookSearch = () => {
                                     className="w-full h-auto rounded-lg mb-4"
                                 />
                             )}
-                            <h3 className="text-lg font-semibold mb-2">{result.title}</h3>
-                            {result.additional.authors?.length > 0 && (
+                            <h3 className="text-lg font-semibold mb-2">
+                                {result.title}
+                            </h3>
+                            {result.book_details.authors?.length > 0 && (
                                 <p className="text-sm text-muted-foreground mb-2">
-                                    By: {result.additional.authors.join(', ')}
+                                    By: {result.book_details.authors.join(', ')}
                                 </p>
                             )}
                             <p className="text-sm text-muted-foreground mb-4">
                                 {result.description?.substring(0, 150)}...
                             </p>
                             <div className="space-y-1 mb-4">
-                                {result.additional.publisher && (
+                                {result.book_details.publisher && (
                                     <p className="text-sm text-muted-foreground">
-                                        Publisher: {result.additional.publisher}
+                                        Publisher: {result.book_details.publisher}
                                     </p>
                                 )}
-                                {result.additional.page_count > 0 && (
+                                {result.book_details.page_count > 0 && (
                                     <p className="text-sm text-muted-foreground">
-                                        Pages: {result.additional.page_count}
+                                        Pages: {result.book_details.page_count}
                                     </p>
                                 )}
-                                {result.additional.published_date && (
+                                {result.book_details.published_date && (
                                     <p className="text-sm text-muted-foreground">
-                                        Published: {result.additional.published_date}
+                                        Published: {result.book_details.published_date}
                                     </p>
                                 )}
                             </div>

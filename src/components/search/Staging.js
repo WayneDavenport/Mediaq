@@ -37,24 +37,83 @@ import { Loader2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import LockRequirements from './LockRequirements';
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 const READING_SPEED = 200; // Average reading speed in words per minute
 
 const formSchema = z.object({
+    // Base media item fields
     title: z.string().min(1, "Title is required"),
-    duration: z.number().min(0),
-    category: z.string().min(1, "Category is required"),
     media_type: z.string(),
+    category: z.string().min(1, "Category is required"),
     description: z.string(),
     poster_path: z.string().optional(),
     backdrop_path: z.string().optional(),
+
+    // Lock fields
     locked: z.boolean().default(false),
-    key_parent: z.string().optional(),
+    key_parent_id: z.number().nullable().optional(),
+    key_parent_text: z.string().nullable().optional(),
     goal_time: z.number().min(0).optional(),
     goal_pages: z.number().min(0).optional(),
     goal_episodes: z.number().min(0).optional(),
-    additional: z.record(z.any()).optional(),
+
+    // Progress fields
+    duration: z.number().min(0),
+    queue_number: z.number().nullable().optional(),
+    completed_duration: z.number().min(0).optional(),
+    completed: z.boolean().optional(),
+
+    // Media-specific fields (all optional since they depend on media_type)
+    // Books
+    authors: z.array(z.string()).optional(),
+    average_rating: z.number().optional(),
+    categories: z.array(z.string()).optional(),
+    estimated_reading_time: z.number().optional(),
+    google_books_id: z.string().optional(),
+    isbn: z.string().optional(),
+    language: z.string().optional(),
+    page_count: z.number().optional(),
+    preview_link: z.string().optional(),
+    published_date: z.string().optional(),
+    publisher: z.string().optional(),
+    ratings_count: z.number().optional(),
+    reading_speed: z.number().optional(),
+
+    // Movies
+    director: z.string().optional(),
+    original_language: z.string().optional(),
+    release_date: z.string().optional(),
+    tmdb_id: z.number().optional(),
+    vote_average: z.number().optional(),
+
+    // TV Shows
+    average_runtime: z.number().optional(),
+    episode_run_times: z.number().optional(),
+    seasons: z.number().optional(),
+    total_episodes: z.number().optional(),
+
+    // Video Games
+    achievements_count: z.number().optional(),
+    average_playtime: z.number().optional(),
+    esrb_rating: z.string().optional(),
+    genres: z.string().optional(),
+    metacritic: z.number().optional(),
+    platforms: z.string().optional(),
+    publishers: z.string().optional(),
+    rating: z.number().optional(),
+    rating_count: z.number().optional(),
+    rawg_id: z.number().optional(),
+    website: z.string().optional(),
+}).refine(data => {
+    if (data.locked) {
+        return data.key_parent_id !== null || data.key_parent_text !== null;
+    }
+    return true;
+}, {
+    message: "Either key_parent_id or key_parent_text must be provided when locked",
+    path: ["key_parent_id", "key_parent_text"],
 });
 
 const Staging = () => {
@@ -69,19 +128,23 @@ const Staging = () => {
     const form = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            title: stagingItem?.title || '',
-            duration: stagingItem?.duration || 0,
+            title: '',
+            media_type: '',
             category: 'General',
-            media_type: stagingItem?.media_type || '',
-            description: stagingItem?.description || '',
-            poster_path: stagingItem?.poster_path || '',
-            backdrop_path: stagingItem?.backdrop_path || '',
+            description: '',
+            poster_path: '',
+            backdrop_path: '',
             locked: false,
-            key_parent: '',
+            key_parent_id: null,
+            key_parent_text: null,
             goal_time: 0,
             goal_pages: 0,
             goal_episodes: 0,
-            additional: stagingItem?.additional || {},
+            duration: 0,
+            queue_number: null,
+            completed_duration: 0,
+            completed: false,
+            key_parent: "",
         },
     });
 
@@ -103,7 +166,7 @@ const Staging = () => {
             try {
                 const response = await fetch('/api/media-items/incomplete');
                 const data = await response.json();
-                console.log('Incomplete Items:', data.items);
+                console.log('Fetched incomplete items:', data.items);
                 setIncompleteItems(data.items);
             } catch (error) {
                 console.error('Failed to fetch incomplete items:', error);
@@ -116,14 +179,35 @@ const Staging = () => {
 
     useEffect(() => {
         if (stagingItem) {
-            form.reset({
-                ...stagingItem,
+            console.log('Staging Item Data:', stagingItem);
+            const formData = {
+                // Base media item data
+                title: stagingItem.title,
+                media_type: stagingItem.media_type,
+                category: stagingItem.category || 'General',
+                description: stagingItem.description,
+                poster_path: stagingItem.poster_path,
+                backdrop_path: stagingItem.backdrop_path,
+
+                // Lock fields
                 locked: false,
-                key_parent: '',
+                key_parent_id: null,
+                key_parent_text: null,
                 goal_time: 0,
                 goal_pages: 0,
                 goal_episodes: 0,
-            });
+
+                // Progress fields
+                duration: stagingItem.duration,
+                queue_number: null,
+                completed_duration: 0,
+                completed: false,
+
+                // Media-specific fields (spread all fields from stagingItem)
+                ...stagingItem
+            };
+            console.log('Setting form data:', formData);
+            form.reset(formData);
         }
     }, [stagingItem, form]);
 
@@ -142,7 +226,29 @@ const Staging = () => {
     };
 
     const onSubmit = async (data) => {
+        if (!session?.user?.email) {
+            console.error('No user session found');
+            return;
+        }
+
+        const keyParent = form.watch('key_parent');
+        const selectedItem = incompleteItems.find(i => i.id === keyParent);
+        const isCategory = allCategories.includes(keyParent);
+
+        const lockData = {
+            user_id: session.user.id,
+            lock_type: selectedItem ? 'specific_item' : (isCategory ? 'category' : 'media_type'),
+            key_parent_id: selectedItem ? selectedItem.id : null,
+            key_parent_text: selectedItem ? null : keyParent,
+            goal_time: data.goal_time,
+            goal_pages: data.goal_pages,
+            goal_episodes: data.goal_episodes,
+        };
+
+        console.log('Starting form submission...');
+        console.log('Form data being submitted:', { ...data, ...lockData });
         setIsLoading(true);
+
         try {
             const response = await fetch('/api/media-items', {
                 method: 'POST',
@@ -151,12 +257,16 @@ const Staging = () => {
                 },
                 body: JSON.stringify({
                     ...data,
-                    user_email: session?.user?.email,
+                    ...lockData,
+                    user_email: session.user.email,
                 }),
             });
 
+            const responseData = await response.json();
+            console.log('Response data:', responseData);
+
             if (!response.ok) {
-                throw new Error('Failed to add item');
+                throw new Error(responseData.error || 'Failed to add item');
             }
 
             clearStagingItem();
@@ -179,7 +289,15 @@ const Staging = () => {
             </CardHeader>
             <CardContent>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            console.log('Form submit event triggered');
+                            console.log('Form errors:', form.formState.errors);
+                            form.handleSubmit(onSubmit)(e);
+                        }}
+                        className="space-y-6"
+                    >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
@@ -253,141 +371,16 @@ const Staging = () => {
                                 )}
                             />
 
-                            <FormField
-                                control={form.control}
-                                name="locked"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                        <div className="space-y-0.5">
-                                            <FormLabel className="text-base">
-                                                Lock Requirements
-                                            </FormLabel>
-                                            <FormDescription>
-                                                Set completion requirements for this item
-                                            </FormDescription>
-                                        </div>
-                                        <FormControl>
-                                            <Switch
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
+                            <LockRequirements
+                                form={form}
+                                incompleteItems={incompleteItems}
+                                calculateReadingTime={calculateReadingTime}
+                                allCategories={allCategories}
+                                userId={session?.user?.id}
                             />
-
-                            {form.watch('locked') && (
-                                <>
-                                    <FormField
-                                        control={form.control}
-                                        name="key_parent"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Key Parent</FormLabel>
-                                                <Select
-                                                    onValueChange={field.onChange}
-                                                    value={field.value}
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select Key Parent" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectGroup label="Media Types">
-                                                            {['Book', 'Show', 'Movie'].map((type) => (
-                                                                <SelectItem key={type} value={type}>
-                                                                    {type}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectGroup>
-                                                        <SelectGroup label="Categories">
-                                                            {allCategories.map((category) => (
-                                                                <SelectItem key={category} value={category}>
-                                                                    {category}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectGroup>
-                                                        <SelectGroup label="Your Media Items">
-                                                            {incompleteItems.map((item) => (
-                                                                <SelectItem key={item.id} value={item.id}>
-                                                                    {item.title}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectGroup>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    {form.watch('key_parent') && (
-                                        <FormField
-                                            control={form.control}
-                                            name={(() => {
-                                                const selectedItem = incompleteItems.find(i => i.id === form.watch('key_parent'));
-                                                switch (selectedItem?.media_type) {
-                                                    case 'book':
-                                                        return 'goal_pages';
-                                                    case 'tv':
-                                                        return 'goal_episodes';
-                                                    default:
-                                                        return 'goal_time';
-                                                }
-                                            })()}
-                                            render={({ field }) => {
-                                                const selectedItem = incompleteItems.find(i => i.id === form.watch('key_parent'));
-                                                console.log('Selected Item:', selectedItem);
-                                                console.log('Key Parent:', form.watch('key_parent'));
-                                                if (!selectedItem) return null;
-
-                                                let max = 0;
-                                                let label = '';
-                                                let valueText = '';
-
-                                                switch (selectedItem.media_type) {
-                                                    case 'book':
-                                                        max = selectedItem.additional?.page_count || 1000;
-                                                        label = 'Pages to Complete';
-                                                        valueText = `${field.value} pages (${calculateReadingTime(field.value)} minutes)`;
-                                                        break;
-                                                    case 'tv':
-                                                        max = selectedItem.additional?.total_episodes || 24;
-                                                        label = 'Episodes to Complete';
-                                                        valueText = `${field.value} episodes (${field.value * selectedItem.duration} minutes)`;
-                                                        break;
-                                                    default:
-                                                        max = selectedItem.duration || 240;
-                                                        label = 'Time to Complete (minutes)';
-                                                        valueText = `${field.value} minutes`;
-                                                }
-
-                                                return (
-                                                    <FormItem>
-                                                        <FormLabel>{label}</FormLabel>
-                                                        <FormControl>
-                                                            <div className="space-y-2">
-                                                                <Slider
-                                                                    value={[field.value]}
-                                                                    onValueChange={([value]) => field.onChange(value)}
-                                                                    max={max}
-                                                                    step={1}
-                                                                />
-                                                                <div className="text-sm text-muted-foreground">
-                                                                    {valueText}
-                                                                </div>
-                                                            </div>
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                );
-                                            }}
-                                        />
-                                    )}
-                                </>
-                            )}
                         </div>
 
-                        <CardFooter className="px-0 flex justify-between">
+                        <div className="flex justify-between pt-4">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -395,7 +388,11 @@ const Staging = () => {
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={isLoading}>
+                            <Button
+                                type="submit"
+                                disabled={isLoading}
+                                onClick={() => console.log('Submit button clicked')}
+                            >
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -405,7 +402,7 @@ const Staging = () => {
                                     'Add to Queue'
                                 )}
                             </Button>
-                        </CardFooter>
+                        </div>
                     </form>
                 </Form>
             </CardContent>

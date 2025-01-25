@@ -1,0 +1,116 @@
+.dashboardContainer {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.mediaGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .mediaGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .mediaGrid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.mediaCard {
+    position: relative;
+    cursor: pointer;
+    width: 100%;
+}
+
+.mediaImage {
+    position: relative;
+    min-height: 5rem;
+    width: 100%;
+    padding: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+}
+
+.mediaImage.expanded {
+    height: auto;
+    padding: 1rem;
+    align-items: flex-start;
+}
+
+.expandedContent {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.posterWrapper {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.posterWrapper.expanded {
+    width: 12rem;
+    height: 16rem;
+}
+
+.mediaTitle {
+    flex: 1;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.mediaTitle.expanded {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.detailsWrapper {
+    width: 100%;
+    margin-left: calc(12rem + 1rem);
+    margin-top: -1.5rem;
+}
+
+.detailsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.detailsGrid.exiting {
+    opacity: 0;
+    transform: translateY(-8px);
+}
+
+.descriptionWrapper {
+    border-top: 1px solid #e5e7eb;
+    margin-top: 1rem;
+    padding: 1rem;
+    height: 200px;
+}
+
+.description {
+    height: 100%;
+    overflow-y: auto;
+    font-size: 0.875rem;
+    color: rgb(75 85 99);
+}
+
+.description.exiting {
+    opacity: 0;
+    transform: translateY(-8px);
+}

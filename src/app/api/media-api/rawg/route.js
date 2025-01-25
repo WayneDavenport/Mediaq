@@ -56,32 +56,44 @@ export async function GET(request) {
 
                     const gameData = detailsResponse.data;
 
-                    return {
+                    // Base media item properties
+                    const mediaItem = {
                         title: gameData.name,
                         media_type: 'game',
                         category: 'General',
                         description: gameData.description_raw || gameData.description,
                         poster_path: gameData.background_image,
                         backdrop_path: gameData.background_image_additional,
+                    };
+
+                    // Game-specific properties
+                    const gameDetails = {
+                        achievements_count: gameData.achievements_count || 0,
+                        average_playtime: gameData.playtime || 0,
+                        esrb_rating: gameData.esrb_rating?.name || null,
+                        genres: gameData.genres?.map(genre => genre.name).join(', ') || '',
+                        metacritic: gameData.metacritic || 0,
+                        platforms: gameData.platforms?.map(p => p.platform.name).join(', ') || '',
+                        publishers: gameData.publishers?.map(pub => pub.name).join(', ') || '',
+                        rating: gameData.rating || 0,
+                        rating_count: gameData.ratings_count || 0,
+                        rawg_id: gameData.id,
+                        release_date: gameData.released || '',
+                        website: gameData.website || '',
+                    };
+
+                    // Progress tracking properties
+                    const progressDetails = {
                         duration: gameData.playtime || 0,
                         completed_duration: 0,
-                        percent_complete: 0,
                         completed: false,
-                        additional: {
-                            rawg_id: gameData.id,
-                            release_date: gameData.released,
-                            developers: gameData.developers?.map(dev => dev.name) || [],
-                            publishers: gameData.publishers?.map(pub => pub.name) || [],
-                            genres: gameData.genres?.map(genre => genre.name) || [],
-                            platforms: gameData.platforms?.map(p => p.platform.name) || [],
-                            metacritic: gameData.metacritic,
-                            esrb_rating: gameData.esrb_rating?.name || null,
-                            website: gameData.website,
-                            average_playtime: gameData.playtime || 0,
-                            achievements_count: gameData.achievements_count || 0,
-                            rating: gameData.rating,
-                            rating_count: gameData.ratings_count,
-                        }
+                        queue_number: null,
+                    };
+
+                    return {
+                        ...mediaItem,
+                        game_details: gameDetails,
+                        progress: progressDetails,
                     };
                 } catch (error) {
                     console.error(`Error fetching details for game ${game.id}:`, error);

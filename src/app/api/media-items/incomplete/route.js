@@ -12,9 +12,16 @@ export async function GET(request) {
     try {
         const { data, error } = await supabase
             .from('media_items')
-            .select('*')
+            .select(`
+                *,
+                user_media_progress(*),
+                books(*),
+                movies(*),
+                tv_shows(*),
+                games(*)
+            `)
             .eq('user_email', session.user.email)
-            .eq('completed', false);
+            .eq('user_media_progress.completed', false);
 
         if (error) throw error;
 
