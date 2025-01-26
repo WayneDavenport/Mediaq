@@ -59,14 +59,20 @@ export default function UpdateProgressModal({
             const updateData = {
                 id: item.id,
                 completed_duration: progress,
-                completed: progress >= getMaxValue()
+                initial_duration: item.user_media_progress?.completed_duration || 0,
+                completed: progress >= getMaxValue(),
+                media_type: item.media_type,
+                category: item.category
             };
 
-            // Add media-specific completion tracking
             if (item.media_type === 'tv') {
-                updateData.episodes_completed = Math.floor(progress / (item.tv_shows?.average_runtime || 30));
+                const newEpisodes = Math.floor(progress / (item.tv_shows?.average_runtime || 30));
+                const initialEpisodes = item.user_media_progress?.episodes_completed || 0;
+                updateData.episodes_completed = newEpisodes;
+                updateData.initial_episodes = initialEpisodes;
             } else if (item.media_type === 'book') {
-                updateData.pages_completed = progress; // For books, progress directly represents pages
+                updateData.pages_completed = progress;
+                updateData.initial_pages = item.user_media_progress?.pages_completed || 0;
             }
 
             const response = await fetch('/api/media-items/progress', {

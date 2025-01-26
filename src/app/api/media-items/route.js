@@ -225,7 +225,7 @@ export async function GET(request) {
                 movies(*),
                 tv_shows(*),
                 games(*),
-                locked_items(*)
+                locked_items!locked_items_id_fkey(*)
             `)
             .eq('user_email', session.user.email);
 
