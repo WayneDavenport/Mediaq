@@ -248,6 +248,13 @@ const Staging = () => {
             const selectedItem = incompleteItems.find(i => Number(i.id) === numericValue);
             const isCategory = allCategories.includes(keyParent);
 
+            // Calculate the correct duration based on media type
+            let duration = data.duration;
+            if (data.media_type === 'tv') {
+                // Calculate total minutes for the entire series
+                duration = (data.total_episodes || 0) * (data.average_runtime || 30);
+            }
+
             const lockData = {
                 user_id: session.user.id,
                 lock_type: selectedItem ? 'specific_item' : (isCategory ? 'category' : 'media_type'),
@@ -259,7 +266,11 @@ const Staging = () => {
             };
 
             console.log('Starting form submission...');
-            console.log('Form data being submitted:', { ...data, ...lockData });
+            console.log('Form data being submitted:', {
+                ...data,
+                ...lockData,
+                duration, // Use the calculated duration
+            });
 
             const response = await fetch('/api/media-items', {
                 method: 'POST',
@@ -269,6 +280,7 @@ const Staging = () => {
                 body: JSON.stringify({
                     ...data,
                     ...lockData,
+                    duration, // Use the calculated duration
                     user_email: session.user.email,
                 }),
             });

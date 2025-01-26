@@ -9,6 +9,8 @@ import { Card } from "@/components/ui/card";
 import { useOutsideClick } from "@/hooks/use-outside-click";
 import styles from './styles.module.css';
 import { Badge } from "@/components/ui/badge";
+import UpdateProgressModal from "@/components/progress/UpdateProgressModal";
+import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
     const { data: session, status } = useSession();
@@ -16,6 +18,8 @@ export default function Dashboard() {
     const [mediaItems, setMediaItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const ref = useRef(null);
+    const [updateModalOpen, setUpdateModalOpen] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null);
 
     useOutsideClick(ref, () => setExpandedId(null));
 
@@ -39,6 +43,44 @@ export default function Dashboard() {
 
         fetchMediaItems();
     }, [status]);
+
+    const handleProgressUpdate = (newProgress) => {
+        setMediaItems(items =>
+            items.map(item =>
+                item.id === selectedItem.id
+                    ? {
+                        ...item,
+                        user_media_progress: {
+                            ...item.user_media_progress,
+                            completed_duration: newProgress,
+                            completed: newProgress >= getMaxValue(item),
+                            episodes_completed: selectedItem.media_type === 'tv'
+                                ? Math.floor(newProgress / (selectedItem.tv_shows?.average_runtime || 30))
+                                : item.user_media_progress?.episodes_completed,
+                            pages_completed: selectedItem.media_type === 'book'
+                                ? newProgress
+                                : item.user_media_progress?.pages_completed
+                        }
+                    }
+                    : item
+            )
+        );
+    };
+
+    const getMaxValue = (item) => {
+        switch (item.media_type) {
+            case 'book':
+                return item.books?.page_count || 0;
+            case 'movie':
+                return item.user_media_progress?.duration || item.movies?.runtime || 0;
+            case 'tv':
+                return item.user_media_progress?.duration || 0;
+            case 'game':
+                return item.user_media_progress?.duration || 0;
+            default:
+                return 100;
+        }
+    };
 
     if (status === "loading" || loading) {
         return <div>Loading...</div>;
@@ -170,7 +212,19 @@ export default function Dashboard() {
                                         </motion.h2>
 
                                         <div className={styles.progressSection}>
-                                            <h3 className="text-lg font-semibold mb-2">Progress</h3>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className="text-lg font-semibold">Progress</h3>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setSelectedItem(item);
+                                                        setUpdateModalOpen(true);
+                                                    }}
+                                                >
+                                                    Update Progress
+                                                </Button>
+                                            </div>
                                             <div className="space-y-2">
                                                 {item.media_type === 'book' && (
                                                     <>
@@ -314,6 +368,17 @@ export default function Dashboard() {
             <Link href="/user-pages/search">
                 Search
             </Link>
+            {selectedItem && (
+                <UpdateProgressModal
+                    isOpen={updateModalOpen}
+                    onClose={() => {
+                        setUpdateModalOpen(false);
+                        setSelectedItem(null);
+                    }}
+                    item={selectedItem}
+                    onUpdate={handleProgressUpdate}
+                />
+            )}
         </>
     );
 }
