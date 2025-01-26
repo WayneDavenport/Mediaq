@@ -23,6 +23,20 @@ export async function GET(request) {
     }
 
     try {
+        // Fetch genres
+        const genresUrl = `${TMDB_BASE_URL}/genre/${mediaType}/list`;
+        const genresResponse = await axios.get(genresUrl, {
+            params: {
+                api_key: TMDB_API_KEY,
+                language,
+            }
+        });
+        const genresData = genresResponse.data.genres;
+        const genresMap = genresData.reduce((acc, genre) => {
+            acc[genre.id] = genre.name;
+            return acc;
+        }, {});
+
         // Initial search
         const searchUrl = `${TMDB_BASE_URL}/search/multi`;
         const searchResponse = await axios.get(searchUrl, {
@@ -59,6 +73,7 @@ export async function GET(request) {
                     description: item.overview,
                     poster_path: item.poster_path,
                     backdrop_path: item.backdrop_path,
+                    genres: item.genre_ids.map(id => genresMap[id] || 'Unknown'), // Map genre IDs to names
                 };
 
                 // Progress tracking properties

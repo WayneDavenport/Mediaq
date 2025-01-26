@@ -60,6 +60,7 @@ export async function GET(request) {
                 description: volumeInfo.description || '',
                 poster_path: volumeInfo.imageLinks?.thumbnail || '',
                 backdrop_path: volumeInfo.imageLinks?.large || volumeInfo.imageLinks?.thumbnail || '',
+                genres: volumeInfo.categories || [],
             };
 
             // Book-specific properties

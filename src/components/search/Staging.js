@@ -48,6 +48,7 @@ const formSchema = z.object({
     media_type: z.string(),
     category: z.string().min(1, "Category is required"),
     description: z.string(),
+    genres: z.array(z.string()).optional(),
     poster_path: z.string().optional(),
     backdrop_path: z.string().optional(),
 
@@ -55,6 +56,8 @@ const formSchema = z.object({
     locked: z.boolean().default(false),
     key_parent_id: z.number().nullable().optional(),
     key_parent_text: z.string().nullable().optional(),
+    pages_completed: z.number().nullable().optional(),
+    episodes_completed: z.number().nullable().optional(),
     goal_time: z.number().min(0).optional(),
     goal_pages: z.number().min(0).optional(),
     goal_episodes: z.number().min(0).optional(),
@@ -64,8 +67,13 @@ const formSchema = z.object({
     queue_number: z.number().nullable().optional(),
     completed_duration: z.number().min(0).optional(),
     completed: z.boolean().optional(),
+    pages_completed: z.number().nullable().optional(),
+    episodes_completed: z.number().nullable().optional(),
 
-    // Media-specific fields (all optional since they depend on media_type)
+
+    /*Media-specific fields (all optional since they depend on media_type. 
+      Progress related fields for tv and books are in progress) */
+
     // Books
     authors: z.array(z.string()).optional(),
     average_rating: z.number().optional(),
@@ -98,7 +106,6 @@ const formSchema = z.object({
     achievements_count: z.number().optional(),
     average_playtime: z.number().optional(),
     esrb_rating: z.string().optional(),
-    genres: z.string().optional(),
     metacritic: z.number().optional(),
     platforms: z.string().optional(),
     publishers: z.string().optional(),
@@ -140,6 +147,7 @@ const Staging = () => {
             goal_time: 0,
             goal_pages: 0,
             goal_episodes: 0,
+            genres: [],
             duration: 0,
             queue_number: null,
             completed_duration: 0,
@@ -188,6 +196,7 @@ const Staging = () => {
                 description: stagingItem.description,
                 poster_path: stagingItem.poster_path,
                 backdrop_path: stagingItem.backdrop_path,
+                genres: stagingItem.genres || [],
 
                 // Lock fields
                 locked: false,
@@ -231,25 +240,27 @@ const Staging = () => {
             return;
         }
 
-        const keyParent = form.watch('key_parent');
-        const selectedItem = incompleteItems.find(i => i.id === keyParent);
-        const isCategory = allCategories.includes(keyParent);
-
-        const lockData = {
-            user_id: session.user.id,
-            lock_type: selectedItem ? 'specific_item' : (isCategory ? 'category' : 'media_type'),
-            key_parent_id: selectedItem ? selectedItem.id : null,
-            key_parent_text: selectedItem ? null : keyParent,
-            goal_time: data.goal_time,
-            goal_pages: data.goal_pages,
-            goal_episodes: data.goal_episodes,
-        };
-
-        console.log('Starting form submission...');
-        console.log('Form data being submitted:', { ...data, ...lockData });
         setIsLoading(true);
 
         try {
+            const keyParent = form.watch('key_parent');
+            const numericValue = parseInt(keyParent);
+            const selectedItem = incompleteItems.find(i => Number(i.id) === numericValue);
+            const isCategory = allCategories.includes(keyParent);
+
+            const lockData = {
+                user_id: session.user.id,
+                lock_type: selectedItem ? 'specific_item' : (isCategory ? 'category' : 'media_type'),
+                key_parent_id: selectedItem ? numericValue : null,
+                key_parent_text: selectedItem ? null : keyParent,
+                goal_time: data.goal_time,
+                goal_pages: data.goal_pages,
+                goal_episodes: data.goal_episodes,
+            };
+
+            console.log('Starting form submission...');
+            console.log('Form data being submitted:', { ...data, ...lockData });
+
             const response = await fetch('/api/media-items', {
                 method: 'POST',
                 headers: {
@@ -370,6 +381,15 @@ const Staging = () => {
                                     </FormItem>
                                 )}
                             />
+
+                            {stagingItem.genres && stagingItem.genres.length > 0 && (
+                                <div className="col-span-2">
+                                    <FormLabel>Genres</FormLabel>
+                                    <p className="text-sm text-muted-foreground">
+                                        {stagingItem.genres.join(', ')}
+                                    </p>
+                                </div>
+                            )}
 
                             <LockRequirements
                                 form={form}

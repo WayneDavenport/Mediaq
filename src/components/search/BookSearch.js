@@ -63,6 +63,7 @@ const BookSearch = () => {
             description: item.description,
             poster_path: item.poster_path,
             backdrop_path: item.backdrop_path,
+            genres: item.genres || [],
 
             // Book-specific data from book_details
             authors: item.book_details.authors,
@@ -84,6 +85,8 @@ const BookSearch = () => {
             queue_number: null,
             completed_duration: 0,
             completed: false,
+            pages_completed: 0,
+            episodes_completed: null,
         };
 
         setStagingItem(formData);
@@ -159,6 +162,11 @@ const BookSearch = () => {
                                 {result.book_details.published_date && (
                                     <p className="text-sm text-muted-foreground">
                                         Published: {result.book_details.published_date}
+                                    </p>
+                                )}
+                                {result.genres && result.genres.length > 0 && (
+                                    <p className="text-sm text-muted-foreground">
+                                        Genres: {result.genres.join(', ')}
                                     </p>
                                 )}
                             </div>

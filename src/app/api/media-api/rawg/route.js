@@ -64,6 +64,7 @@ export async function GET(request) {
                         description: gameData.description_raw || gameData.description,
                         poster_path: gameData.background_image,
                         backdrop_path: gameData.background_image_additional,
+                        genres: gameData.genres?.map(genre => genre.name) || [],
                     };
 
                     // Game-specific properties
@@ -71,7 +72,6 @@ export async function GET(request) {
                         achievements_count: gameData.achievements_count || 0,
                         average_playtime: gameData.playtime || 0,
                         esrb_rating: gameData.esrb_rating?.name || null,
-                        genres: gameData.genres?.map(genre => genre.name).join(', ') || '',
                         metacritic: gameData.metacritic || 0,
                         platforms: gameData.platforms?.map(p => p.platform.name).join(', ') || '',
                         publishers: gameData.publishers?.map(pub => pub.name).join(', ') || '',

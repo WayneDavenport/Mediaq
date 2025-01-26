@@ -73,12 +73,12 @@ const VideoGameSearch = () => {
             description: item.description,
             poster_path: item.poster_path,
             backdrop_path: item.backdrop_path,
+            genres: item.genres || [],
 
             // Game-specific data from game_details
             achievements_count: item.game_details.achievements_count,
             average_playtime: item.game_details.average_playtime,
             esrb_rating: item.game_details.esrb_rating,
-            genres: item.game_details.genres,
             metacritic: item.game_details.metacritic,
             platforms: item.game_details.platforms,
             publishers: item.game_details.publishers,

@@ -51,8 +51,10 @@ export async function POST(request) {
                 media_type: data.media_type,
                 category: data.category,
                 description: data.description,
+                genres: data.genres,
                 poster_path: data.poster_path,
                 backdrop_path: data.backdrop_path,
+                user_id: session.user.id,
                 user_email: session.user.email,
             })
             .select()
@@ -90,6 +92,7 @@ export async function POST(request) {
                         publisher: data.publisher,
                         ratings_count: data.ratings_count,
                         reading_speed: data.reading_speed,
+                        user_id: session.user.id,
                     });
                 if (bookError) throw bookError;
                 break;
@@ -105,6 +108,7 @@ export async function POST(request) {
                         tmdb_id: data.tmdb_id,
                         vote_average: data.vote_average,
                         runtime: duration,
+                        user_id: session.user.id,
                     });
                 if (movieError) throw movieError;
                 break;
@@ -126,6 +130,7 @@ export async function POST(request) {
                         rawg_id: data.rawg_id,
                         release_date: data.release_date,
                         website: data.website,
+                        user_id: session.user.id,
                     });
                 if (gameError) throw gameError;
                 break;
@@ -143,6 +148,7 @@ export async function POST(request) {
                         tmdb_id: data.tmdb_id,
                         total_episodes: data.total_episodes,
                         vote_average: data.vote_average,
+                        user_id: session.user.id,
                     });
                 if (tvError) throw tvError;
                 break;
@@ -159,6 +165,7 @@ export async function POST(request) {
                 duration: duration, // Use the determined duration
                 completed_duration: 0,
                 completed: false,
+                user_id: session.user.id,
             });
 
         if (progressError) throw progressError;
@@ -168,16 +175,23 @@ export async function POST(request) {
             const { error: lockError } = await supabase
                 .from('locked_items')
                 .insert({
-                    user_id: session.user.id,
-                    lock_type: data.lock_type,
+                    id: mediaItem.id,
+                    key_parent_text: data.key_parent_text || '',
+                    lock_type: data.lock_type || 'specific_item',
                     key_parent_id: data.key_parent_id,
-                    key_parent_text: data.key_parent_text,
-                    goal_time: data.goal_time,
-                    goal_pages: data.goal_pages,
-                    goal_episodes: data.goal_episodes,
+                    goal_time: data.goal_time || 0,
+                    goal_pages: data.goal_pages || 0,
+                    goal_episodes: data.goal_episodes || 0,
+                    completed_time: 0,
+                    pages_completed: 0,
+                    episodes_completed: 0,
+                    user_id: session.user.id
                 });
 
-            if (lockError) throw lockError;
+            if (lockError) {
+                console.error('Lock Error:', lockError);
+                throw lockError;
+            }
         }
 
         return NextResponse.json({ success: true, data: mediaItem });
@@ -210,7 +224,8 @@ export async function GET(request) {
                 books(*),
                 movies(*),
                 tv_shows(*),
-                games(*)
+                games(*),
+                locked_items(*)
             `)
             .eq('user_email', session.user.email);
 

@@ -33,10 +33,12 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
 
         if (!isNaN(numericValue) && selectedItem) {
             form.setValue('key_parent_id', numericValue);
-            form.setValue('key_parent_text', null);
+            form.setValue('key_parent_text', '');
+            form.setValue('lock_type', 'specific_item');
         } else {
             form.setValue('key_parent_id', null);
             form.setValue('key_parent_text', value);
+            form.setValue('lock_type', allCategories.includes(value) ? 'category' : 'media_type');
         }
     }, [form.watch('key_parent')]);
 

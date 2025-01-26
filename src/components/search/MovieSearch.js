@@ -72,6 +72,7 @@ const MovieSearch = () => {
             description: item.description,
             poster_path: item.poster_path,
             backdrop_path: item.backdrop_path,
+            genres: item.genres || [],
 
             // Movie-specific data from movie_details
             director: item.movie_details.director,
@@ -150,6 +151,11 @@ const MovieSearch = () => {
                                 {result.movie_details.vote_average > 0 && (
                                     <p className="text-sm text-muted-foreground">
                                         Rating: {result.movie_details.vote_average}/10
+                                    </p>
+                                )}
+                                {result.genres && result.genres.length > 0 && (
+                                    <p className="text-sm text-muted-foreground">
+                                        Genres: {result.genres.join(', ')}
                                     </p>
                                 )}
                             </div>

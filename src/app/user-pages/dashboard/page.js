@@ -3,16 +3,21 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
+import { useOutsideClick } from "@/hooks/use-outside-click";
 import styles from './styles.module.css';
+import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
     const { data: session, status } = useSession();
     const [expandedId, setExpandedId] = useState(null);
     const [mediaItems, setMediaItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const ref = useRef(null);
+
+    useOutsideClick(ref, () => setExpandedId(null));
 
     useEffect(() => {
         const fetchMediaItems = async () => {
@@ -44,188 +49,271 @@ export default function Dashboard() {
     }
 
     return (
-        <motion.div
-            className={styles.dashboardContainer}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-        >
-            <h1 className="text-2xl font-bold mb-6">Welcome, {session?.user?.name || session?.user?.email || 'User'}!</h1>
-
-            <motion.div className={styles.mediaGrid}>
-                {mediaItems.map((item) => (
+        <>
+            <AnimatePresence>
+                {expandedId && (
                     <motion.div
-                        key={item.id}
-                        className={styles.mediaCard}
-                        onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                    >
-                        <Card>
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className={styles.overlay}
+                        onClick={() => setExpandedId(null)}
+                    />
+                )}
+            </AnimatePresence>
+
+            <motion.div className={styles.dashboardContainer}>
+                <div>
+                    <h1 className="text-2xl font-bold mb-6">
+                        Welcome, {session?.user?.name || session?.user?.email || 'User'}!
+                    </h1>
+
+                    <div className={styles.mediaGrid}>
+                        {mediaItems.map((item) => (
                             <motion.div
-                                layout
-                                className={`${styles.mediaImage} ${expandedId === item.id ? styles.expanded : ''}`}
+                                key={item.id}
+                                layoutId={`card-${item.id}`}
+                                onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                                className={styles.mediaCard}
                             >
-                                <motion.div
-                                    layoutId={`poster-${item.id}`}
-                                    className={`${styles.posterWrapper} ${expandedId === item.id ? styles.expanded : ''}`}
-                                >
-                                    <Image
-                                        src={(() => {
-                                            switch (item.media_type) {
-                                                case 'movie':
-                                                case 'tv':
-                                                    return item.poster_path
-                                                        ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                                                        : '/images/placeholder.jpg';
-                                                case 'book':
-                                                    return item.poster_path || '/images/placeholder.jpg';
-                                                case 'game':
-                                                    return item.poster_path || '/images/placeholder.jpg';
-                                                default:
-                                                    return '/images/placeholder.jpg';
-                                            }
-                                        })()}
-                                        alt={item.title}
-                                        width={expandedId === item.id ? 192 : 64}
-                                        height={expandedId === item.id ? 256 : 64}
-                                        className="object-cover rounded"
-                                    />
-                                </motion.div>
-
-                                <motion.h2
-                                    layoutId={`title-${item.id}`}
-                                    className={`${styles.mediaTitle} ${expandedId === item.id ? styles.expanded : styles.thumbnail}`}
-                                >
-                                    {item.title}
-                                </motion.h2>
-
-                                <AnimatePresence mode="sync">
-                                    {expandedId === item.id && (
+                                <Card>
+                                    <div className={styles.mediaContent}>
                                         <motion.div
-                                            initial={{ opacity: 0 }}
-                                            animate={{
-                                                opacity: 1,
-                                                transition: { duration: 0.2, delay: 0.1 }
-                                            }}
-                                            exit={{
-                                                opacity: 0,
-                                                transition: { duration: 0.15 }
-                                            }}
-                                            className={styles.detailsWrapper}
+                                            layoutId={`image-${item.id}`}
+                                            className={styles.posterWrapper}
                                         >
-                                            <motion.div
-                                                className={styles.detailsGrid}
-                                                initial={{ opacity: 0, y: -8 }}
-                                                animate={{
-                                                    opacity: 1,
-                                                    y: 0,
-                                                    transition: { duration: 0.2, delay: 0.15 }
-                                                }}
-                                                exit={{
-                                                    opacity: 0,
-                                                    y: -8,
-                                                    transition: { duration: 0.1 }
-                                                }}
-                                            >
-                                                <div>
-                                                    <span className="font-semibold">Category:</span> {item.category}
-                                                </div>
-                                                <div>
-                                                    <span className="font-semibold">Type:</span> {item.media_type}
-                                                </div>
-                                                {item.media_type === 'movie' && (
-                                                    <>
-                                                        <div>
-                                                            <span className="font-semibold">Duration:</span> {item.user_media_progress?.duration} min
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-semibold">Director:</span> {item.movies?.director}
-                                                        </div>
-                                                    </>
-                                                )}
-                                                {item.media_type === 'tv' && (
-                                                    <>
-                                                        <div>
-                                                            <span className="font-semibold">Episodes:</span> {item.tv_shows?.total_episodes}
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-semibold">Seasons:</span> {item.tv_shows?.seasons}
-                                                        </div>
-                                                    </>
-                                                )}
+                                            <Image
+                                                src={(() => {
+                                                    switch (item.media_type) {
+                                                        case 'movie':
+                                                        case 'tv':
+                                                            return item.poster_path
+                                                                ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                                                                : '/images/placeholder.jpg';
+                                                        case 'book':
+                                                            return item.poster_path || '/images/placeholder.jpg';
+                                                        case 'game':
+                                                            return item.poster_path || '/images/placeholder.jpg';
+                                                        default:
+                                                            return '/images/placeholder.jpg';
+                                                    }
+                                                })()}
+                                                alt={item.title}
+                                                width={64}
+                                                height={64}
+                                                className="object-cover rounded"
+                                            />
+                                        </motion.div>
+                                        <motion.h2
+                                            layoutId={`title-${item.id}`}
+                                            className={styles.mediaTitle}
+                                        >
+                                            {item.title}
+                                        </motion.h2>
+                                    </div>
+                                </Card>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+
+                <div>
+                    {/* Right column - reserved for future analytics */}
+                </div>
+            </motion.div>
+
+            <AnimatePresence>
+                {expandedId && (
+                    <motion.div
+                        ref={ref}
+                        layoutId={`card-${expandedId}`}
+                        className={styles.expandedCard}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        {mediaItems.map(item => item.id === expandedId && (
+                            <Card key={item.id} className={styles.expandedCardInner}>
+                                <div className={styles.expandedContent}>
+                                    <motion.div
+                                        layoutId={`image-${item.id}`}
+                                        className={styles.expandedPoster}
+                                    >
+                                        <Image
+                                            src={(() => {
+                                                switch (item.media_type) {
+                                                    case 'movie':
+                                                    case 'tv':
+                                                        return item.poster_path
+                                                            ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                                                            : '/images/placeholder.jpg';
+                                                    case 'book':
+                                                        return item.poster_path || '/images/placeholder.jpg';
+                                                    case 'game':
+                                                        return item.poster_path || '/images/placeholder.jpg';
+                                                    default:
+                                                        return '/images/placeholder.jpg';
+                                                }
+                                            })()}
+                                            alt={item.title}
+                                            width={240}
+                                            height={360}
+                                            className="object-cover rounded"
+                                        />
+                                    </motion.div>
+                                    <div className={styles.expandedDetails}>
+                                        <motion.h2
+                                            layoutId={`title-${item.id}`}
+                                            className={styles.expandedTitle}
+                                        >
+                                            {item.title}
+                                        </motion.h2>
+
+                                        <div className={styles.progressSection}>
+                                            <h3 className="text-lg font-semibold mb-2">Progress</h3>
+                                            <div className="space-y-2">
                                                 {item.media_type === 'book' && (
                                                     <>
                                                         <div>
-                                                            <span className="font-semibold">Pages:</span> {item.books?.page_count}
+                                                            <span className="font-semibold">Pages Read:</span> {item.user_media_progress?.completed_duration || 0}
+                                                            / {item.books?.page_count || '?'} pages
                                                         </div>
                                                         <div>
-                                                            <span className="font-semibold">Author:</span> {item.books?.authors?.[0]}
+                                                            <span className="font-semibold">Estimated Time:</span> {
+                                                                Math.round((item.user_media_progress?.duration || 0) / 60)
+                                                            } hours
                                                         </div>
                                                     </>
                                                 )}
-                                                {item.media_type === 'game' && (
+
+                                                {item.media_type === 'movie' && (
+                                                    <div>
+                                                        <span className="font-semibold">Watched:</span> {item.user_media_progress?.completed_duration || 0}
+                                                        / {item.user_media_progress?.duration || item.movies?.runtime || '?'} minutes
+                                                    </div>
+                                                )}
+
+                                                {item.media_type === 'tv' && (
                                                     <>
                                                         <div>
-                                                            <span className="font-semibold">Playtime:</span> {item.games?.average_playtime} hours
+                                                            <span className="font-semibold">Episodes Watched:</span> {
+                                                                Math.floor((item.user_media_progress?.completed_duration || 0) /
+                                                                    (item.tv_shows?.average_runtime || 30))
+                                                            } / {item.tv_shows?.total_episodes || '?'}
                                                         </div>
                                                         <div>
-                                                            <span className="font-semibold">Rating:</span> {item.games?.metacritic || 'N/A'}
+                                                            <span className="font-semibold">Time Watched:</span> {
+                                                                item.user_media_progress?.completed_duration || 0
+                                                            } / {item.user_media_progress?.duration || '?'} minutes
                                                         </div>
                                                     </>
                                                 )}
-                                            </motion.div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
 
-                                <AnimatePresence mode="sync">
-                                    {expandedId === item.id && (
-                                        <motion.div
-                                            initial={{ height: 0 }}
-                                            animate={{
-                                                height: "auto",
-                                                transition: { duration: 0.3 }
-                                            }}
-                                            exit={{
-                                                height: 0,
-                                                transition: { duration: 0.2 }
-                                            }}
-                                            className={styles.descriptionWrapper}
-                                        >
-                                            <motion.div
-                                                className={styles.description}
-                                                initial={{ opacity: 0, y: -8 }}
-                                                animate={{
-                                                    opacity: 1,
-                                                    y: 0,
-                                                    transition: { duration: 0.2, delay: 0.2 }
-                                                }}
-                                                exit={{
-                                                    opacity: 0,
-                                                    y: -8,
-                                                    transition: { duration: 0.1 }
-                                                }}
-                                            >
-                                                {item.description}
-                                            </motion.div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </motion.div>
-                        </Card>
+                                                {item.media_type === 'game' && (
+                                                    <div>
+                                                        <span className="font-semibold">Time Played:</span> {
+                                                            Math.round((item.user_media_progress?.completed_duration || 0) / 60)
+                                                        } / {
+                                                            Math.round((item.user_media_progress?.duration || 0) / 60)
+                                                        } hours
+                                                    </div>
+                                                )}
+
+                                                <div>
+                                                    <span className="font-semibold">Status:</span> {
+                                                        item.user_media_progress?.completed ? 'Completed' : 'In Progress'
+                                                    }
+                                                    {item.locked_items && item.locked_items.length > 0 && (
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="ml-2"
+                                                        >
+                                                            Locked
+                                                        </Badge>
+                                                    )}
+                                                </div>
+
+
+                                                {item.user_media_progress?.queue_number && (
+                                                    <div>
+                                                        <span className="font-semibold">Queue Position:</span> {
+                                                            item.user_media_progress.queue_number
+                                                        }
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className={styles.detailsGrid}>
+                                            <div>
+                                                <span className="font-semibold">Category:</span> {item.category}
+                                            </div>
+                                            <div>
+                                                <span className="font-semibold">Type:</span> {item.media_type}
+                                            </div>
+                                            {item.media_type === 'movie' && (
+                                                <>
+                                                    <div>
+                                                        <span className="font-semibold">Duration:</span> {item.user_media_progress?.duration} min
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-semibold">Director:</span> {item.movies?.director}
+                                                    </div>
+                                                </>
+                                            )}
+                                            {item.media_type === 'tv' && (
+                                                <>
+                                                    <div>
+                                                        <span className="font-semibold">Episodes:</span> {item.tv_shows?.total_episodes}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-semibold">Seasons:</span> {item.tv_shows?.seasons}
+                                                    </div>
+                                                </>
+                                            )}
+                                            {item.media_type === 'book' && (
+                                                <>
+                                                    <div>
+                                                        <span className="font-semibold">Pages:</span> {item.books?.page_count}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-semibold">Author:</span> {
+                                                            item.books?.authors ?
+                                                                (typeof item.books.authors === 'string'
+                                                                    ? JSON.parse(item.books.authors).join(', ')
+                                                                    : item.books.authors.join(', ')
+                                                                )
+                                                                : 'Unknown Author'
+                                                        }
+                                                    </div>
+                                                </>
+                                            )}
+                                            {item.media_type === 'game' && (
+                                                <>
+                                                    <div>
+                                                        <span className="font-semibold">Playtime:</span> {item.games?.average_playtime} hours
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-semibold">Rating:</span> {item.games?.metacritic || 'N/A'}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className={styles.descriptionWrapper}>
+                                    <div className={styles.description}>
+                                        {item.description}
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
                     </motion.div>
-                ))}
-            </motion.div>
-
-            <motion.div
-                className="mt-4"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-            >
-                <Link href="/user-pages/search" className="text-blue-500 hover:underline">
-                    Search for more media
-                </Link>
-            </motion.div>
-        </motion.div>
+                )}
+            </AnimatePresence>
+            <Link href="/user-pages/search">
+                Search
+            </Link>
+        </>
     );
 }

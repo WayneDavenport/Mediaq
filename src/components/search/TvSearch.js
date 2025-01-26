@@ -72,6 +72,7 @@ const TvSearch = () => {
             description: item.description,
             poster_path: item.poster_path,
             backdrop_path: item.backdrop_path,
+            genres: item.genres,
 
             // TV-specific data from tv_details
             average_runtime: item.tv_details.average_runtime,
@@ -88,6 +89,8 @@ const TvSearch = () => {
             queue_number: null,
             completed_duration: 0,
             completed: false,
+            pages_completed: null,
+            episodes_completed: 0,
         };
 
         setStagingItem(formData);
@@ -163,6 +166,11 @@ const TvSearch = () => {
                                 {result.tv_details.vote_average > 0 && (
                                     <p className="text-sm text-muted-foreground">
                                         Rating: {result.tv_details.vote_average}/10
+                                    </p>
+                                )}
+                                {result.genres && result.genres.length > 0 && (
+                                    <p className="text-sm text-muted-foreground">
+                                        Genres: {result.genres.join(', ')}
                                     </p>
                                 )}
                             </div>
