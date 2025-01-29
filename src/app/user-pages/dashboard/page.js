@@ -11,6 +11,7 @@ import styles from './styles.module.css';
 import { Badge } from "@/components/ui/badge";
 import UpdateProgressModal from "@/components/progress/UpdateProgressModal";
 import { Button } from "@/components/ui/button";
+import ProgressDisplay from "@/components/progress/ProgressDisplay";
 
 export default function Dashboard() {
     const { data: session, status } = useSession();
@@ -212,90 +213,7 @@ export default function Dashboard() {
                                         </motion.h2>
 
                                         <div className={styles.progressSection}>
-                                            <div className="flex justify-between items-center mb-2">
-                                                <h3 className="text-lg font-semibold">Progress</h3>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setSelectedItem(item);
-                                                        setUpdateModalOpen(true);
-                                                    }}
-                                                >
-                                                    Update Progress
-                                                </Button>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {item.media_type === 'book' && (
-                                                    <>
-                                                        <div>
-                                                            <span className="font-semibold">Pages Read:</span> {item.user_media_progress?.completed_duration || 0}
-                                                            / {item.books?.page_count || '?'} pages
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-semibold">Estimated Time:</span> {
-                                                                Math.round((item.user_media_progress?.duration || 0) / 60)
-                                                            } hours
-                                                        </div>
-                                                    </>
-                                                )}
-
-                                                {item.media_type === 'movie' && (
-                                                    <div>
-                                                        <span className="font-semibold">Watched:</span> {item.user_media_progress?.completed_duration || 0}
-                                                        / {item.user_media_progress?.duration || item.movies?.runtime || '?'} minutes
-                                                    </div>
-                                                )}
-
-                                                {item.media_type === 'tv' && (
-                                                    <>
-                                                        <div>
-                                                            <span className="font-semibold">Episodes Watched:</span> {
-                                                                Math.floor((item.user_media_progress?.completed_duration || 0) /
-                                                                    (item.tv_shows?.average_runtime || 30))
-                                                            } / {item.tv_shows?.total_episodes || '?'}
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-semibold">Time Watched:</span> {
-                                                                item.user_media_progress?.completed_duration || 0
-                                                            } / {item.user_media_progress?.duration || '?'} minutes
-                                                        </div>
-                                                    </>
-                                                )}
-
-                                                {item.media_type === 'game' && (
-                                                    <div>
-                                                        <span className="font-semibold">Time Played:</span> {
-                                                            Math.round((item.user_media_progress?.completed_duration || 0) / 60)
-                                                        } / {
-                                                            Math.round((item.user_media_progress?.duration || 0) / 60)
-                                                        } hours
-                                                    </div>
-                                                )}
-
-                                                <div>
-                                                    <span className="font-semibold">Status:</span> {
-                                                        item.user_media_progress?.completed ? 'Completed' : 'In Progress'
-                                                    }
-                                                    {item.locked_items && item.locked_items.length > 0 && (
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className="ml-2"
-                                                        >
-                                                            Locked
-                                                        </Badge>
-                                                    )}
-                                                </div>
-
-
-                                                {item.user_media_progress?.queue_number && (
-                                                    <div>
-                                                        <span className="font-semibold">Queue Position:</span> {
-                                                            item.user_media_progress.queue_number
-                                                        }
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <ProgressDisplay item={item} />
                                         </div>
 
                                         <div className={styles.detailsGrid}>

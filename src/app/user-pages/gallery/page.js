@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 
+
 export default function GalleryPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
@@ -20,6 +21,7 @@ export default function GalleryPage() {
     return (
         <div>
             <h1>Gallery</h1>
+
         </div>
     );
 }

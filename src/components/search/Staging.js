@@ -131,6 +131,7 @@ const Staging = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [customCategory, setCustomCategory] = useState('');
     const [allCategories, setAllCategories] = useState(PRESET_CATEGORIES);
+    const [nextQueueNumber, setNextQueueNumber] = useState(null);
 
     const form = useForm({
         resolver: zodResolver(formSchema),
@@ -220,6 +221,20 @@ const Staging = () => {
         }
     }, [stagingItem, form]);
 
+    useEffect(() => {
+        const fetchNextQueueNumber = async () => {
+            try {
+                const response = await fetch('/api/media-items/queue-number');
+                const data = await response.json();
+                setNextQueueNumber(data.nextQueueNumber);
+            } catch (error) {
+                console.error('Error fetching next queue number:', error);
+            }
+        };
+
+        fetchNextQueueNumber();
+    }, []);
+
     const handleCustomCategoryAdd = (newCategory) => {
         if (newCategory && !allCategories.includes(newCategory)) {
             setAllCategories(prevCategories => [...prevCategories, newCategory]);
@@ -269,7 +284,8 @@ const Staging = () => {
             console.log('Form data being submitted:', {
                 ...data,
                 ...lockData,
-                duration, // Use the calculated duration
+                duration,
+                queue_number: nextQueueNumber,
             });
 
             const response = await fetch('/api/media-items', {
@@ -280,7 +296,8 @@ const Staging = () => {
                 body: JSON.stringify({
                     ...data,
                     ...lockData,
-                    duration, // Use the calculated duration
+                    duration,
+                    queue_number: nextQueueNumber,
                     user_email: session.user.email,
                 }),
             });
