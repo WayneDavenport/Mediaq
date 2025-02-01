@@ -1,25 +1,40 @@
 'use client';
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
-export default function ProgressDisplay({ item }) {
+export default function ProgressDisplay({ item, onUpdateClick }) {
     const isLocked = item.locked_items && item.locked_items.length > 0;
     const lockData = isLocked ? item.locked_items[0] : null;
+
+    const capitalizeFirstLetter = (string) => {
+        if (!string) return '';
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    };
 
     const getProgressDisplay = () => {
         if (isLocked) {
             return (
                 <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold">Lock Progress</h3>
-                        <Badge variant="secondary">Locked</Badge>
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold">Lock Progress</h3>
+                            <Badge variant="secondary">Locked</Badge>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onUpdateClick(item)}
+                        >
+                            Update Progress
+                        </Button>
                     </div>
 
                     <div>
                         <span className="font-semibold">Locked Behind:</span> {
                             lockData.key_parent_id !== null
                                 ? lockData.parent?.title
-                                : lockData.key_parent_text
+                                : capitalizeFirstLetter(lockData.key_parent_text)
                         }
                     </div>
 
@@ -61,7 +76,16 @@ export default function ProgressDisplay({ item }) {
         // Regular progress display for unlocked items
         return (
             <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Progress</h3>
+                <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Progress</h3>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onUpdateClick(item)}
+                    >
+                        Update Progress
+                    </Button>
+                </div>
 
                 {item.media_type === 'book' && (
                     <>

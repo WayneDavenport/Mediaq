@@ -213,7 +213,13 @@ export default function Dashboard() {
                                         </motion.h2>
 
                                         <div className={styles.progressSection}>
-                                            <ProgressDisplay item={item} />
+                                            <ProgressDisplay
+                                                item={item}
+                                                onUpdateClick={(item) => {
+                                                    setSelectedItem(item);
+                                                    setUpdateModalOpen(true);
+                                                }}
+                                            />
                                         </div>
 
                                         <div className={styles.detailsGrid}>

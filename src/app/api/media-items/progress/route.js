@@ -24,18 +24,9 @@ export async function PUT(request) {
         } = await request.json();
 
         // Calculate progress differences
-        const durationDiff = completed_duration - initial_duration;
+        const timeDiff = completed_duration - initial_duration;
         const episodesDiff = episodes_completed - initial_episodes;
         const pagesDiff = pages_completed - initial_pages;
-
-        // Calculate time difference based on media type
-        let timeDiff = durationDiff; // Default for movies and games
-        if (media_type === 'book') {
-            // Assuming average reading speed (words per minute)
-            timeDiff = Math.round((pagesDiff * 250) / 200); // 250 words per page, 200 words per minute
-        } else if (media_type === 'tv') {
-            timeDiff = episodesDiff * (item.tv_shows?.average_runtime || 30);
-        }
 
         // First, update the progress for the current item
         const updateData = {

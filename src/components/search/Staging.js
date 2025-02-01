@@ -263,18 +263,24 @@ const Staging = () => {
             const selectedItem = incompleteItems.find(i => Number(i.id) === numericValue);
             const isCategory = allCategories.includes(keyParent);
 
-            // Calculate the correct duration based on media type
+            // Convert media types to lowercase when saving
+            const mediaTypes = ['Movie', 'Book', 'Show', 'Game'];
+            let keyParentText = selectedItem ? null : keyParent;
+            if (mediaTypes.includes(keyParent)) {
+                keyParentText = keyParent.toLowerCase();
+            }
+
+            // Calculate total duration for TV shows
             let duration = data.duration;
-            if (data.media_type === 'tv') {
-                // Calculate total minutes for the entire series
-                duration = (data.total_episodes || 0) * (data.average_runtime || 30);
+            if (data.media_type === 'tv' && data.total_episodes) {
+                duration = data.total_episodes * (data.average_runtime || 30); // Default to 30 minutes if no runtime specified
             }
 
             const lockData = {
                 user_id: session.user.id,
                 lock_type: selectedItem ? 'specific_item' : (isCategory ? 'category' : 'media_type'),
                 key_parent_id: selectedItem ? numericValue : null,
-                key_parent_text: selectedItem ? null : keyParent,
+                key_parent_text: keyParentText,
                 goal_time: data.goal_time,
                 goal_pages: data.goal_pages,
                 goal_episodes: data.goal_episodes,
