@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
@@ -11,12 +11,15 @@ import {
     CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
+import MediaModal from '@/components/gallery/MediaModal';
 
 export default function GalleryPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [mediaItems, setMediaItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [cardPosition, setCardPosition] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
         const fetchMediaItems = async () => {
@@ -64,6 +67,7 @@ export default function GalleryPage() {
         if (item.category) categories.add(item.category);
 
         // Parse genres if it exists and is a string
+        /*
         if (item.genres && typeof item.genres === 'string') {
             try {
                 const genreArray = JSON.parse(item.genres);
@@ -72,6 +76,7 @@ export default function GalleryPage() {
                 console.error('Error parsing genres:', e);
             }
         }
+        */
 
         // Add to all relevant category groups
         categories.forEach(category => {
@@ -81,6 +86,14 @@ export default function GalleryPage() {
 
         return acc;
     }, {});
+
+    const handleCardClick = (item, event) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const centerX = window.innerWidth / 2 - (rect.left + rect.width / 2);
+        const centerY = window.innerHeight / 2 - (rect.top + rect.height / 2);
+        setCardPosition({ x: -centerX, y: -centerY });
+        setSelectedItem(item);
+    };
 
     const MediaRow = ({ title, items }) => (
         <div className="py-4">
@@ -103,7 +116,10 @@ export default function GalleryPage() {
 
                         return (
                             <CarouselItem key={item.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
-                                <Card>
+                                <Card
+                                    className="cursor-pointer"
+                                    onClick={(e) => handleCardClick(item, e)}
+                                >
                                     <CardContent
                                         className="flex aspect-[2/3] items-center justify-center p-6 relative"
                                         style={{
@@ -144,42 +160,51 @@ export default function GalleryPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-8">My Media Gallery</h1>
+        <>
+            <div className="container mx-auto px-4 py-8">
+                <h1 className="text-3xl font-bold mb-8">My Media Gallery</h1>
 
-            {/* Queue Row */}
-            {queuedItems.length > 0 && (
-                <MediaRow
-                    title="Queue"
-                    items={queuedItems}
-                />
-            )}
+                {/* Queue Row */}
+                {queuedItems.length > 0 && (
+                    <MediaRow
+                        title="Queue"
+                        items={queuedItems}
+                    />
+                )}
 
-            {/* Unqueued Row */}
-            {unqueuedItems.length > 0 && (
-                <MediaRow
-                    title="Unqueued Items"
-                    items={unqueuedItems}
-                />
-            )}
+                {/* Unqueued Row */}
+                {unqueuedItems.length > 0 && (
+                    <MediaRow
+                        title="Unqueued Items"
+                        items={unqueuedItems}
+                    />
+                )}
 
-            {/* Media Type Sections */}
-            {Object.entries(groupedByType).map(([type, items]) => (
-                <MediaRow
-                    key={type}
-                    title={type}
-                    items={items}
-                />
-            ))}
+                {/* Media Type Sections */}
+                {Object.entries(groupedByType).map(([type, items]) => (
+                    <MediaRow
+                        key={type}
+                        title={type}
+                        items={items}
+                    />
+                ))}
 
-            {/* Category Sections */}
-            {Object.entries(groupedByCategory).map(([category, items]) => (
-                <MediaRow
-                    key={category}
-                    title={category}
-                    items={items}
-                />
-            ))}
-        </div>
+                {/* Category Sections */}
+                {Object.entries(groupedByCategory).map(([category, items]) => (
+                    <MediaRow
+                        key={category}
+                        title={category}
+                        items={items}
+                    />
+                ))}
+            </div>
+
+            <MediaModal
+                item={selectedItem}
+                isOpen={!!selectedItem}
+                onClose={() => setSelectedItem(null)}
+                cardPosition={cardPosition}
+            />
+        </>
     );
 }

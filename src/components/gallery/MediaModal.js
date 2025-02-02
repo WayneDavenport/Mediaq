@@ -1,0 +1,221 @@
+'use client';
+
+import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+const MediaModal = ({ item, isOpen, onClose, cardPosition }) => {
+    if (!item) return null;
+
+    // Debug logging
+    console.log('Full item data:', item);
+    console.log('Description:', item.description);
+    console.log('Media type:', item.media_type);
+    console.log('Media specific data:', {
+        movies: item.movies,
+        books: item.books,
+        tv_shows: item.tv_shows,
+        games: item.games
+    });
+    console.log('Progress data:', item.user_media_progress);
+    console.log('Genres:', item.genres);
+    console.log('Category:', item.category);
+
+    const isLocked = item.locked_items && item.locked_items.length > 0;
+    const lockData = isLocked ? item.locked_items[0] : null;
+
+    const parseAuthors = (authors) => {
+        try {
+            return JSON.parse(authors).join(', ');
+        } catch {
+            return authors;
+        }
+    };
+
+    const parseGenres = (genres) => {
+        try {
+            return JSON.parse(genres);
+        } catch {
+            return [];
+        }
+    };
+
+    const renderMediaSpecificDetails = () => {
+        console.log('Rendering media specific details for:', item.media_type);
+        switch (item.media_type) {
+            case 'movie':
+                console.log('Movie details:', item.movies);
+                return item.movies ? (
+                    <>
+                        <p><span className="font-semibold">Director:</span> {item.movies.director || 'N/A'}</p>
+                        <p><span className="font-semibold">Release Date:</span> {item.movies.release_date ? new Date(item.movies.release_date).toLocaleDateString() : 'N/A'}</p>
+                        <p><span className="font-semibold">Runtime:</span> {item.movies.runtime || 'N/A'} minutes</p>
+                        <p><span className="font-semibold">Rating:</span> {item.movies.vote_average ? `${item.movies.vote_average}/10` : 'N/A'}</p>
+                    </>
+                ) : null;
+            case 'book':
+                return item.books ? (
+                    <>
+                        <p><span className="font-semibold">Authors:</span> {parseAuthors(item.books.authors)}</p>
+                        <p><span className="font-semibold">Language:</span> {item.books.language || 'N/A'}</p>
+                        <p><span className="font-semibold">Pages:</span> {item.books.page_count || 'N/A'}</p>
+                    </>
+                ) : null;
+            case 'tv':
+                return item.tv_shows ? (
+                    <>
+                        <p><span className="font-semibold">First Air Date:</span> {item.tv_shows.first_air_date ? new Date(item.tv_shows.first_air_date).toLocaleDateString() : 'N/A'}</p>
+                        <p><span className="font-semibold">Episodes:</span> {item.tv_shows.number_of_episodes || 'N/A'}</p>
+                        <p><span className="font-semibold">Rating:</span> {item.tv_shows.vote_average ? `${item.tv_shows.vote_average}/10` : 'N/A'}</p>
+                    </>
+                ) : null;
+            case 'game':
+                return item.games ? (
+                    <>
+                        <p><span className="font-semibold">Release Date:</span> {item.games.release_date ? new Date(item.games.release_date).toLocaleDateString() : 'N/A'}</p>
+                        <p><span className="font-semibold">Rating:</span> {item.games.rating ? `${item.games.rating}/5` : 'N/A'}</p>
+                        <p><span className="font-semibold">Playtime:</span> {item.games.playtime || 'N/A'} hours</p>
+                    </>
+                ) : null;
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+                    onClick={onClose}
+                >
+                    <motion.div
+                        initial={{ ...cardPosition, opacity: 0, scale: 0.75 }}
+                        animate={{
+                            x: 0,
+                            y: 0,
+                            opacity: 1,
+                            scale: 1,
+                            transition: { type: "spring", duration: 0.5 }
+                        }}
+                        exit={{
+                            ...cardPosition,
+                            opacity: 0,
+                            scale: 0.75,
+                            transition: { duration: 0.3 }
+                        }}
+                        className="relative w-full max-w-2xl mx-auto bg-background rounded-lg shadow-lg overflow-hidden"
+                        style={{
+                            maxHeight: 'calc(100vh - 2rem)',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-4 top-4 z-50"
+                            onClick={onClose}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+
+                        <div className="relative h-[200px] sm:h-[250px]">
+                            <div
+                                className="absolute inset-0 bg-cover bg-center"
+                                style={{
+                                    backgroundImage: item.poster_path ?
+                                        `url(${item.media_type === 'book' || item.media_type === 'game'
+                                            ? item.poster_path
+                                            : `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                                        })` : 'none'
+                                }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
+                        </div>
+
+                        <ScrollArea className="max-h-[calc(100vh-2rem-250px)] overflow-y-auto">
+                            <div className="p-6">
+                                <div className="space-y-4">
+                                    <h2 className="text-2xl font-bold">{item.title}</h2>
+
+                                    {/* Show locked status if item is locked */}
+                                    {isLocked && (
+                                        <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-md">
+                                            <p className="font-semibold">
+                                                Locked behind: {
+                                                    lockData.key_parent_id
+                                                        ? "Another media item"
+                                                        : lockData.key_parent_text
+                                                }
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Debug info */}
+                                    <div className="text-xs text-muted-foreground">
+                                        <p>Media Type: {item.media_type}</p>
+                                        <p>Has Description: {item.description ? 'Yes' : 'No'}</p>
+                                        <p>Description Length: {item.description?.length || 0}</p>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
+                                        <span className="px-2 py-1 bg-primary/10 rounded-full text-sm">
+                                            {item.media_type?.charAt(0).toUpperCase() + item.media_type?.slice(1)}
+                                        </span>
+                                        {item.category && (
+                                            <span className="px-2 py-1 bg-primary/10 rounded-full text-sm">
+                                                {item.category}
+                                            </span>
+                                        )}
+                                        {item.genres && typeof item.genres === 'string' &&
+                                            parseGenres(item.genres).map(genre => (
+                                                <span key={genre} className="px-2 py-1 bg-primary/10 rounded-full text-sm">
+                                                    {genre}
+                                                </span>
+                                            ))
+                                        }
+                                    </div>
+
+                                    {/* Description section */}
+                                    <div className="space-y-2">
+                                        <p className="font-semibold">Description:</p>
+                                        {item.description ? (
+                                            <p className="text-muted-foreground whitespace-pre-wrap">
+                                                {item.description}
+                                            </p>
+                                        ) : (
+                                            <p className="text-muted-foreground italic">
+                                                No description available
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        {renderMediaSpecificDetails()}
+                                    </div>
+
+                                    {item.user_media_progress && (
+                                        <div className="pt-4 border-t space-y-2">
+                                            <p className="font-semibold">Duration:</p>
+                                            <p>{item.user_media_progress.duration} {
+                                                item.media_type === 'book'
+                                                    ? 'pages'
+                                                    : 'minutes'
+                                            }</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </ScrollArea>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
+
+export default MediaModal; 
