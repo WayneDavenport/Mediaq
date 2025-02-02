@@ -13,6 +13,8 @@ import UpdateProgressModal from "@/components/progress/UpdateProgressModal";
 import { Button } from "@/components/ui/button";
 import ProgressDisplay from "@/components/progress/ProgressDisplay";
 import ProgressSection from "@/components/progress/ProgressSection";
+import CompletedSection from "@/components/dashboard/CompletedSection";
+
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 
@@ -189,7 +191,9 @@ export default function Dashboard() {
                             </motion.div>
                         ))}
                     </div>
+                    <CompletedSection />
                 </div>
+
 
                 <div>
                     {/* Right column - reserved for future analytics */}

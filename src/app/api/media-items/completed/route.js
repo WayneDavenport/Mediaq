@@ -10,10 +10,11 @@ export async function GET(request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        console.log('Fetching completed items for user:', session.user.id);
+
         const { data: items, error } = await supabase
             .from('user_media_progress')
             .select(`
-                *,
                 media_items (
                     id,
                     title,
@@ -29,16 +30,28 @@ export async function GET(request) {
                     tv_shows (
                         average_runtime
                     )
-                )
+                ),
+                completed_duration,
+                duration,
+                episodes_completed,
+                pages_completed,
+                completed,
+                created_at
             `)
             .eq('user_id', session.user.id)
             .eq('completed', true)
-            .order('updated_at', { ascending: false });
+            .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase query error:', error);
+            throw error;
+        }
 
+        console.log('Raw items:', items);
+
+        // Transform the data to match the expected structure
         const transformedItems = items
-            .filter(item => item.media_items)
+            .filter(item => item.media_items) // Filter out any null items
             .map(item => ({
                 id: item.media_items.id,
                 title: item.media_items.title,
@@ -54,16 +67,18 @@ export async function GET(request) {
                     episodes_completed: item.episodes_completed,
                     pages_completed: item.pages_completed,
                     completed: item.completed,
-                    completed_at: item.updated_at
+                    completed_at: item.created_at
                 }
             }));
+
+        console.log('Transformed items:', transformedItems);
 
         return NextResponse.json({ items: transformedItems });
 
     } catch (error) {
-        console.error('Error fetching completed items:', error);
+        console.error('Detailed error:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch completed items' },
+            { error: 'Failed to fetch completed items', details: error.message },
             { status: 500 }
         );
     }
