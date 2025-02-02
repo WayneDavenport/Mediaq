@@ -12,6 +12,14 @@ export default function ProgressDisplay({ item, onUpdateClick }) {
         return string.charAt(0).toUpperCase() + string.slice(1);
     };
 
+    const shouldShowBookGoals = () => {
+        if (!lockData) return false;
+        return (
+            item.media_type === 'book' ||
+            (lockData.key_parent_text === 'book' && !lockData.key_parent_id)
+        );
+    };
+
     const getProgressDisplay = () => {
         if (isLocked) {
             return (
@@ -42,26 +50,13 @@ export default function ProgressDisplay({ item, onUpdateClick }) {
                         <span className="font-semibold">Time Completed:</span> {lockData.completed_time || 0} minutes
                     </div>
 
-                    {item.media_type === 'book' && (
-                        <>
-                            <div>
-                                <span className="font-semibold">Pages Read:</span> {lockData.pages_completed || 0}
-                                {lockData.goal_pages && (
-                                    <span> / {lockData.goal_pages} pages</span>
-                                )}
-                            </div>
-                        </>
-                    )}
-
-                    {item.media_type === 'tv' && (
-                        <>
-                            <div>
-                                <span className="font-semibold">Episodes Watched:</span> {lockData.episodes_completed || 0}
-                                {lockData.goal_episodes && (
-                                    <span> / {lockData.goal_episodes} episodes</span>
-                                )}
-                            </div>
-                        </>
+                    {shouldShowBookGoals() && (
+                        <div>
+                            <span className="font-semibold">Pages Read:</span> {lockData.pages_completed || 0}
+                            {lockData.goal_pages && (
+                                <span> / {lockData.goal_pages} pages</span>
+                            )}
+                        </div>
                     )}
 
                     {lockData.goal_time && (

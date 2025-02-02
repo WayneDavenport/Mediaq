@@ -12,17 +12,29 @@ import { Badge } from "@/components/ui/badge";
 import UpdateProgressModal from "@/components/progress/UpdateProgressModal";
 import { Button } from "@/components/ui/button";
 import ProgressDisplay from "@/components/progress/ProgressDisplay";
+import ProgressSection from "@/components/progress/ProgressSection";
+
+const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 
 export default function Dashboard() {
     const { data: session, status } = useSession();
     const [expandedId, setExpandedId] = useState(null);
     const [mediaItems, setMediaItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [allCategories, setAllCategories] = useState(PRESET_CATEGORIES);
     const ref = useRef(null);
     const [updateModalOpen, setUpdateModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
 
-    useOutsideClick(ref, () => setExpandedId(null));
+    useOutsideClick(ref, (event) => {
+        // Check if the click is within a Select/dropdown component
+        const isSelectClick = event.target.closest('[role="combobox"]') ||
+            event.target.closest('[role="listbox"]');
+
+        if (!isSelectClick) {
+            setExpandedId(null);
+        }
+    });
 
     useEffect(() => {
         const fetchMediaItems = async () => {
@@ -43,6 +55,25 @@ export default function Dashboard() {
         };
 
         fetchMediaItems();
+    }, [status]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await fetch('/api/media-items/categories');
+                const data = await response.json();
+                if (data.categories) {
+                    const uniqueCategories = Array.from(new Set([...PRESET_CATEGORIES, ...data.categories]));
+                    setAllCategories(uniqueCategories);
+                }
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            }
+        };
+
+        if (status === "authenticated") {
+            fetchCategories();
+        }
     }, [status]);
 
     const handleProgressUpdate = (newProgress) => {
@@ -213,12 +244,14 @@ export default function Dashboard() {
                                         </motion.h2>
 
                                         <div className={styles.progressSection}>
-                                            <ProgressDisplay
+                                            <ProgressSection
                                                 item={item}
                                                 onUpdateClick={(item) => {
                                                     setSelectedItem(item);
                                                     setUpdateModalOpen(true);
                                                 }}
+                                                allCategories={allCategories}
+                                                incompleteItems={mediaItems.filter(i => !i.user_media_progress?.completed)}
                                             />
                                         </div>
 
