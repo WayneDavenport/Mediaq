@@ -10,6 +10,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function UpdateProgressModal({
     isOpen,
@@ -18,6 +28,8 @@ export default function UpdateProgressModal({
     onUpdate
 }) {
     const [progress, setProgress] = useState(item.user_media_progress?.completed_duration || 0);
+    const [showCompleteAlert, setShowCompleteAlert] = useState(false);
+    const [isMarkingComplete, setIsMarkingComplete] = useState(false);
 
     const getMaxValue = () => {
         switch (item.media_type) {
@@ -54,13 +66,29 @@ export default function UpdateProgressModal({
         }
     };
 
-    const handleUpdate = async () => {
+    const handleMarkComplete = () => {
+        setIsMarkingComplete(true);
+        const maxValue = getMaxValue();
+        setProgress(maxValue);
+        handleUpdate(true);
+    };
+
+    const handleSaveClick = () => {
+        const maxValue = getMaxValue();
+        if (progress === maxValue) {
+            setShowCompleteAlert(true);
+        } else {
+            handleUpdate(false);
+        }
+    };
+
+    const handleUpdate = async (markAsComplete = false) => {
         try {
             const updateData = {
                 id: item.id,
                 completed_duration: progress,
                 initial_duration: item.user_media_progress?.completed_duration || 0,
-                completed: progress >= getMaxValue(),
+                completed: markAsComplete,
                 media_type: item.media_type,
                 category: item.category
             };
@@ -89,45 +117,90 @@ export default function UpdateProgressModal({
 
             onUpdate(progress);
             onClose();
+            setShowCompleteAlert(false);
+            setIsMarkingComplete(false);
         } catch (error) {
             console.error('Error updating progress:', error);
         }
     };
 
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Update Progress</DialogTitle>
-                    <DialogDescription>
-                        Adjust your progress for {item.title}
-                    </DialogDescription>
-                </DialogHeader>
+    const handleCompleteAlertResponse = (shouldComplete) => {
+        setShowCompleteAlert(false);
+        if (shouldComplete) {
+            handleUpdate(true);
+        } else {
+            // Set progress to 99% of max value
+            const maxValue = getMaxValue();
+            const newProgress = Math.floor(maxValue * 0.99);
+            setProgress(newProgress);
+            handleUpdate(false);
+        }
+    };
 
-                <div className="py-6">
-                    <div className="space-y-4">
-                        <Slider
-                            value={[progress]}
-                            onValueChange={([value]) => setProgress(value)}
-                            max={getMaxValue()}
-                            step={1}
-                            className="w-full"
-                        />
-                        <div className="text-center text-sm text-muted-foreground">
-                            {getDisplayValue()}
+    return (
+        <>
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Update Progress</DialogTitle>
+                        <DialogDescription>
+                            Adjust your progress for {item.title}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-6">
+                        <div className="space-y-4">
+                            <Slider
+                                value={[progress]}
+                                onValueChange={([value]) => setProgress(value)}
+                                max={getMaxValue()}
+                                step={1}
+                                className="w-full"
+                            />
+                            <div className="text-center text-sm text-muted-foreground">
+                                {getDisplayValue()}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={onClose}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleUpdate}>
-                        Save Progress
-                    </Button>
-                </div>
-            </DialogContent>
-        </Dialog>
+                    <div className="flex justify-between space-x-2">
+                        <Button
+                            variant="secondary"
+                            onClick={handleMarkComplete}
+                            className="bg-green-500 hover:bg-green-600 text-white"
+                        >
+                            Mark as Complete
+                        </Button>
+                        <div className="flex space-x-2">
+                            <Button variant="outline" onClick={onClose}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleSaveClick}>
+                                Save Progress
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <AlertDialog open={showCompleteAlert} onOpenChange={setShowCompleteAlert}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Mark as Complete?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You've reached 100% progress. Would you like to mark this item as complete?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => handleCompleteAlertResponse(false)}>
+                            Cancel (set to 99%)
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleCompleteAlertResponse(true)}>
+                            Yes, mark as complete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 } 

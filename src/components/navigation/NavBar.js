@@ -15,8 +15,16 @@ export default function NavBar() {
         <nav className={styles.navbar}>
             <div className={styles.navContent}>
                 <Link
+                    href="/"
+                    className={pathname === '/' ? styles.active : ''}
+                >
+                    Home
+
+                </Link>
+                <Link
                     href="/user-pages/dashboard"
                     className={pathname === '/user-pages/dashboard' ? styles.active : ''}
+
                 >
                     Dashboard
                 </Link>
@@ -31,6 +39,12 @@ export default function NavBar() {
                     className={pathname === '/user-pages/search' ? styles.active : ''}
                 >
                     Search
+                </Link>
+                <Link
+                    href="/user-pages/social"
+                    className={pathname === '/user-pages/social' ? styles.active : ''}
+                >
+                    Social
                 </Link>
                 <h2 className="text-2xl font-bold mb-6">
                     Welcome, {session?.user?.username || session?.user?.email || 'User'}!

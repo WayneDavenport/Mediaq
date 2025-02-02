@@ -1,11 +1,17 @@
 'use client';
 
+import { useState, useTransition } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import Comments from './Comments';
+import { useSession } from "next-auth/react";
 
 const MediaModal = ({ item, isOpen, onClose, cardPosition }) => {
+    const [isPending, startTransition] = useTransition();
+    const { data: session } = useSession();
+
     if (!item) return null;
 
     // Debug logging
@@ -84,7 +90,7 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition }) => {
     };
 
     return (
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
             {isOpen && (
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -108,22 +114,19 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition }) => {
                             scale: 0.75,
                             transition: { duration: 0.3 }
                         }}
-                        className="relative w-full max-w-2xl mx-auto bg-background rounded-lg shadow-lg overflow-hidden"
-                        style={{
-                            maxHeight: 'calc(100vh - 2rem)',
-                        }}
+                        className="relative w-full max-w-2xl mx-auto bg-background rounded-lg shadow-lg overflow-hidden flex flex-col"
+                        style={{ maxHeight: '90vh' }}
                         onClick={e => e.stopPropagation()}
                     >
                         <Button
                             variant="ghost"
-                            size="icon"
-                            className="absolute right-4 top-4 z-50"
+                            className="absolute right-4 top-4 z-10"
                             onClick={onClose}
                         >
                             <X className="h-4 w-4" />
                         </Button>
 
-                        <div className="relative h-[200px] sm:h-[250px]">
+                        <div className="relative h-[200px] sm:h-[250px] flex-shrink-0">
                             <div
                                 className="absolute inset-0 bg-cover bg-center"
                                 style={{
@@ -137,7 +140,7 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition }) => {
                             <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
                         </div>
 
-                        <ScrollArea className="max-h-[calc(100vh-2rem-250px)] overflow-y-auto">
+                        <ScrollArea className="flex-1 overflow-y-auto">
                             <div className="p-6">
                                 <div className="space-y-4">
                                     <h2 className="text-2xl font-bold">{item.title}</h2>
@@ -207,6 +210,17 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition }) => {
                                                     : 'minutes'
                                             }</p>
                                         </div>
+                                    )}
+                                </div>
+
+                                {/* Add Comments section */}
+                                <div className="mt-6 border-t pt-6">
+                                    <h3 className="text-lg font-semibold mb-4">Comments</h3>
+                                    {session && (
+                                        <Comments
+                                            mediaItemId={item.id}
+                                            currentUser={session.user}
+                                        />
                                     )}
                                 </div>
                             </div>

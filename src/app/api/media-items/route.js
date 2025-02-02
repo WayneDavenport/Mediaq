@@ -206,47 +206,62 @@ export async function POST(request) {
 }
 
 export async function GET(request) {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-    const mediaType = searchParams.get('mediaType');
-
     try {
-        let query = supabase
-            .from('media_items')
+        const session = await getServerSession(authOptions);
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { data: items, error } = await supabase
+            .from('user_media_progress')
             .select(`
                 *,
-                user_media_progress(*),
-                books(*),
-                movies(*),
-                tv_shows(*),
-                games(*),
-                locked_items!locked_items_id_fkey(*,
-                    parent:media_items!locked_items_key_parent_id_fkey(
-                        id,
-                        title
+                media_items (
+                    id,
+                    title,
+                    media_type,
+                    poster_path,
+                    description,
+                    books (
+                        page_count
+                    ),
+                    movies (
+                        runtime
+                    ),
+                    tv_shows (
+                        average_runtime
                     )
                 )
             `)
-            .eq('user_email', session.user.email);
-
-        if (category) {
-            query = query.eq('category', category);
-        }
-
-        if (mediaType) {
-            query = query.eq('media_type', mediaType);
-        }
-
-        const { data, error } = await query;
+            .eq('user_id', session.user.id)
+            .eq('completed', false)
+            .order('queue_number', { ascending: true });
 
         if (error) throw error;
 
-        return NextResponse.json({ items: data });
+        // Transform the data to flatten the structure
+        const transformedItems = items
+            .filter(item => item.media_items)
+            .map(item => ({
+                id: item.media_items.id,
+                title: item.media_items.title,
+                media_type: item.media_items.media_type,
+                poster_path: item.media_items.poster_path,
+                description: item.media_items.description,
+                books: item.media_items.books,
+                movies: item.media_items.movies,
+                tv_shows: item.media_items.tv_shows,
+                user_media_progress: {
+                    queue_number: item.queue_number,
+                    completed_duration: item.completed_duration,
+                    duration: item.duration,
+                    episodes_completed: item.episodes_completed,
+                    pages_completed: item.pages_completed,
+                    completed: item.completed
+                }
+            }));
+
+        return NextResponse.json({ items: transformedItems });
 
     } catch (error) {
         console.error('Error fetching media items:', error);

@@ -17,29 +17,37 @@ export default function GalleryPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [mediaItems, setMediaItems] = useState([]);
+    const [friendsQueues, setFriendsQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedItem, setSelectedItem] = useState(null);
     const [cardPosition, setCardPosition] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
-        const fetchMediaItems = async () => {
+        const fetchData = async () => {
             if (status === "authenticated") {
                 try {
-                    const response = await fetch('/api/media-items');
-                    const data = await response.json();
-                    if (data.items) {
-                        setMediaItems(data.items);
-                        console.log("Media items:", data.items);
+                    // Fetch user's media items
+                    const mediaResponse = await fetch('/api/media-items');
+                    const mediaData = await mediaResponse.json();
+                    if (mediaData.items) {
+                        setMediaItems(mediaData.items);
+                    }
+
+                    // Fetch friends' queues
+                    const friendsResponse = await fetch('/api/friends/queues');
+                    const friendsData = await friendsResponse.json();
+                    if (friendsData.queues) {
+                        setFriendsQueues(friendsData.queues);
                     }
                 } catch (error) {
-                    console.error('Error fetching media items:', error);
+                    console.error('Error fetching data:', error);
                 } finally {
                     setLoading(false);
                 }
             }
         };
 
-        fetchMediaItems();
+        fetchData();
     }, [status]);
 
     if (status === 'unauthenticated') {
@@ -172,6 +180,8 @@ export default function GalleryPage() {
                     />
                 )}
 
+
+
                 {/* Unqueued Row */}
                 {unqueuedItems.length > 0 && (
                     <MediaRow
@@ -184,7 +194,7 @@ export default function GalleryPage() {
                 {Object.entries(groupedByType).map(([type, items]) => (
                     <MediaRow
                         key={type}
-                        title={type}
+                        title={`${type}s`}
                         items={items}
                     />
                 ))}
@@ -198,6 +208,19 @@ export default function GalleryPage() {
                     />
                 ))}
             </div>
+            {/* Friend Zone Section */}
+            {friendsQueues.length > 0 && (
+                <div className="mt-8">
+                    <h2 className="text-3xl font-bold mb-6">Friend Zone</h2>
+                    {friendsQueues.map((friendQueue) => (
+                        <MediaRow
+                            key={friendQueue.friend_id}
+                            title={`${friendQueue.friend_user_name}'s Queue`}
+                            items={friendQueue.items}
+                        />
+                    ))}
+                </div>
+            )}
 
             <MediaModal
                 item={selectedItem}
