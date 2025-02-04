@@ -21,6 +21,7 @@ export default function GalleryPage() {
     const [loading, setLoading] = useState(true);
     const [selectedItem, setSelectedItem] = useState(null);
     const [cardPosition, setCardPosition] = useState({ x: 0, y: 0 });
+    const [isFriendItem, setIsFriendItem] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -28,6 +29,7 @@ export default function GalleryPage() {
                 try {
                     // Fetch user's media items
                     const mediaResponse = await fetch('/api/media-items');
+                    console.log(mediaResponse);
                     const mediaData = await mediaResponse.json();
                     if (mediaData.items) {
                         setMediaItems(mediaData.items);
@@ -95,15 +97,16 @@ export default function GalleryPage() {
         return acc;
     }, {});
 
-    const handleCardClick = (item, event) => {
+    const handleCardClick = (item, event, isFromFriend = false) => {
         const rect = event.currentTarget.getBoundingClientRect();
         const centerX = window.innerWidth / 2 - (rect.left + rect.width / 2);
         const centerY = window.innerHeight / 2 - (rect.top + rect.height / 2);
         setCardPosition({ x: -centerX, y: -centerY });
         setSelectedItem(item);
+        setIsFriendItem(isFromFriend);
     };
 
-    const MediaRow = ({ title, items }) => (
+    const MediaRow = ({ title, items, isFriendQueue = false }) => (
         <div className="py-4">
             <h2 className="text-2xl font-semibold mb-4">{title}</h2>
             <Carousel className="w-full max-w-screen-xl mx-auto">
@@ -126,7 +129,7 @@ export default function GalleryPage() {
                             <CarouselItem key={item.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
                                 <Card
                                     className="cursor-pointer"
-                                    onClick={(e) => handleCardClick(item, e)}
+                                    onClick={(e) => handleCardClick(item, e, isFriendQueue)}
                                 >
                                     <CardContent
                                         className="flex aspect-[2/3] items-center justify-center p-6 relative"
@@ -180,8 +183,6 @@ export default function GalleryPage() {
                     />
                 )}
 
-
-
                 {/* Unqueued Row */}
                 {unqueuedItems.length > 0 && (
                     <MediaRow
@@ -189,6 +190,7 @@ export default function GalleryPage() {
                         items={unqueuedItems}
                     />
                 )}
+
 
                 {/* Media Type Sections */}
                 {Object.entries(groupedByType).map(([type, items]) => (
@@ -217,6 +219,7 @@ export default function GalleryPage() {
                             key={friendQueue.friend_id}
                             title={`${friendQueue.friend_user_name}'s Queue`}
                             items={friendQueue.items}
+                            isFriendQueue={true}
                         />
                     ))}
                 </div>
@@ -225,8 +228,12 @@ export default function GalleryPage() {
             <MediaModal
                 item={selectedItem}
                 isOpen={!!selectedItem}
-                onClose={() => setSelectedItem(null)}
+                onClose={() => {
+                    setSelectedItem(null);
+                    setIsFriendItem(false);
+                }}
                 cardPosition={cardPosition}
+                isFriendItem={isFriendItem}
             />
         </>
     );

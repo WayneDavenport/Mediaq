@@ -38,6 +38,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import LockRequirements from './LockRequirements';
+import { toast } from 'sonner';
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 const READING_SPEED = 200; // Average reading speed in words per minute
@@ -251,7 +252,7 @@ const Staging = () => {
 
     const onSubmit = async (data) => {
         if (!session?.user?.email) {
-            console.error('No user session found');
+            toast.error('No user session found');
             return;
         }
 
@@ -273,7 +274,7 @@ const Staging = () => {
             // Calculate total duration for TV shows
             let duration = data.duration;
             if (data.media_type === 'tv' && data.total_episodes) {
-                duration = data.total_episodes * (data.average_runtime || 30); // Default to 30 minutes if no runtime specified
+                duration = data.total_episodes * (data.average_runtime || 30);
             }
 
             const lockData = {
@@ -285,14 +286,6 @@ const Staging = () => {
                 goal_pages: data.goal_pages,
                 goal_episodes: data.goal_episodes,
             };
-
-            console.log('Starting form submission...');
-            console.log('Form data being submitted:', {
-                ...data,
-                ...lockData,
-                duration,
-                queue_number: nextQueueNumber,
-            });
 
             const response = await fetch('/api/media-items', {
                 method: 'POST',
@@ -308,16 +301,21 @@ const Staging = () => {
                 }),
             });
 
-            const responseData = await response.json();
-            console.log('Response data:', responseData);
-
             if (!response.ok) {
-                throw new Error(responseData.error || 'Failed to add item');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to add item');
             }
+
+            toast.success(`${data.title} added to your queue!`, {
+                description: data.locked ? 'Item added with lock requirements' : 'Item added successfully'
+            });
 
             clearStagingItem();
         } catch (error) {
             console.error('Error adding item:', error);
+            toast.error('Failed to add item', {
+                description: error.message
+            });
         } finally {
             setIsLoading(false);
         }
