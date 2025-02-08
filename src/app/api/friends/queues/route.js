@@ -27,13 +27,20 @@ export async function GET(request) {
                 const { data: items, error: itemsError } = await supabase
                     .from('user_media_progress')
                     .select(`
-                        queue_number,
+                        *,
                         media_items (
                             id,
                             title,
                             media_type,
                             poster_path,
-                            description
+                            description,
+                            category,
+                            genres,
+                            backdrop_path,
+                            books (*),
+                            movies (*),
+                            tv_shows (*),
+                            games (*)
                         )
                     `)
                     .eq('user_id', friend.friend_id)
@@ -50,7 +57,13 @@ export async function GET(request) {
                         .map(item => ({
                             ...item.media_items,
                             user_media_progress: {
-                                queue_number: item.queue_number
+                                id: item.id,
+                                queue_number: item.queue_number,
+                                duration: item.duration,
+                                completed_duration: item.completed_duration,
+                                completed: item.completed,
+                                pages_completed: item.pages_completed,
+                                episodes_completed: item.episodes_completed
                             }
                         }))
                 };

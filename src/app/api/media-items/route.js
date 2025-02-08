@@ -213,53 +213,52 @@ export async function GET(request) {
         }
 
         const { data: items, error } = await supabase
-            .from('user_media_progress')
+            .from('media_items')
             .select(`
                 *,
-                media_items (
+                books (*),
+                movies (*),
+                tv_shows (*),
+                games (*),
+                user_media_progress (*),
+                locked_items!locked_items_id_fkey (
                     id,
-                    title,
-                    media_type,
-                    poster_path,
-                    description,
-                    books (
-                        page_count
-                    ),
-                    movies (
-                        runtime
-                    ),
-                    tv_shows (
-                        average_runtime
-                    )
+                    key_parent_text,
+                    lock_type,
+                    key_parent_id,
+                    goal_time,
+                    goal_pages,
+                    goal_episodes,
+                    completed_time,
+                    pages_completed,
+                    episodes_completed
                 )
             `)
-            .eq('user_id', session.user.id)
-            .eq('completed', false)
-            .order('queue_number', { ascending: true });
+            .eq('user_email', session.user.email);
 
         if (error) throw error;
 
+        console.log('Raw items from Supabase:', JSON.stringify(items, null, 2));
+
         // Transform the data to flatten the structure
-        const transformedItems = items
-            .filter(item => item.media_items)
-            .map(item => ({
-                id: item.media_items.id,
-                title: item.media_items.title,
-                media_type: item.media_items.media_type,
-                poster_path: item.media_items.poster_path,
-                description: item.media_items.description,
-                books: item.media_items.books,
-                movies: item.media_items.movies,
-                tv_shows: item.media_items.tv_shows,
-                user_media_progress: {
-                    queue_number: item.queue_number,
-                    completed_duration: item.completed_duration,
-                    duration: item.duration,
-                    episodes_completed: item.episodes_completed,
-                    pages_completed: item.pages_completed,
-                    completed: item.completed
-                }
-            }));
+        const transformedItems = items.map(item => ({
+            id: item.id,
+            title: item.title,
+            media_type: item.media_type,
+            category: item.category,
+            description: item.description,
+            genres: typeof item.genres === 'string' ? JSON.parse(item.genres) : item.genres,
+            poster_path: item.poster_path,
+            backdrop_path: item.backdrop_path,
+            books: item.books,
+            movies: item.movies,
+            tv_shows: item.tv_shows,
+            games: item.games,
+            user_media_progress: item.user_media_progress,
+            locked_items: item.locked_items || []
+        }));
+
+        console.log('Transformed items:', JSON.stringify(transformedItems, null, 2));
 
         return NextResponse.json({ items: transformedItems });
 

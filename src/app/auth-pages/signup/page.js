@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from "@/components/ui/slider";
 
 export default function SignUp() {
     const { data: session } = useSession();
@@ -23,7 +23,7 @@ export default function SignUp() {
         email: '',
         password: '',
         username: '',
-        reading_speed: '20'
+        reading_speed: 20 // Default value in pages per 30 min
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -40,10 +40,16 @@ export default function SignUp() {
         setError('');
 
         try {
+            // Convert reading speed from pages/30min to pages/min before sending
+            const pagesPerMinute = formData.reading_speed / 30;
+
             const response = await fetch('/api/auth/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({
+                    ...formData,
+                    reading_speed: pagesPerMinute // Send as pages per minute
+                })
             });
 
             const data = await response.json();
@@ -59,6 +65,13 @@ export default function SignUp() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const getReadingSpeedLabel = (value) => {
+        if (value <= 10) return "Slow";
+        if (value <= 20) return "Normal";
+        if (value <= 30) return "Fast";
+        return "Very Fast";
     };
 
     return (
@@ -119,24 +132,27 @@ export default function SignUp() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="reading_speed">Reading Speed</Label>
-                            <Select
-                                value={formData.reading_speed}
+                            <Label htmlFor="reading_speed">
+                                Reading Speed: {formData.reading_speed} pages per 30 minutes
+                                <span className="ml-2 text-sm text-muted-foreground">
+                                    ({getReadingSpeedLabel(formData.reading_speed)})
+                                </span>
+                            </Label>
+                            <Slider
+                                id="reading_speed"
+                                min={5}
+                                max={40}
+                                step={5}
+                                value={[formData.reading_speed]}
                                 onValueChange={(value) => setFormData(prev => ({
                                     ...prev,
-                                    reading_speed: value
+                                    reading_speed: value[0]
                                 }))}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select your reading speed" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="20">Slow (20 wpm)</SelectItem>
-                                    <SelectItem value="40">Normal (40 wpm)</SelectItem>
-                                    <SelectItem value="60">Fast (60 wpm)</SelectItem>
-                                    <SelectItem value="80">Very Fast (80 wpm)</SelectItem>
-                                </SelectContent>
-                            </Select>
+                                className="w-full"
+                            />
+                            <p className="text-sm text-muted-foreground">
+                                Slide to adjust your average reading speed
+                            </p>
                         </div>
 
                         {error && (

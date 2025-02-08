@@ -25,11 +25,14 @@ export default function UpdateProgressModal({
     isOpen,
     onClose,
     item,
-    onUpdate
+    onUpdate,
+    refreshData
 }) {
     const [progress, setProgress] = useState(item.user_media_progress?.completed_duration || 0);
     const [showCompleteAlert, setShowCompleteAlert] = useState(false);
     const [isMarkingComplete, setIsMarkingComplete] = useState(false);
+    const [affectedItems, setAffectedItems] = useState([]);
+    const [showAffectedItemsAlert, setShowAffectedItemsAlert] = useState(false);
 
     const getMaxValue = () => {
         switch (item.media_type) {
@@ -115,10 +118,19 @@ export default function UpdateProgressModal({
                 throw new Error('Failed to update progress');
             }
 
-            onUpdate(progress);
-            onClose();
-            setShowCompleteAlert(false);
-            setIsMarkingComplete(false);
+            const result = await response.json();
+
+            if (result.affectedItems?.length > 0) {
+                setAffectedItems(result.affectedItems);
+                setShowAffectedItemsAlert(true);
+            } else {
+                onUpdate(progress);
+                await refreshData();
+                onClose();
+                setShowCompleteAlert(false);
+                setIsMarkingComplete(false);
+            }
+
         } catch (error) {
             console.error('Error updating progress:', error);
         }
@@ -129,12 +141,19 @@ export default function UpdateProgressModal({
         if (shouldComplete) {
             handleUpdate(true);
         } else {
-            // Set progress to 99% of max value
             const maxValue = getMaxValue();
             const newProgress = Math.floor(maxValue * 0.99);
             setProgress(newProgress);
             handleUpdate(false);
         }
+    };
+
+    const handleAffectedItemsAlertClose = () => {
+        setShowAffectedItemsAlert(false);
+        onUpdate(progress);
+        onClose();
+        setShowCompleteAlert(false);
+        setIsMarkingComplete(false);
     };
 
     return (
@@ -197,6 +216,38 @@ export default function UpdateProgressModal({
                         </AlertDialogCancel>
                         <AlertDialogAction onClick={() => handleCompleteAlertResponse(true)}>
                             Yes, mark as complete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={showAffectedItemsAlert} onOpenChange={setShowAffectedItemsAlert}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Lock Progress Updated</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            The following locked items had their progress updated:
+                        </AlertDialogDescription>
+                        <ul className="list-disc pl-6 mt-2">
+                            {affectedItems.map((affectedItem, index) => (
+                                <li key={index} className="text-sm">
+                                    {affectedItem.title}
+                                    {affectedItem.progress && (
+                                        <span className="text-muted-foreground">
+                                            {' '}(+{affectedItem.progress} {
+                                                item.media_type === 'book' ? 'pages' :
+                                                    item.media_type === 'tv' ? 'episodes' :
+                                                        'minutes'
+                                            })
+                                        </span>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={handleAffectedItemsAlertClose}>
+                            OK
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

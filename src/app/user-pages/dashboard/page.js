@@ -11,7 +11,6 @@ import styles from './styles.module.css';
 import { Badge } from "@/components/ui/badge";
 import UpdateProgressModal from "@/components/progress/UpdateProgressModal";
 import { Button } from "@/components/ui/button";
-import ProgressDisplay from "@/components/progress/ProgressDisplay";
 import ProgressSection from "@/components/progress/ProgressSection";
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
@@ -251,6 +250,7 @@ export default function Dashboard() {
                                                     setUpdateModalOpen(true);
                                                 }}
                                                 allCategories={allCategories}
+                                                mediaItems={mediaItems}
                                                 incompleteItems={mediaItems.filter(i => !i.user_media_progress?.completed)}
                                             />
                                         </div>

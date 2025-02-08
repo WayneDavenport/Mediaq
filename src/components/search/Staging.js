@@ -276,6 +276,11 @@ const Staging = () => {
             if (data.media_type === 'tv' && data.total_episodes) {
                 duration = data.total_episodes * (data.average_runtime || 30);
             }
+            // Calculate total duration for books
+            if (data.media_type === 'book' && data.page_count) {
+                duration = (data.page_count / (session.user.reading_speed || 200)).toFixed(3);
+            }
+
 
             const lockData = {
                 user_id: session.user.id,

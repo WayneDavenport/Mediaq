@@ -4,12 +4,15 @@ import { useState } from 'react';
 import ProgressDisplay from './ProgressDisplay';
 import AddLockForm from './AddLockForm';
 import { Button } from '../ui/button';
+import { toast } from 'sonner';
 
 export default function ProgressSection({
     item,
     onUpdateClick,
     allCategories,
-    incompleteItems
+    mediaItems,
+    incompleteItems,
+    onItemUpdate
 }) {
     const [showLockForm, setShowLockForm] = useState(false);
 
@@ -27,50 +30,66 @@ export default function ProgressSection({
             });
 
             if (!response.ok) {
-                throw new Error('Failed to add lock');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to add lock');
+            }
+
+            const lockData = await response.json();
+
+            // Update the item locally with the new lock
+            const updatedItem = {
+                ...item,
+                locked_items: [lockData]
+            };
+
+            // Call the update function passed from parent
+            if (onItemUpdate) {
+                onItemUpdate(updatedItem);
             }
 
             setShowLockForm(false);
-            // You might want to add a refresh function here to update the item data
+            toast.success('Lock requirements added successfully');
         } catch (error) {
             console.error('Error adding lock:', error);
+            toast.error(error.message);
         }
     };
 
-    if (showLockForm) {
-        return (
-            <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Add Lock Requirements</h3>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowLockForm(false)}
-                    >
-                        Cancel
-                    </Button>
-                </div>
-                <AddLockForm
-                    onSubmit={handleLockSubmit}
-                    allCategories={allCategories}
-                    incompleteItems={incompleteItems}
-                />
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-4">
-            <ProgressDisplay item={item} onUpdateClick={onUpdateClick} />
-            {!item.locked_items?.length && (
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowLockForm(true)}
-                    className="w-full"
-                >
-                    Add Lock Requirements
-                </Button>
+            {showLockForm ? (
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-semibold">Set Lock Requirements</h3>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowLockForm(false)}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                    <AddLockForm
+                        onSubmit={handleLockSubmit}
+                        allCategories={allCategories}
+                        incompleteItems={incompleteItems}
+                    />
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    <ProgressDisplay item={item} onUpdateClick={onUpdateClick} mediaItems={mediaItems} />
+                    {!item.locked_items?.length && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowLockForm(true)}
+                            className="w-full"
+                        >
+                            Lock This {item.media_type.charAt(0).toUpperCase() + item.media_type.slice(1)}
+                        </Button>
+                    )}
+                </div>
+
             )}
         </div>
     );

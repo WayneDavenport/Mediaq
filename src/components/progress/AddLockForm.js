@@ -17,28 +17,44 @@ import { useSession } from "next-auth/react";
 
 export default function AddLockForm({ onSubmit, allCategories, incompleteItems }) {
     const { data: session } = useSession();
-    const userReadingSpeed = session?.user?.reading_speed || 30; // Default to 30 pages per 30 minutes
+    const userReadingSpeed = session?.user?.reading_speed || 0.667;
     const methods = useForm();
     const { register, handleSubmit, watch, setValue } = methods;
 
     const handleKeyParentChange = (value) => {
         setValue('key_parent', value);
+
+        if (value && !isNaN(value)) {
+            // If value is a number (item ID)
+            setValue('key_parent_id', parseInt(value));
+            setValue('key_parent_text', null);
+
+            // Find the selected item to determine media type
+            const selectedItem = incompleteItems.find(item => item.id === parseInt(value));
+            if (selectedItem) {
+                setValue('media_type', selectedItem.media_type);
+            }
+        } else {
+            // If value is a string (media type or category)
+            setValue('key_parent_id', null);
+            if (['Movie', 'Book', 'Show', 'Game'].includes(value)) {
+                setValue('key_parent_text', value.toLowerCase());
+                setValue('media_type', value.toLowerCase());
+            } else if (allCategories.includes(value)) {
+                setValue('key_parent_text', 'category');
+            }
+        }
     };
 
     const selectedKeyParent = watch('key_parent');
-    const numericValue = parseInt(selectedKeyParent);
-    const selectedItem = incompleteItems.find(i => Number(i.id) === numericValue);
-    const isCategory = allCategories.includes(selectedKeyParent);
-    const isMediaType = ['Movie', 'Book', 'Show', 'Game'].includes(selectedKeyParent);
-
-    // Watch both time and pages for books
+    const mediaType = watch('media_type');
     const goalTime = watch('goal_time');
     const goalPages = watch('goal_pages');
+    const goalEpisodes = watch('goal_episodes');
 
     // Update corresponding value when either changes for books
     useEffect(() => {
-        const isBook = selectedKeyParent === 'Book';
-        if (isBook) {
+        if (mediaType === 'book') {
             if (goalTime && !goalPages) {
                 setValue('goal_pages', calculatePagesFromTime(goalTime, userReadingSpeed));
             }
@@ -46,20 +62,25 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
                 setValue('goal_time', calculateReadingTime(goalPages, userReadingSpeed));
             }
         }
-    }, [goalTime, goalPages, selectedKeyParent, setValue, userReadingSpeed]);
+    }, [goalTime, goalPages, mediaType, setValue, userReadingSpeed]);
 
     // For TV shows, update time based on episodes
-    const goalEpisodes = watch('goal_episodes');
     useEffect(() => {
-        const isTV = selectedKeyParent === 'Show';
-        if (isTV && goalEpisodes) {
+        if (mediaType === 'show' && goalEpisodes) {
             setValue('goal_time', calculateTVDuration(goalEpisodes));
         }
-    }, [goalEpisodes, selectedKeyParent, setValue]);
+    }, [goalEpisodes, mediaType, setValue]);
 
     return (
         <FormProvider {...methods}>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit((data) => {
+                const formData = {
+                    ...data,
+                    key_parent_id: data.key_parent_id || null,
+                    key_parent_text: data.key_parent_id ? null : data.key_parent_text
+                };
+                onSubmit(formData);
+            })} className="space-y-4">
                 <div className="space-y-2">
                     <Label>Lock Type</Label>
                     <Select onValueChange={handleKeyParentChange}>
@@ -85,7 +106,7 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
                     </Select>
                 </div>
 
-                {(selectedItem?.media_type === 'book' || selectedKeyParent === 'Book' || (isCategory && selectedItem?.media_type === 'book')) && (
+                {(mediaType === 'book') && (
                     <div className="space-y-2">
                         <Label>Pages Goal</Label>
                         <Input
@@ -102,7 +123,7 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
                             placeholder="Number of pages..."
                         />
                         <div className="text-sm text-muted-foreground">
-                            Reading speed: {userReadingSpeed} pages per 30 minutes
+                            Reading speed: {(userReadingSpeed * 30).toFixed(1)} pages per 30 minutes
                         </div>
                         <div className="text-sm text-muted-foreground">
                             Estimated time: {calculateReadingTime(goalPages, userReadingSpeed) || 0} minutes
@@ -110,7 +131,7 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
                     </div>
                 )}
 
-                {(selectedItem?.media_type === 'tv' || selectedKeyParent === 'Show' || (isCategory && selectedItem?.media_type === 'tv')) && (
+                {(mediaType === 'show') && (
                     <div className="space-y-2">
                         <Label>Episodes Goal</Label>
                         <Input
@@ -132,17 +153,16 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
                     </div>
                 )}
 
-                {(selectedKeyParent === 'Movie' || selectedKeyParent === 'Game' ||
-                    (isCategory && selectedItem?.media_type !== 'book' && selectedItem?.media_type !== 'tv')) && (
-                        <div className="space-y-2">
-                            <Label>Time Goal (minutes)</Label>
-                            <Input
-                                type="number"
-                                {...register('goal_time', { valueAsNumber: true })}
-                                placeholder="Time in minutes..."
-                            />
-                        </div>
-                    )}
+                {(mediaType === 'movie' || mediaType === 'game') && (
+                    <div className="space-y-2">
+                        <Label>Time Goal (minutes)</Label>
+                        <Input
+                            type="number"
+                            {...register('goal_time', { valueAsNumber: true })}
+                            placeholder="Time in minutes..."
+                        />
+                    </div>
+                )}
 
                 <Button type="submit" className="w-full">
                     Add Lock

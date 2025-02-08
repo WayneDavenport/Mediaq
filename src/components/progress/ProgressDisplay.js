@@ -3,7 +3,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-export default function ProgressDisplay({ item, onUpdateClick }) {
+export default function ProgressDisplay({ item, onUpdateClick, mediaItems = [] }) {
+    console.log('Item in ProgressDisplay:', JSON.stringify(item, null, 2));
     const isLocked = item.locked_items && item.locked_items.length > 0;
     const lockData = isLocked ? item.locked_items[0] : null;
 
@@ -18,6 +19,12 @@ export default function ProgressDisplay({ item, onUpdateClick }) {
             item.media_type === 'book' ||
             (lockData.key_parent_text === 'book' && !lockData.key_parent_id)
         );
+    };
+
+    const getParentTitle = (parentId) => {
+        if (!mediaItems) return 'Unknown';
+        const parentItem = mediaItems.find(item => item.id === parentId);
+        return parentItem?.title || 'Unknown';
     };
 
     const getProgressDisplay = () => {
@@ -41,7 +48,7 @@ export default function ProgressDisplay({ item, onUpdateClick }) {
                     <div>
                         <span className="font-semibold">Locked Behind:</span> {
                             lockData.key_parent_id !== null
-                                ? lockData.parent?.title
+                                ? getParentTitle(lockData.key_parent_id)
                                 : capitalizeFirstLetter(lockData.key_parent_text)
                         }
                     </div>

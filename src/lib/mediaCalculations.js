@@ -1,8 +1,8 @@
 export const WORDS_PER_PAGE = 300; // Average words per page
 
-export const calculateReadingTime = (pages, pagesPerHalfHour) => {
-    if (!pages || !pagesPerHalfHour) return 0;
-    return Math.round((pages / pagesPerHalfHour) * 30); // Convert to minutes
+export const calculateReadingTime = (pages, pagesPerMin) => {
+    if (!pages || !pagesPerMin) return 0;
+    return Math.round(pages / pagesPerMin); // Convert to minutes
 };
 
 export const calculatePagesFromTime = (minutes, pagesPerHalfHour) => {
