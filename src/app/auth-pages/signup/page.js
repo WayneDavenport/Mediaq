@@ -106,7 +106,7 @@ export default function SignUp() {
         try {
             // Using signIn for Google will handle both sign-up and sign-in
             await signIn('google', {
-                callbackUrl: '/user-pages/settings'  // Send new users to settings
+                callbackUrl: '/auth-pages/complete-profile'  // Send new users to settings
             });
         } catch (error) {
             toast.error("Failed to sign up with Google");

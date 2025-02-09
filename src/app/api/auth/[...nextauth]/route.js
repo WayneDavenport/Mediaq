@@ -1,7 +1,7 @@
 // Import necessary modules
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { SupabaseAdapter } from "@next-auth/supabase-adapter";
+import GoogleProvider from "next-auth/providers/google";
 import { verifyPassword } from "@/lib/auth";
 import supabase from "@/lib/supabaseClient";
 
@@ -16,6 +16,10 @@ export const authOptions = {
         cookiePrefix: 'next-auth.csrf-token',
     },
     providers: [
+        GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        }),
         CredentialsProvider({
             name: "Credentials",
             credentials: {
@@ -69,17 +73,74 @@ export const authOptions = {
         })
     ],
     pages: {
-        signIn: '/auth/signin',
-        error: '/auth/error',
+        signIn: '/auth-pages/signin',
+        error: '/auth-pages/error',
         signOut: '/auth/signout'
     },
     callbacks: {
-        async jwt({ token, user }) {
+        async signIn({ user, account }) {
+            if (account.provider === "google") {
+                try {
+                    // Check if user already exists
+                    const { data: existingUser } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('email', user.email)
+                        .single();
+
+                    if (!existingUser) {
+                        // Create new user with Google data
+                        const { data: newUser, error: createError } = await supabase
+                            .from('users')
+                            .insert([
+                                {
+                                    email: user.email,
+                                    username: user.name,
+                                    first_name: user.given_name,
+                                    last_name: user.family_name,
+                                    is_verified: true,
+                                    reading_speed: null,
+                                    google_id: user.id,
+                                    password: null  // Explicitly set to null for Google users
+                                }
+                            ])
+                            .select()
+                            .single();
+
+                        if (createError) {
+                            console.error("Error creating user:", createError);
+                            return false;
+                        }
+                        // Set the user ID from the newly created user
+                        user.id = newUser.id;
+                    } else {
+                        // Set the user ID from the existing user
+                        user.id = existingUser.id;
+                        user.reading_speed = existingUser.reading_speed;
+                    }
+                    return true;
+                } catch (error) {
+                    console.error("Google sign in error:", error);
+                    return false;
+                }
+            }
+            return true;
+        },
+        async jwt({ token, user, account }) {
             if (user) {
                 token.id = user.id;
                 token.email = user.email;
-                token.username = user.username;
+                token.username = user.name;
                 token.reading_speed = user.reading_speed;
+            }
+            if (account?.provider === "google") {
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('reading_speed')
+                    .eq('email', token.email)
+                    .single();
+
+                token.isNewUser = !userData?.reading_speed;
             }
             return token;
         },
@@ -88,18 +149,13 @@ export const authOptions = {
                 session.user.id = token.id;
                 session.user.email = token.email;
                 session.user.username = token.username;
+                session.user.isNewUser = token.isNewUser;
                 session.user.reading_speed = token.reading_speed;
             }
             return session;
         }
     },
-    secret: process.env.NEXTAUTH_SECRET, // Ensure you have a secret set for JWT signing
-    adapter: SupabaseAdapter({
-        url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-        secret: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        schema: 'public'
-    }),
-    debug: process.env.NODE_ENV === 'development', // Optional: enable debug messages in development
+    secret: process.env.NEXTAUTH_SECRET,
 };
 
 // Export the NextAuth handler

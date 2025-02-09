@@ -9,8 +9,8 @@ export async function middleware(request) {
 
     const isNewGoogleUser = token?.google_id && !token?.reading_speed;
 
-    if (isNewGoogleUser && !request.nextUrl.pathname.startsWith('/user-pages/settings')) {
-        return NextResponse.redirect(new URL("/user-pages/settings", request.url));
+    if (isNewGoogleUser && !request.nextUrl.pathname.startsWith('/auth-pages/complete-profile')) {
+        return NextResponse.redirect(new URL("/auth-pages/complete-profile", request.url));
     }
 
     return NextResponse.next();
