@@ -234,8 +234,6 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false 
                                         {/* Debug info */}
                                         <div className="text-xs text-muted-foreground">
                                             <p>Media Type: {item.media_type}</p>
-                                            <p>Has Description: {item.description ? 'Yes' : 'No'}</p>
-                                            <p>Description Length: {item.description?.length || 0}</p>
                                         </div>
 
                                         <div className="flex flex-wrap gap-2">
@@ -277,11 +275,7 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false 
                                         {item.user_media_progress && (
                                             <div className="pt-4 border-t space-y-2">
                                                 <p className="font-semibold">Duration:</p>
-                                                <p>{item.user_media_progress.duration} {
-                                                    item.media_type === 'book'
-                                                        ? 'pages'
-                                                        : 'minutes'
-                                                }</p>
+                                                <p>{item.user_media_progress.duration} minutes</p>
                                             </div>
                                         )}
                                     </div>

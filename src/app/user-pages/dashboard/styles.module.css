@@ -28,6 +28,8 @@
     gap: 1rem;
     padding: 0.5rem;
     height: 5rem;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
 }
 
 .posterWrapper {
@@ -46,41 +48,42 @@
 .overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(4px);
     z-index: 40;
 }
 
 .expandedCard {
-    position: fixed;
-    top: 10%;
-    /* Move up slightly from center */
-    left: 35%;
-    /* Move slightly left from center */
-    transform: translate(-50%, -50%);
-    width: 90%;
+    width: 90vw;
     max-width: 800px;
-    max-height: 90vh;
-    z-index: 50;
+    max-height: 85vh;
+    background: hsl(var(--background));
+    display: flex;
+    flex-direction: column;
 }
 
 .expandedCardInner {
-    background: white;
+    display: flex;
+    flex-direction: column;
     height: 100%;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 2rem;
+    background: hsl(var(--background));
+
+    @media (max-width: 640px) {
+        padding: 1rem;
+    }
 }
 
 .expandedContent {
     display: flex;
     gap: 2rem;
     margin-bottom: 2rem;
-}
 
-.expandedPoster {
-    flex-shrink: 0;
-    border-radius: 0.25rem;
-    overflow: hidden;
+    @media (max-width: 640px) {
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
 }
 
 .expandedDetails {
@@ -88,7 +91,7 @@
     flex-direction: column;
     gap: 1rem;
     flex: 1;
-    padding: 1rem;
+    min-width: 0;
 }
 
 .expandedTitle {
@@ -101,23 +104,41 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
+    color: hsl(var(--foreground));
+
+    @media (max-width: 640px) {
+        grid-template-columns: 1fr;
+    }
 }
 
 .descriptionWrapper {
-    border-top: 1px solid #e5e7eb;
+    flex: 1;
+    overflow-y: auto;
+    border-top: 1px solid hsl(var(--border));
     padding-top: 1.5rem;
     margin-top: 1.5rem;
+    padding-bottom: 1rem;
 }
 
 .description {
     font-size: 0.875rem;
-    color: rgb(75 85 99);
+    color: hsl(var(--muted-foreground));
     line-height: 1.5;
 }
 
 .progressSection {
-    background-color: #f8f9fa;
+    background-color: hsl(var(--muted));
     padding: 1rem;
     border-radius: 0.5rem;
     margin: 1rem 0;
+}
+
+.expandedPoster {
+    flex-shrink: 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+
+    @media (max-width: 640px) {
+        align-self: center;
+    }
 }

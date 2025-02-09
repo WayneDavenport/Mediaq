@@ -1,8 +1,10 @@
 'use client'
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import { toast } from "sonner";
+import { FcGoogle } from 'react-icons/fc';
 import {
     Card,
     CardHeader,
@@ -17,53 +19,97 @@ import { Label } from '@/components/ui/label';
 import { Slider } from "@/components/ui/slider";
 
 export default function SignUp() {
-    const { data: session } = useSession();
     const router = useRouter();
     const [formData, setFormData] = useState({
         email: '',
-        password: '',
         username: '',
-        reading_speed: 20 // Default value in pages per 30 min
+        password: '',
+        confirmPassword: '',
+        reading_speed: 250
     });
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (session) {
-            router.push('/dashboard');
-        }
-    }, [session, router]);
+    const validatePassword = (password) => {
+        const requirements = {
+            length: password.length >= 8,
+            uppercase: /[A-Z]/.test(password),
+            lowercase: /[a-z]/.test(password),
+            number: /[0-9]/.test(password),
+            special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+        };
+
+        return {
+            isValid: Object.values(requirements).every(Boolean),
+            requirements
+        };
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setError('');
+
+        // Password validation
+        if (formData.password !== formData.confirmPassword) {
+            toast.error("Passwords do not match");
+            setLoading(false);
+            return;
+        }
+
+        const { isValid, requirements } = validatePassword(formData.password);
+        if (!isValid) {
+            let errorMessage = "Password must contain:";
+            if (!requirements.length) errorMessage += "\n- At least 8 characters";
+            if (!requirements.uppercase) errorMessage += "\n- One uppercase letter";
+            if (!requirements.lowercase) errorMessage += "\n- One lowercase letter";
+            if (!requirements.number) errorMessage += "\n- One number";
+            if (!requirements.special) errorMessage += "\n- One special character";
+
+            toast.error("Invalid Password", {
+                description: errorMessage
+            });
+            setLoading(false);
+            return;
+        }
 
         try {
-            // Convert reading speed from pages/30min to pages/min before sending
-            const pagesPerMinute = formData.reading_speed / 30;
-
             const response = await fetch('/api/auth/signup', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({
-                    ...formData,
-                    reading_speed: pagesPerMinute // Send as pages per minute
-                })
+                    email: formData.email,
+                    password: formData.password,
+                    username: formData.username,
+                    reading_speed: formData.reading_speed
+                }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to create account');
+                throw new Error(data.error || 'Something went wrong');
             }
 
-            router.push('/auth-pages/signin?success=Account created successfully');
-
+            toast.success("Account created successfully!", {
+                description: "Please check your email for verification link"
+            });
+            router.push('/auth-pages/signin');
         } catch (error) {
-            setError(error.message);
+            toast.error(error.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleGoogleSignUp = async () => {
+        try {
+            // Using signIn for Google will handle both sign-up and sign-in
+            await signIn('google', {
+                callbackUrl: '/user-pages/settings'  // Send new users to settings
+            });
+        } catch (error) {
+            toast.error("Failed to sign up with Google");
         }
     };
 
@@ -79,99 +125,145 @@ export default function SignUp() {
             <Card className="w-full max-w-md shadow-lg">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl font-bold text-center">
-                        Create an account
+                        Create an Account
                     </CardTitle>
                     <CardDescription className="text-center">
-                        Enter your details below to create your account
+                        Choose how you'd like to create your account
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="m@example.com"
-                                required
-                                value={formData.email}
-                                onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    email: e.target.value
-                                }))}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="username">Username</Label>
-                            <Input
-                                id="username"
-                                placeholder="Your username"
-                                required
-                                value={formData.username}
-                                onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    username: e.target.value
-                                }))}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                placeholder="Enter your password"
-                                required
-                                value={formData.password}
-                                onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    password: e.target.value
-                                }))}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="reading_speed">
-                                Reading Speed: {formData.reading_speed} pages per 30 minutes
-                                <span className="ml-2 text-sm text-muted-foreground">
-                                    ({getReadingSpeedLabel(formData.reading_speed)})
-                                </span>
-                            </Label>
-                            <Slider
-                                id="reading_speed"
-                                min={5}
-                                max={40}
-                                step={5}
-                                value={[formData.reading_speed]}
-                                onValueChange={(value) => setFormData(prev => ({
-                                    ...prev,
-                                    reading_speed: value[0]
-                                }))}
-                                className="w-full"
-                            />
-                            <p className="text-sm text-muted-foreground">
-                                Slide to adjust your average reading speed
-                            </p>
-                        </div>
-
-                        {error && (
-                            <div className="text-sm text-red-500 text-center">
-                                {error}
-                            </div>
-                        )}
-
+                    <div className="space-y-4">
                         <Button
-                            type="submit"
+                            type="button"
+                            variant="outline"
                             className="w-full"
-                            disabled={loading}
+                            onClick={handleGoogleSignUp}
                         >
-                            {loading ? 'Creating Account...' : 'Sign Up'}
+                            <FcGoogle className="mr-2 h-4 w-4" />
+                            Sign up with Google
                         </Button>
-                    </form>
+
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-background px-2 text-muted-foreground">
+                                    Or sign up with email
+                                </span>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="m@example.com"
+                                    required
+                                    value={formData.email}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        email: e.target.value
+                                    }))}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="username">Username</Label>
+                                <Input
+                                    id="username"
+                                    type="text"
+                                    placeholder="Enter your username"
+                                    required
+                                    value={formData.username}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        username: e.target.value
+                                    }))}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="password">Password</Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    placeholder="Create a password"
+                                    required
+                                    value={formData.password}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        password: e.target.value
+                                    }))}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                                <Input
+                                    id="confirmPassword"
+                                    type="password"
+                                    placeholder="Confirm your password"
+                                    required
+                                    value={formData.confirmPassword}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        confirmPassword: e.target.value
+                                    }))}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="reading_speed">
+                                    Reading Speed: {formData.reading_speed} pages per 30 minutes
+                                    <span className="ml-2 text-sm text-muted-foreground">
+                                        ({getReadingSpeedLabel(formData.reading_speed)})
+                                    </span>
+                                </Label>
+                                <Slider
+                                    id="reading_speed"
+                                    min={5}
+                                    max={40}
+                                    step={5}
+                                    value={[formData.reading_speed]}
+                                    onValueChange={(value) => setFormData(prev => ({
+                                        ...prev,
+                                        reading_speed: value[0]
+                                    }))}
+                                    className="w-full"
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    Slide to adjust your average reading speed
+                                </p>
+                            </div>
+
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={loading}
+                            >
+                                {loading ? 'Creating Account...' : 'Sign Up'}
+                            </Button>
+                        </form>
+                    </div>
+
+                    <div className="mt-4 text-sm text-muted-foreground text-center">
+                        <p>By signing up, you agree to our</p>
+                        <div className="space-x-2">
+                            <Link href="/terms" className="text-primary hover:underline">
+                                Terms of Service
+                            </Link>
+                            <span>and</span>
+                            <Link href="/privacy" className="text-primary hover:underline">
+                                Privacy Policy
+                            </Link>
+                        </div>
+                    </div>
                 </CardContent>
-                <CardFooter className="flex flex-col space-y-4">
-                    <div className="text-sm text-muted-foreground text-center">
+                <CardFooter className="flex justify-center">
+                    <div className="text-sm text-muted-foreground">
                         Already have an account?{' '}
                         <Link
                             href="/auth-pages/signin"

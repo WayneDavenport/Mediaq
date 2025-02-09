@@ -1,33 +1,15 @@
 // src/app/api/auth/signup/route.js
 import { NextResponse } from 'next/server';
-import { hashPassword } from "@/lib/auth";
-import supabase from "@/lib/supabaseClient";
+import { nanoid } from 'nanoid';
+import { hashPassword } from '@/lib/auth';
+import { sendVerificationEmail } from '@/lib/nodemailer';
+import supabase from '@/lib/supabaseClient';
 
 export async function POST(request) {
     try {
-        // Parse the request body
-        const body = await request.json();
-        const { email, password, username, reading_speed } = body;
+        const { email, password, username, reading_speed } = await request.json();
 
-        if (!email || !email.includes('@') || !password || password.trim().length < 7 || !username) {
-            return NextResponse.json(
-                { message: 'Invalid input - password should be at least 7 characters long, and username is required.' },
-                { status: 422 }
-            );
-        }
-
-        // Basic validation for username
-        const usernameRegex = /^[a-zA-Z0-9_]{3,15}$/;
-        if (!usernameRegex.test(username)) {
-            return NextResponse.json(
-                { message: 'Invalid username - must be 3-15 characters long and can only contain letters, numbers, and underscores.' },
-                { status: 422 }
-            );
-        }
-
-        const hashedPassword = await hashPassword(password);
-
-        // First check if user exists
+        // Check if user already exists
         const { data: existingUser } = await supabase
             .from('users')
             .select('id')
@@ -36,38 +18,56 @@ export async function POST(request) {
 
         if (existingUser) {
             return NextResponse.json(
-                { message: 'User already exists' },
+                { error: 'User already exists' },
                 { status: 400 }
             );
         }
 
-        // Create the user
-        const { data: user, error } = await supabase
+        // Generate verification token and hash password
+        const verificationToken = nanoid();
+        const hashedPassword = await hashPassword(password);
+
+        // Create user
+        const { error: createError } = await supabase
             .from('users')
             .insert([
                 {
                     email,
                     password: hashedPassword,
                     username,
-                    reading_speed: reading_speed || 20,
+                    reading_speed,
+                    verification_token: verificationToken,
+                    is_verified: false
                 }
-            ])
-            .select()
-            .single();
+            ]);
 
-        if (error) {
-            throw error;
+        if (createError) {
+            console.error('Error creating user:', createError);
+            throw createError;
         }
 
-        return NextResponse.json(
-            { message: 'Created user!' },
-            { status: 201 }
-        );
+        // Send verification email
+        try {
+            await sendVerificationEmail(email, verificationToken);
+        } catch (emailError) {
+            console.error('Error sending verification email:', emailError);
+            // Delete the user if email sending fails
+            await supabase
+                .from('users')
+                .delete()
+                .eq('email', email);
+
+            throw new Error('Failed to send verification email');
+        }
+
+        return NextResponse.json({
+            message: 'User created successfully. Please check your email to verify your account.'
+        });
 
     } catch (error) {
-        console.error("Failed to create user:", error);
+        console.error('Signup error:', error);
         return NextResponse.json(
-            { message: error.message || 'Internal server error' },
+            { error: error.message || 'Failed to create user' },
             { status: 500 }
         );
     }

@@ -39,6 +39,10 @@ export const authOptions = {
                         throw new Error('No user found with this email');
                     }
 
+                    if (!user.is_verified) {
+                        throw new Error('Please verify your email before signing in');
+                    }
+
                     const isValid = await verifyPassword(
                         credentials.password,
                         user.password
