@@ -172,7 +172,7 @@ export default function Dashboard() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-50`}
+                        className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-[50]`}
                         onClick={() => setExpandedId(null)}
                     />
                 )}
@@ -241,7 +241,7 @@ export default function Dashboard() {
 
             <AnimatePresence>
                 {expandedId && (
-                    <div className="fixed inset-0 grid place-items-center z-[100]">
+                    <div className="fixed inset-0 grid place-items-center z-[51]">
                         <motion.div
                             ref={ref}
                             layoutId={`card-${expandedId}-${id}`}
@@ -396,7 +396,14 @@ export default function Dashboard() {
                         setSelectedItem(null);
                     }}
                     item={selectedItem}
-                    onUpdate={handleProgressUpdate}
+                    onUpdate={(newProgress) => {
+                        handleProgressUpdate(newProgress);
+                    }}
+                    refreshData={async () => {
+                        // Add a refreshData function if needed
+                        // This could fetch updated data from the server
+                    }}
+                    key={selectedItem.id}
                 />
             )}
         </>

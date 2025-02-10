@@ -5,51 +5,35 @@ import supabase from '@/lib/supabaseClient';
 
 // Get comments for a media item
 export async function GET(request) {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const mediaItemId = searchParams.get('mediaItemId');
+
     try {
-        const session = await getServerSession(authOptions);
-        if (!session) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
-
-        const mediaItemId = new URL(request.url).searchParams.get('mediaItemId');
-        if (!mediaItemId) {
-            return NextResponse.json(
-                { error: 'Media item ID is required' },
-                { status: 400 }
-            );
-        }
-
-        // Fetch comments with user info and replies
-        const { data: comments, error: commentsError } = await supabase
+        const { data: comments, error } = await supabase
             .from('comments')
             .select(`
                 *,
-                user:user_id (
+                user:users(id, username),
+                replies:comment_replies(
                     id,
-                    username
-                ),
-                replies:comment_replies (
-                    id,
-                    created_at,
                     content,
-                    user:user_id (
-                        id,
-                        username
-                    )
+                    created_at,
+                    user:users(id, username)
                 )
             `)
             .eq('media_item_id', mediaItemId)
             .order('created_at', { ascending: false });
 
-        if (commentsError) throw commentsError;
+        if (error) throw error;
 
         return NextResponse.json({ comments });
-
     } catch (error) {
-        console.error('Get comments error:', error);
+        console.error('Error fetching comments:', error);
         return NextResponse.json(
             { error: 'Failed to fetch comments' },
             { status: 500 }
@@ -59,50 +43,37 @@ export async function GET(request) {
 
 // Create a new comment
 export async function POST(request) {
-    try {
-        const session = await getServerSession(authOptions);
-        if (!session) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
+    const session = await getServerSession(authOptions);
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
+    try {
         const { media_item_id, content } = await request.json();
 
-        if (!media_item_id || !content) {
-            return NextResponse.json(
-                { error: 'Media item ID and content are required' },
-                { status: 400 }
-            );
-        }
-
-        // Create the comment
-        const { data: comment, error: insertError } = await supabase
+        const { data: comment, error } = await supabase
             .from('comments')
             .insert({
                 media_item_id,
-                user_id: session.user.id,
-                content
+                content,
+                user_id: session.user.id
             })
             .select(`
                 *,
-                user:user_id (
+                user:users(
                     id,
-                    username
+                    username,
+                    email
+                    
                 )
             `)
             .single();
 
-        if (insertError) throw insertError;
+        if (error) throw error;
 
-        return NextResponse.json({
-            message: 'Comment created successfully',
-            comment: { ...comment, replies: [] }
-        });
-
+        return NextResponse.json({ comment });
     } catch (error) {
-        console.error('Create comment error:', error);
+        console.error('Error creating comment:', error);
         return NextResponse.json(
             { error: 'Failed to create comment' },
             { status: 500 }

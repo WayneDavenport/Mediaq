@@ -48,9 +48,10 @@ export async function POST(request, { params }) {
             })
             .select(`
                 *,
-                user:user_id (
+                user:users(
                     id,
-                    username
+                    username,
+                    email
                 )
             `)
             .single();

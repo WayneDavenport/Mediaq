@@ -5,6 +5,7 @@ import NavBar from '@/components/navigation/NavBar'
 import { Toaster } from 'sonner';
 import { ThemeProvider } from "@/components/theme-provider"
 
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

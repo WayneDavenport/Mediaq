@@ -127,9 +127,9 @@ export default function UpdateProgressModal({
                 onUpdate(progress);
                 await refreshData();
                 onClose();
-                setShowCompleteAlert(false);
-                setIsMarkingComplete(false);
             }
+            setShowCompleteAlert(false);
+            setIsMarkingComplete(false);
 
         } catch (error) {
             console.error('Error updating progress:', error);
@@ -159,7 +159,7 @@ export default function UpdateProgressModal({
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent>
+                <DialogContent className="fixed z-[1001]">
                     <DialogHeader>
                         <DialogTitle>Update Progress</DialogTitle>
                         <DialogDescription>
@@ -203,7 +203,7 @@ export default function UpdateProgressModal({
             </Dialog>
 
             <AlertDialog open={showCompleteAlert} onOpenChange={setShowCompleteAlert}>
-                <AlertDialogContent>
+                <AlertDialogContent className="fixed z-[1002]">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Mark as Complete?</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -222,7 +222,7 @@ export default function UpdateProgressModal({
             </AlertDialog>
 
             <AlertDialog open={showAffectedItemsAlert} onOpenChange={setShowAffectedItemsAlert}>
-                <AlertDialogContent>
+                <AlertDialogContent className="fixed z-[1002]">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Lock Progress Updated</AlertDialogTitle>
                         <AlertDialogDescription>

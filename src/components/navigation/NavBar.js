@@ -4,8 +4,21 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { Moon, Sun } from 'lucide-react'
+import { Moon, Sun, Mail, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "@/components/ui/avatar"
 import styles from './NavBar.module.css'
 
 export default function NavBar() {
@@ -14,6 +27,17 @@ export default function NavBar() {
     const { theme, setTheme } = useTheme()
 
     if (!session) return null
+
+    // Get user's initials for avatar fallback
+    const getInitials = () => {
+        const name = session?.user?.username || session?.user?.email || ''
+        return name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2)
+    }
 
     return (
         <nav className={styles.navbar}>
@@ -51,12 +75,24 @@ export default function NavBar() {
                     </Link>
                 </div>
 
-                <div className={styles.rightSection}>
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="relative"
+                    >
+                        <Mail className="h-5 w-5" />
+                        <span className="sr-only">Check notifications</span>
+                        {/* Add notification badge if needed */}
+                        <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-medium text-white flex items-center justify-center">
+                            3
+                        </span>
+                    </Button>
+
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                        className="mr-4"
                     >
                         {theme === 'dark' ? (
                             <Sun className="h-5 w-5" />
@@ -66,9 +102,35 @@ export default function NavBar() {
                         <span className="sr-only">Toggle theme</span>
                     </Button>
 
-                    <h2 className="text-2xl font-bold">
-                        Welcome, {session?.user?.username || session?.user?.email || 'User'}!
-                    </h2>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={session.user.image} alt={session.user.username || 'User'} />
+                                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                                </Avatar>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56" align="end" forceMount>
+                            <DropdownMenuLabel className="font-normal">
+                                <div className="flex flex-col space-y-1">
+                                    <p className="text-sm font-medium leading-none">
+                                        {session.user.username || 'User'}
+                                    </p>
+                                    <p className="text-xs leading-none text-muted-foreground">
+                                        {session.user.email}
+                                    </p>
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>
+                                <Link href="/user-pages/settings">Settings</Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Link href="/user-pages/profile">Profile</Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
         </nav>

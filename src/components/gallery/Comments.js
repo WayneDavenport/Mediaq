@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatDistanceToNow } from 'date-fns';
+import supabaseRealtime from '@/lib/supabaseRealtimeClient';
 
 const Comments = ({ mediaItemId, currentUser }) => {
     const [isPending, startTransition] = useTransition();
@@ -16,12 +17,49 @@ const Comments = ({ mediaItemId, currentUser }) => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        if (mediaItemId) {
-            startTransition(() => {
-                fetchComments();
-            });
-        }
-    }, [mediaItemId]);
+        if (!mediaItemId) return;
+
+        // Fetch initial comments
+        fetchComments();
+
+        // Set up realtime subscription
+        const commentsSubscription = supabaseRealtime
+            .channel('comments-channel')
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'comments',
+                filter: `media_item_id=eq.${mediaItemId}`
+            }, (payload) => {
+                setComments(prev => [payload.new, ...prev]);
+            })
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'comment_replies',
+                filter: `comment_id=in.(${comments.map(c => c.id).join(',')})`
+            }, (payload) => {
+                setComments(prev => prev.map(comment =>
+                    comment.id === payload.new.comment_id
+                        ? {
+                            ...comment,
+                            replies: [
+                                ...(comment.replies || []),
+                                {
+                                    ...payload.new,
+                                    user: currentUser // Add current user data
+                                }
+                            ]
+                        }
+                        : comment
+                ));
+            })
+            .subscribe();
+
+        return () => {
+            supabaseRealtime.removeChannel(commentsSubscription);
+        };
+    }, [mediaItemId, comments]); // Add comments to dependency array
 
     const fetchComments = async () => {
         try {
@@ -85,9 +123,19 @@ const Comments = ({ mediaItemId, currentUser }) => {
 
             setComments(prev => prev.map(comment =>
                 comment.id === commentId
-                    ? { ...comment, replies: [...(comment.replies || []), data.reply] }
+                    ? {
+                        ...comment,
+                        replies: [
+                            ...(comment.replies || []),
+                            {
+                                ...data.reply,
+                                user: currentUser
+                            }
+                        ]
+                    }
                     : comment
             ));
+
             setReplyText(prev => ({ ...prev, [commentId]: '' }));
             setReplyingTo(null);
         } catch (err) {
@@ -119,95 +167,109 @@ const Comments = ({ mediaItemId, currentUser }) => {
             )}
 
             <div className="space-y-4">
-                {comments.map((comment) => (
-                    <div key={comment.id} className="space-y-2">
-                        <div className="flex items-start gap-2 bg-muted p-3 rounded-lg">
-                            <Avatar>
-                                <AvatarFallback>
-                                    {comment.user.username.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="font-medium">
-                                        {comment.user.username}
-                                    </span>
-                                    <span className="text-sm text-muted-foreground">
-                                        {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                                    </span>
-                                </div>
-                                <p className="mt-1">{comment.content}</p>
-                                {replyingTo !== comment.id && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setReplyingTo(comment.id)}
-                                        className="mt-2"
-                                    >
-                                        Reply
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
+                {comments.map((comment) => {
+                    if (!comment.user) {
+                        console.warn('Comment has no user data:', comment);
+                        return null;
+                    }
 
-                        {/* Reply Form */}
-                        {replyingTo === comment.id && (
-                            <div className="ml-8 space-y-2">
-                                <Textarea
-                                    placeholder="Write a reply..."
-                                    value={replyText[comment.id] || ''}
-                                    onChange={(e) => setReplyText(prev => ({
-                                        ...prev,
-                                        [comment.id]: e.target.value
-                                    }))}
-                                />
-                                <div className="flex gap-2">
-                                    <Button
-                                        onClick={() => handleSubmitReply(comment.id)}
-                                        disabled={!replyText[comment.id]?.trim()}
-                                    >
-                                        Post Reply
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        onClick={() => {
-                                            setReplyingTo(null);
-                                            setReplyText(prev => ({ ...prev, [comment.id]: '' }));
-                                        }}
-                                    >
-                                        Cancel
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Replies */}
-                        {comment.replies?.length > 0 && (
-                            <div className="ml-8 space-y-2">
-                                {comment.replies.map((reply) => (
-                                    <div key={reply.id} className="flex items-start gap-2 bg-muted/50 p-3 rounded-lg">
-                                        <Avatar>
-                                            <AvatarFallback>
-                                                {reply.user.username.charAt(0).toUpperCase()}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-medium">
-                                                    {reply.user.username}
-                                                </span>
-                                                <span className="text-sm text-muted-foreground">
-                                                    {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
-                                                </span>
-                                            </div>
-                                            <p className="mt-1">{reply.content}</p>
-                                        </div>
+                    return (
+                        <div key={comment.id} className="space-y-2">
+                            <div className="flex items-start gap-2 bg-muted p-3 rounded-lg">
+                                <Avatar>
+                                    <AvatarFallback>
+                                        {comment.user?.username?.charAt(0).toUpperCase() || 'U'}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium">
+                                            {comment.user?.username || 'Unknown User'}
+                                        </span>
+                                        <span className="text-sm text-muted-foreground">
+                                            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                                        </span>
                                     </div>
-                                ))}
+                                    <p className="mt-1">{comment.content}</p>
+                                    {replyingTo !== comment.id && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setReplyingTo(comment.id)}
+                                            className="mt-2"
+                                        >
+                                            Reply
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
-                        )}
-                    </div>
-                ))}
+
+                            {/* Reply Form */}
+                            {replyingTo === comment.id && (
+                                <div className="ml-8 space-y-2">
+                                    <Textarea
+                                        placeholder="Write a reply..."
+                                        value={replyText[comment.id] || ''}
+                                        onChange={(e) => setReplyText(prev => ({
+                                            ...prev,
+                                            [comment.id]: e.target.value
+                                        }))}
+                                    />
+                                    <div className="flex gap-2">
+                                        <Button
+                                            onClick={() => handleSubmitReply(comment.id)}
+                                            disabled={!replyText[comment.id]?.trim()}
+                                        >
+                                            Post Reply
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => {
+                                                setReplyingTo(null);
+                                                setReplyText(prev => ({ ...prev, [comment.id]: '' }));
+                                            }}
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Replies */}
+                            {comment.replies?.length > 0 && (
+                                <div className="ml-8 space-y-2">
+                                    {comment.replies.map((reply) => {
+                                        if (!reply.user) {
+                                            console.warn('Reply has no user data:', reply);
+                                            return null;
+                                        }
+
+                                        return (
+                                            <div key={reply.id} className="flex items-start gap-2 bg-muted/50 p-3 rounded-lg">
+                                                <Avatar>
+                                                    <AvatarFallback>
+                                                        {reply.user?.username?.charAt(0).toUpperCase() || 'U'}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-medium">
+                                                            {reply.user?.username || 'Unknown User'}
+                                                        </span>
+                                                        <span className="text-sm text-muted-foreground">
+                                                            {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
+                                                        </span>
+                                                    </div>
+                                                    <p className="mt-1">{reply.content}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
