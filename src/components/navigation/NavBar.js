@@ -20,6 +20,7 @@ import {
     AvatarImage,
 } from "@/components/ui/avatar"
 import styles from './NavBar.module.css'
+import NotificationsDropdown from '@/components/notifications/NotificationsDropdown'
 
 export default function NavBar() {
     const { data: session } = useSession()
@@ -76,19 +77,7 @@ export default function NavBar() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="relative"
-                    >
-                        <Mail className="h-5 w-5" />
-                        <span className="sr-only">Check notifications</span>
-                        {/* Add notification badge if needed */}
-                        <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-medium text-white flex items-center justify-center">
-                            3
-                        </span>
-                    </Button>
-
+                    <NotificationsDropdown />
                     <Button
                         variant="ghost"
                         size="icon"

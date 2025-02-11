@@ -22,9 +22,9 @@ const Comments = ({ mediaItemId, currentUser }) => {
         // Fetch initial comments
         fetchComments();
 
-        // Set up realtime subscription
+        // Set up realtime subscription with UUID handling
         const commentsSubscription = supabaseRealtime
-            .channel('comments-channel')
+            .channel(`comments-channel-${mediaItemId}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -36,8 +36,7 @@ const Comments = ({ mediaItemId, currentUser }) => {
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
-                table: 'comment_replies',
-                filter: `comment_id=in.(${comments.map(c => c.id).join(',')})`
+                table: 'comment_replies'
             }, (payload) => {
                 setComments(prev => prev.map(comment =>
                     comment.id === payload.new.comment_id
@@ -47,7 +46,7 @@ const Comments = ({ mediaItemId, currentUser }) => {
                                 ...(comment.replies || []),
                                 {
                                     ...payload.new,
-                                    user: currentUser // Add current user data
+                                    user: currentUser
                                 }
                             ]
                         }
@@ -59,7 +58,7 @@ const Comments = ({ mediaItemId, currentUser }) => {
         return () => {
             supabaseRealtime.removeChannel(commentsSubscription);
         };
-    }, [mediaItemId, comments]); // Add comments to dependency array
+    }, [mediaItemId]);
 
     const fetchComments = async () => {
         try {

@@ -55,7 +55,7 @@ const formSchema = z.object({
 
     // Lock fields
     locked: z.boolean().default(false),
-    key_parent_id: z.number().nullable().optional(),
+    key_parent_id: z.string().uuid().nullable().optional(),
     key_parent_text: z.string().nullable().optional(),
     pages_completed: z.number().nullable().optional(),
     episodes_completed: z.number().nullable().optional(),

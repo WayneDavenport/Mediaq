@@ -106,12 +106,12 @@ export default function UpdateProgressModal({
                 updateData.initial_pages = item.user_media_progress?.pages_completed || 0;
             }
 
-            const response = await fetch('/api/media-items/progress', {
+            const response = await fetch(`/api/media-items/${item.id}/progress`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(updateData),
+                body: JSON.stringify(updateData)
             });
 
             if (!response.ok) {

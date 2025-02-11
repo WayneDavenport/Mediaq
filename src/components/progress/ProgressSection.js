@@ -55,6 +55,14 @@ export default function ProgressSection({
         }
     };
 
+    const isItemCompleted = (itemId) => {
+        return mediaItems.find(item => item.id === itemId)?.user_media_progress?.completed;
+    };
+
+    const lockedItem = item.locked_items?.find(lock =>
+        lock.key_parent_id === item.id
+    );
+
     return (
         <div className="space-y-4">
             {showLockForm ? (

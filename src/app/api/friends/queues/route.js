@@ -37,10 +37,10 @@ export async function GET(request) {
                             category,
                             genres,
                             backdrop_path,
-                            books (*),
-                            movies (*),
-                            tv_shows (*),
-                            games (*)
+                            books:books(*),
+                            movies:movies(*),
+                            tv_shows:tv_shows(*),
+                            games:games(*)
                         )
                     `)
                     .eq('user_id', friend.friend_id)
@@ -56,6 +56,7 @@ export async function GET(request) {
                         .filter(item => item.media_items) // Filter out any null items
                         .map(item => ({
                             ...item.media_items,
+                            id: item.media_items.id,
                             user_media_progress: {
                                 id: item.id,
                                 queue_number: item.queue_number,

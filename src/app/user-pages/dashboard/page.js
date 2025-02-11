@@ -147,8 +147,8 @@ export default function Dashboard() {
                 throw new Error('Failed to delete item');
             }
 
-            setExpandedId(null);  // Close the expanded card
-            /* fetchMediaItems();  */   // Refresh the list
+            setMediaItems(items => items.filter(item => item.id !== itemId));
+            setExpandedId(null);
             toast.success("Item deleted successfully");
         } catch (error) {
             console.error('Error deleting item:', error);

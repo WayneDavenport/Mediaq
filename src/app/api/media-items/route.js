@@ -43,10 +43,11 @@ export async function POST(request) {
         const data = await request.json();
         console.log('Received data:', data); // Debug log
 
-        // First, insert the base media item
+        // First, insert the base media item with UUID
         const { data: mediaItem, error: mediaError } = await supabase
             .from('media_items')
             .insert({
+                id: crypto.randomUUID(), // Explicitly generate a UUID
                 title: data.title,
                 media_type: data.media_type,
                 category: data.category,
@@ -156,13 +157,13 @@ export async function POST(request) {
 
         }
 
-        // Create progress tracking entry with the correct duration
+        // Update progress tracking with UUID
         const { error: progressError } = await supabase
             .from('user_media_progress')
             .insert({
                 id: mediaItem.id,
                 queue_number: data.queue_number,
-                duration: duration, // Use the determined duration
+                duration: duration,
                 completed_duration: 0,
                 completed: false,
                 user_id: session.user.id,
@@ -170,15 +171,15 @@ export async function POST(request) {
 
         if (progressError) throw progressError;
 
-        // Add lock logic here
+        // Update lock data with UUID
         if (data.locked) {
             const { error: lockError } = await supabase
                 .from('locked_items')
                 .insert({
                     id: mediaItem.id,
+                    key_parent_id: data.key_parent_id,
                     key_parent_text: data.key_parent_text || '',
                     lock_type: data.lock_type || 'specific_item',
-                    key_parent_id: data.key_parent_id,
                     goal_time: data.goal_time || 0,
                     goal_pages: data.goal_pages || 0,
                     goal_episodes: data.goal_episodes || 0,
@@ -212,6 +213,17 @@ export async function GET(request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        console.log('Session user:', session.user); // Log session info
+
+        // First, let's check if we have any media items at all
+        const { data: basicItems, error: basicError } = await supabase
+            .from('media_items')
+            .select('*')
+            .eq('user_email', session.user.email);
+
+        console.log('Basic items query:', basicItems, basicError); // Log basic query results
+
+        // Then try the full join
         const { data: items, error } = await supabase
             .from('media_items')
             .select(`
@@ -221,24 +233,16 @@ export async function GET(request) {
                 tv_shows (*),
                 games (*),
                 user_media_progress (*),
-                locked_items!locked_items_id_fkey (
-                    id,
-                    key_parent_text,
-                    lock_type,
-                    key_parent_id,
-                    goal_time,
-                    goal_pages,
-                    goal_episodes,
-                    completed_time,
-                    pages_completed,
-                    episodes_completed
-                )
+                locked_items (*)
             `)
             .eq('user_email', session.user.email);
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase error:', error);
+            throw error;
+        }
 
-        console.log('Raw items from Supabase:', JSON.stringify(items, null, 2));
+        console.log('Raw items from Supabase:', items); // Log raw results
 
         // Transform the data to flatten the structure
         const transformedItems = items.map(item => ({
@@ -258,14 +262,14 @@ export async function GET(request) {
             locked_items: item.locked_items || []
         }));
 
-        console.log('Transformed items:', JSON.stringify(transformedItems, null, 2));
+        console.log('Transformed items:', transformedItems); // Log transformed results
 
         return NextResponse.json({ items: transformedItems });
 
     } catch (error) {
         console.error('Error fetching media items:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch media items' },
+            { error: 'Failed to fetch media items', details: error.message },
             { status: 500 }
         );
     }

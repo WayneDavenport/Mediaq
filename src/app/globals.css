@@ -78,7 +78,7 @@ body {
 /* Add these styles to your global CSS file */
 
 /* Ensure the modal appears above other elements */
-.dialog-overlay {
+/* .dialog-overlay {
   z-index: 1000 !important;
 }
 
@@ -86,8 +86,8 @@ body {
   z-index: 1001 !important;
 }
 
-/* If you're using a custom expanded card component */
+
 .expanded-card {
   z-index: 999 !important;
-  /* Ensure it's below the modal */
-}
+ 
+} */

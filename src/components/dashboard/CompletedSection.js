@@ -31,6 +31,20 @@ export default function CompletedSection() {
         }
     };
 
+    const handleItemUpdate = async (itemId, newData) => {
+        try {
+            const response = await fetch(`/api/media-items/${itemId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newData)
+            });
+        } catch (error) {
+            console.error('Error updating item:', error);
+        }
+    };
+
     if (isLoading) return <div>Loading completed items...</div>;
     if (error) return <div>Error: {error}</div>;
 

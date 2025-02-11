@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     Carousel,
     CarouselContent,
@@ -16,12 +16,15 @@ import MediaModal from '@/components/gallery/MediaModal';
 export default function GalleryPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [mediaItems, setMediaItems] = useState([]);
     const [friendsQueues, setFriendsQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedItem, setSelectedItem] = useState(null);
     const [cardPosition, setCardPosition] = useState({ x: 0, y: 0 });
     const [isFriendItem, setIsFriendItem] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedCommentId, setSelectedCommentId] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -51,6 +54,37 @@ export default function GalleryPage() {
 
         fetchData();
     }, [status]);
+
+    useEffect(() => {
+        const mediaId = searchParams.get('mediaId');
+        const commentId = searchParams.get('commentId');
+
+        if (mediaId) {
+            // First check user's media items
+            let item = mediaItems.find(item => item.id === mediaId);
+
+            // If not found in user's items, check friend queues
+            if (!item) {
+                for (const friendQueue of friendsQueues) {
+                    item = friendQueue.items.find(i => i.id === mediaId);
+                    if (item) {
+                        setIsFriendItem(true);
+                        break;
+                    }
+                }
+            }
+
+            if (item) {
+                setSelectedItem(item);
+                setModalOpen(true);
+
+                // If there's a commentId, pass it to the MediaModal
+                if (commentId) {
+                    setSelectedCommentId(commentId);
+                }
+            }
+        }
+    }, [searchParams, mediaItems, friendsQueues]);
 
     if (status === 'unauthenticated') {
         router.push('/');
@@ -231,9 +265,11 @@ export default function GalleryPage() {
                 onClose={() => {
                     setSelectedItem(null);
                     setIsFriendItem(false);
+                    setSelectedCommentId(null);
                 }}
                 cardPosition={cardPosition}
                 isFriendItem={isFriendItem}
+                selectedCommentId={selectedCommentId}
             />
         </>
     );

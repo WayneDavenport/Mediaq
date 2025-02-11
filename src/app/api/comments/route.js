@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import supabase from '@/lib/supabaseClient';
+import { v4 as uuidv4 } from 'uuid';
 
 // Get comments for a media item
 export async function GET(request) {
@@ -50,10 +51,12 @@ export async function POST(request) {
 
     try {
         const { media_item_id, content } = await request.json();
+        const commentId = uuidv4(); // Generate UUID for new comment
 
         const { data: comment, error } = await supabase
             .from('comments')
             .insert({
+                id: commentId,
                 media_item_id,
                 content,
                 user_id: session.user.id
@@ -62,9 +65,7 @@ export async function POST(request) {
                 *,
                 user:users(
                     id,
-                    username,
-                    email
-                    
+                    username
                 )
             `)
             .single();
