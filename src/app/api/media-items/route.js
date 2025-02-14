@@ -5,6 +5,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 
 
+
 /* 
 Note: You might want to consider using a database transaction 
 to ensure all inserts succeed or fail together. 
@@ -233,7 +234,7 @@ export async function GET(request) {
                 tv_shows (*),
                 games (*),
                 user_media_progress (*),
-                locked_items (*)
+                locked_items!locked_items_id_fkey (*)
             `)
             .eq('user_email', session.user.email);
 

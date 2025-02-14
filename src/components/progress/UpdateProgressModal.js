@@ -20,6 +20,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export default function UpdateProgressModal({
     isOpen,
@@ -88,10 +89,14 @@ export default function UpdateProgressModal({
     const handleUpdate = async (markAsComplete = false) => {
         try {
             const updateData = {
-                id: item.id,
+                id: item.user_media_progress.id,
                 completed_duration: progress,
                 initial_duration: item.user_media_progress?.completed_duration || 0,
                 completed: markAsComplete,
+                episodes_completed: undefined,
+                initial_episodes: undefined,
+                pages_completed: undefined,
+                initial_pages: undefined,
                 media_type: item.media_type,
                 category: item.category
             };
@@ -106,7 +111,7 @@ export default function UpdateProgressModal({
                 updateData.initial_pages = item.user_media_progress?.pages_completed || 0;
             }
 
-            const response = await fetch(`/api/media-items/${item.id}/progress`, {
+            const response = await fetch('/api/media-items/progress', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -115,7 +120,8 @@ export default function UpdateProgressModal({
             });
 
             if (!response.ok) {
-                throw new Error('Failed to update progress');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to update progress');
             }
 
             const result = await response.json();
@@ -133,6 +139,7 @@ export default function UpdateProgressModal({
 
         } catch (error) {
             console.error('Error updating progress:', error);
+            toast.error(error.message || "Failed to update progress");
         }
     };
 

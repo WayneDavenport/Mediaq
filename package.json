@@ -25,6 +25,7 @@
     "@radix-ui/react-switch": "^1.1.2",
     "@radix-ui/react-toast": "^1.2.5",
     "@supabase/supabase-js": "^2.47.3",
+    "@vercel/postgres": "^0.10.0",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
