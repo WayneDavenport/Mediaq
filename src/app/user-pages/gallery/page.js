@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -13,7 +13,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import MediaModal from '@/components/gallery/MediaModal';
 
-export default function GalleryPage() {
+function GalleryContent() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -272,5 +272,13 @@ export default function GalleryPage() {
                 selectedCommentId={selectedCommentId}
             />
         </>
+    );
+}
+
+export default function Gallery() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <GalleryContent />
+        </Suspense>
     );
 }
