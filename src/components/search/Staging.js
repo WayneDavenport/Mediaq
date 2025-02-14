@@ -104,16 +104,16 @@ const formSchema = z.object({
     total_episodes: z.number().optional(),
 
     // Video Games
-    achievements_count: z.number().optional(),
-    average_playtime: z.number().optional(),
-    esrb_rating: z.string().optional(),
-    metacritic: z.number().optional(),
-    platforms: z.string().optional(),
-    publishers: z.string().optional(),
-    rating: z.number().optional(),
-    rating_count: z.number().optional(),
+    achievements_count: z.number().nullable().optional(),
+    average_playtime: z.number().nullable().optional(),
+    esrb_rating: z.string().nullable().optional(),
+    metacritic: z.number().nullable().optional(),
+    platforms: z.string().nullable().optional(),
+    publishers: z.string().nullable().optional(),
+    rating: z.number().nullable().optional(),
+    rating_count: z.number().nullable().optional(),
     rawg_id: z.number().optional(),
-    website: z.string().optional(),
+    website: z.string().nullable().optional(),
 }).refine(data => {
     if (data.locked) {
         return data.key_parent_id !== null || data.key_parent_text !== null;
