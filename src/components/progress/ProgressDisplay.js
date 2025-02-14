@@ -5,8 +5,13 @@ import { Button } from "@/components/ui/button";
 
 export default function ProgressDisplay({ item, onUpdateClick, mediaItems = [] }) {
     console.log('Item in ProgressDisplay:', JSON.stringify(item, null, 2));
-    const isLocked = item.locked_items && item.locked_items.length > 0;
-    const lockData = isLocked ? item.locked_items[0] : null;
+    // Convert locked_items to array if it's an object
+    const normalizedLockedItems = item.locked_items && !Array.isArray(item.locked_items)
+        ? [item.locked_items]
+        : item.locked_items;
+
+    const isLocked = normalizedLockedItems && normalizedLockedItems.length > 0;
+    const lockData = isLocked ? normalizedLockedItems[0] : null;
 
     const capitalizeFirstLetter = (string) => {
         if (!string) return '';

@@ -26,6 +26,10 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
         console.log('Incomplete items:', incompleteItems);
     }, [incompleteItems]);
 
+    useEffect(() => {
+        console.log('User reading speed:', userReadingSpeed);
+    }, [userReadingSpeed]);
+
     const handleKeyParentChange = (value) => {
         console.log('Selected value:', value);
         setValue('key_parent', value);
@@ -64,10 +68,14 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
     useEffect(() => {
         if (mediaType === 'book') {
             if (goalTime && !goalPages) {
-                setValue('goal_pages', calculatePagesFromTime(goalTime, userReadingSpeed));
+                const calculatedPages = goalTime * userReadingSpeed;
+                console.log('Calculating pages from time:', { goalTime, userReadingSpeed, calculatedPages });
+                setValue('goal_pages', Math.round(calculatedPages));
             }
             if (goalPages && !goalTime) {
-                setValue('goal_time', calculateReadingTime(goalPages, userReadingSpeed));
+                const calculatedTime = goalPages / userReadingSpeed;
+                console.log('Calculating time from pages:', { goalPages, userReadingSpeed, calculatedTime });
+                setValue('goal_time', Math.round(calculatedTime));
             }
         }
     }, [goalTime, goalPages, mediaType, setValue, userReadingSpeed]);

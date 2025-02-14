@@ -214,17 +214,7 @@ export async function GET(request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        console.log('Session user:', session.user); // Log session info
-
-        // First, let's check if we have any media items at all
-        const { data: basicItems, error: basicError } = await supabase
-            .from('media_items')
-            .select('*')
-            .eq('user_email', session.user.email);
-
-        console.log('Basic items query:', basicItems, basicError); // Log basic query results
-
-        // Then try the full join
+        // Specify the foreign key relationship for locked_items
         const { data: items, error } = await supabase
             .from('media_items')
             .select(`
@@ -243,27 +233,13 @@ export async function GET(request) {
             throw error;
         }
 
-        console.log('Raw items from Supabase:', items); // Log raw results
-
-        // Transform the data to flatten the structure
+        // Transform the data to flatten the structure and normalize locked_items
         const transformedItems = items.map(item => ({
-            id: item.id,
-            title: item.title,
-            media_type: item.media_type,
-            category: item.category,
-            description: item.description,
-            genres: typeof item.genres === 'string' ? JSON.parse(item.genres) : item.genres,
-            poster_path: item.poster_path,
-            backdrop_path: item.backdrop_path,
-            books: item.books,
-            movies: item.movies,
-            tv_shows: item.tv_shows,
-            games: item.games,
-            user_media_progress: item.user_media_progress,
-            locked_items: item.locked_items || []
+            ...item,
+            locked_items: item.locked_items ? (Array.isArray(item.locked_items) ? item.locked_items : [item.locked_items]) : []
         }));
 
-        console.log('Transformed items:', transformedItems); // Log transformed results
+        console.log('Transformed items:', transformedItems);
 
         return NextResponse.json({ items: transformedItems });
 
