@@ -1,131 +1,100 @@
 'use client';
 
 import { useState } from 'react';
-import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-    Card,
-    CardContent,
-} from "@/components/ui/card";
+import { toast } from 'sonner';
 
-const FriendSearch = ({ currentUserId }) => {
+export default function FriendSearch({ currentUserId, currentFriends, onFriendAdded }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     const handleSearch = async () => {
         if (!searchTerm.trim()) return;
 
-        setIsLoading(true);
-        setError(null);
-
+        setLoading(true);
         try {
             const response = await fetch(`/api/users/search?term=${encodeURIComponent(searchTerm)}`);
             const data = await response.json();
 
-            if (!response.ok) throw new Error(data.message || 'Failed to search users');
+            // Filter out current user and existing friends
+            const filteredResults = data.users.filter(user =>
+                user.id !== currentUserId &&
+                !currentFriends?.some(friend => friend.friend_id === user.id)
+            );
 
-            setSearchResults(data.users);
-        } catch (err) {
-            setError(err.message);
-            setSearchResults([]);
+            setSearchResults(filteredResults);
+        } catch (error) {
+            console.error('Search error:', error);
+            toast.error('Failed to search users');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
-    const handleSendRequest = async (receiverId) => {
+    const sendFriendRequest = async (receiverId) => {
         try {
-            console.log('Sending friend request...', { receiverId, currentUserId });
-
             const response = await fetch('/api/friend-requests', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    sender_id: currentUserId,
-                    receiver_id: receiverId,
-                    status: 'pending'
-                }),
+                body: JSON.stringify({ receiver_id: receiverId }),
             });
 
             const data = await response.json();
-            console.log('Response:', data);
 
-            if (!response.ok) {
-                throw new Error(data.error || data.details || 'Failed to send friend request');
-            }
+            if (!response.ok) throw new Error(data.error);
 
-            // Update UI to show request sent
-            setSearchResults(results =>
-                results.map(user =>
-                    user.id === receiverId
-                        ? { ...user, requestSent: true }
-                        : user
-                )
-            );
-        } catch (err) {
-            console.error('Error sending friend request:', err);
-            setError(err.message);
+            toast.success('Friend request sent!');
+            // Remove the user from search results
+            setSearchResults(prev => prev.filter(user => user.id !== receiverId));
+        } catch (error) {
+            console.error('Error sending friend request:', error);
+            toast.error(error.message || 'Failed to send friend request');
         }
     };
 
     return (
-        <Card className="w-full max-w-2xl mx-auto">
-            <CardContent className="p-6">
-                <div className="space-y-4">
-                    <div className="flex gap-2">
-                        <Input
-                            placeholder="Search by email or username..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        />
-                        <Button
-                            onClick={handleSearch}
-                            disabled={isLoading}
+        <div className="space-y-4">
+            <h2 className="text-2xl font-semibold">Find Friends</h2>
+            <div className="flex gap-2">
+                <Input
+                    type="text"
+                    placeholder="Search by username or email"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                <Button onClick={handleSearch} disabled={loading}>
+                    {loading ? 'Searching...' : 'Search'}
+                </Button>
+            </div>
+
+            {searchResults.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {searchResults.map((user) => (
+                        <div
+                            key={user.id}
+                            className="p-4 rounded-lg bg-card border"
                         >
-                            <Search className="h-4 w-4 mr-2" />
-                            Search
-                        </Button>
-                    </div>
-
-                    {error && (
-                        <p className="text-sm text-destructive">{error}</p>
-                    )}
-
-                    <div className="space-y-2">
-                        {searchResults.map((user) => (
-                            <div
-                                key={user.id}
-                                className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                            >
+                            <div className="flex flex-col space-y-4">
                                 <div>
                                     <p className="font-medium">{user.username}</p>
                                     <p className="text-sm text-muted-foreground">{user.email}</p>
                                 </div>
                                 <Button
-                                    variant={user.requestSent ? "secondary" : "default"}
-                                    disabled={user.requestSent || user.id === currentUserId}
-                                    onClick={() => handleSendRequest(user.id)}
+                                    size="sm"
+                                    onClick={() => sendFriendRequest(user.id)}
                                 >
-                                    {user.requestSent
-                                        ? "Request Sent"
-                                        : user.id === currentUserId
-                                            ? "This is you"
-                                            : "Add Friend"
-                                    }
+                                    Add Friend
                                 </Button>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    ))}
                 </div>
-            </CardContent>
-        </Card>
+            )}
+        </div>
     );
-};
-
-export default FriendSearch; 
+} 

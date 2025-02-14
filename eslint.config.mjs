@@ -7,8 +7,30 @@ const __dirname = dirname(__filename);
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
+  recommendedConfig: true
 });
 
-const eslintConfig = [...compat.extends("next/core-web-vitals")];
-
-export default eslintConfig;
+export default [
+  {
+    ignores: [".next/*", "node_modules/*"]
+  },
+  ...compat.extends("next/core-web-vitals"),
+  {
+    files: ["**/*.js", "**/*.mjs", "**/*.jsx"],
+    rules: {
+      "no-unused-vars": "warn",
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn"
+    },
+    settings: {
+      react: {
+        version: "detect"
+      }
+    },
+    env: {
+      browser: true,
+      node: true,
+      es6: true
+    }
+  }
+];

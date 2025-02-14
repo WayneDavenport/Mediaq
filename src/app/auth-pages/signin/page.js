@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FcGoogle } from 'react-icons/fc';
 
-export default function SignIn() {
+function SignInContent() {
     const { data: session } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -104,7 +104,8 @@ export default function SignIn() {
 
             // Successful login
             toast.success("Signed in successfully");
-            router.push('/user-pages/dashboard');
+            const callbackUrl = searchParams.get('callbackUrl') || '/user-pages/dashboard';
+            router.push(callbackUrl);
         } catch (error) {
             toast.error("An error occurred", {
                 description: "Please try again later"
@@ -244,5 +245,13 @@ export default function SignIn() {
                 </CardFooter>
             </Card>
         </div>
+    );
+}
+
+export default function SignIn() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <SignInContent />
+        </Suspense>
     );
 }

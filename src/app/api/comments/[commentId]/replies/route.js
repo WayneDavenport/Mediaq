@@ -13,9 +13,23 @@ export async function POST(request, { params }) {
 
     try {
         const { content } = await request.json();
-        const replyId = uuidv4(); // Generate UUID for new reply
+        const replyId = uuidv4();
 
-        const { data: reply, error } = await supabase
+        // Get the original comment and media item details
+        const { data: comment, error: commentError } = await supabase
+            .from('comments')
+            .select(`
+                *,
+                user:users(id, username),
+                media_items(id, title, user_id)
+            `)
+            .eq('id', params.commentId)
+            .single();
+
+        if (commentError) throw commentError;
+
+        // Create the reply
+        const { data: reply, error: replyError } = await supabase
             .from('comment_replies')
             .insert({
                 id: replyId,
@@ -32,7 +46,50 @@ export async function POST(request, { params }) {
             `)
             .single();
 
-        if (error) throw error;
+        if (replyError) throw replyError;
+
+        // Create notification for the comment owner (if it's not their own reply)
+        if (comment.user_id !== session.user.id) {
+            const { error: notificationError } = await supabase
+                .from('notifications')
+                .insert({
+                    id: uuidv4(),
+                    sender_id: session.user.id,
+                    receiver_id: comment.user_id,
+                    type: 'reply',
+                    media_item_id: comment.media_item_id,
+                    comment_id: params.commentId,
+                    reply_id: replyId,
+                    message: `${session.user.username} replied to your comment on ${comment.media_items.title}`,
+                    is_read: false
+                });
+
+            if (notificationError) {
+                console.error('Error creating notification for comment owner:', notificationError);
+            }
+        }
+
+        // Also notify the media item owner if different from comment owner and reply owner
+        if (comment.media_items.user_id !== session.user.id &&
+            comment.media_items.user_id !== comment.user_id) {
+            const { error: ownerNotificationError } = await supabase
+                .from('notifications')
+                .insert({
+                    id: uuidv4(),
+                    sender_id: session.user.id,
+                    receiver_id: comment.media_items.user_id,
+                    type: 'reply',
+                    media_item_id: comment.media_item_id,
+                    comment_id: params.commentId,
+                    reply_id: replyId,
+                    message: `${session.user.username} replied to a comment on your media item: ${comment.media_items.title}`,
+                    is_read: false
+                });
+
+            if (ownerNotificationError) {
+                console.error('Error creating notification for media owner:', ownerNotificationError);
+            }
+        }
 
         return NextResponse.json({ reply });
     } catch (error) {

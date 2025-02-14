@@ -5,9 +5,9 @@ export const calculateReadingTime = (pages, pagesPerMin) => {
     return Math.round(pages / pagesPerMin); // Convert to minutes
 };
 
-export const calculatePagesFromTime = (minutes, pagesPerHalfHour) => {
-    if (!minutes || !pagesPerHalfHour) return 0;
-    return Math.round((minutes / 30) * pagesPerHalfHour);
+export const calculatePagesFromTime = (minutes, pagesPerMin) => {
+    if (!minutes || !pagesPerMin) return 0;
+    return Math.round(minutes * pagesPerMin);
 };
 
 export const calculateTVDuration = (episodes, runtime = 30) => {

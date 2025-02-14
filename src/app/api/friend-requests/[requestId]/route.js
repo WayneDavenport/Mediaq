@@ -5,9 +5,6 @@ import supabase from '@/lib/supabaseClient';
 
 export async function DELETE(request, { params }) {
     try {
-        const { requestId } = params;
-
-        // Get current user's session
         const session = await getServerSession(authOptions);
         if (!session) {
             return NextResponse.json(
@@ -16,34 +13,13 @@ export async function DELETE(request, { params }) {
             );
         }
 
-        // Verify the request belongs to the current user
-        const { data: friendRequest, error: fetchError } = await supabase
-            .from('friend_requests')
-            .select('*')
-            .eq('id', requestId)
-            .single();
-
-        if (fetchError) throw fetchError;
-
-        if (!friendRequest) {
-            return NextResponse.json(
-                { error: 'Friend request not found' },
-                { status: 404 }
-            );
-        }
-
-        if (friendRequest.receiver_id !== session.user.id) {
-            return NextResponse.json(
-                { error: 'Unauthorized to modify this request' },
-                { status: 403 }
-            );
-        }
-
         // Delete the request
         const { error: deleteError } = await supabase
             .from('friend_requests')
             .delete()
-            .eq('id', requestId);
+            .eq('sender_id', params.requestId)
+            .eq('receiver_id', session.user.id)
+            .eq('status', 'pending');
 
         if (deleteError) throw deleteError;
 
@@ -62,10 +38,6 @@ export async function DELETE(request, { params }) {
 
 export async function POST(request, { params }) {
     try {
-        const { requestId } = params;
-        console.log('Processing request ID:', requestId);
-
-        // Get current user's session
         const session = await getServerSession(authOptions);
         if (!session) {
             return NextResponse.json(
@@ -74,7 +46,7 @@ export async function POST(request, { params }) {
             );
         }
 
-        // Verify and get the friend request with sender and receiver info
+        // Get the friend request details
         const { data: friendRequest, error: fetchError } = await supabase
             .from('friend_requests')
             .select(`
@@ -82,11 +54,10 @@ export async function POST(request, { params }) {
                 sender:sender_id(username),
                 receiver:receiver_id(username)
             `)
-            .eq('id', requestId)
+            .eq('receiver_id', session.user.id)
+            .eq('sender_id', params.requestId)
+            .eq('status', 'pending')
             .single();
-
-        console.log('Friend request data:', friendRequest);
-        console.log('Fetch error:', fetchError);
 
         if (fetchError) throw fetchError;
 
@@ -97,18 +68,12 @@ export async function POST(request, { params }) {
             );
         }
 
-        if (friendRequest.receiver_id !== session.user.id) {
-            return NextResponse.json(
-                { error: 'Unauthorized to modify this request' },
-                { status: 403 }
-            );
-        }
-
         // Update request status to accepted
         const { error: updateError } = await supabase
             .from('friend_requests')
             .update({ status: 'accepted' })
-            .eq('id', requestId);
+            .eq('sender_id', params.requestId)
+            .eq('receiver_id', session.user.id);
 
         if (updateError) throw updateError;
 
@@ -117,21 +82,18 @@ export async function POST(request, { params }) {
             .from('friends')
             .insert([
                 {
-                    user_id: friendRequest.receiver_id,
+                    user_id: session.user.id,
                     friend_id: friendRequest.sender_id,
                     friend_user_name: friendRequest.sender.username
                 },
                 {
                     user_id: friendRequest.sender_id,
-                    friend_id: friendRequest.receiver_id,
+                    friend_id: session.user.id,
                     friend_user_name: friendRequest.receiver.username
                 }
             ]);
 
-        if (friendError) {
-            console.error('Error creating friend entries:', friendError);
-            throw friendError;
-        }
+        if (friendError) throw friendError;
 
         return NextResponse.json({
             message: 'Friend request accepted successfully'
@@ -140,7 +102,7 @@ export async function POST(request, { params }) {
     } catch (error) {
         console.error('Accept friend request error:', error);
         return NextResponse.json(
-            { error: 'Failed to accept friend request', details: error.message },
+            { error: 'Failed to accept friend request' },
             { status: 500 }
         );
     }

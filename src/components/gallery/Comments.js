@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatDistanceToNow } from 'date-fns';
 import supabaseRealtime from '@/lib/supabaseRealtimeClient';
+import debounce from 'lodash/debounce';
 
 const Comments = ({ mediaItemId, currentUser }) => {
     const [isPending, startTransition] = useTransition();
@@ -15,50 +16,89 @@ const Comments = ({ mediaItemId, currentUser }) => {
     const [replyingTo, setReplyingTo] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const lastProcessedComment = useRef(null);
+    const processedComments = useRef(new Set());
+
+    const addNewComment = useCallback(
+        debounce((payload) => {
+            const commentId = payload.new.id;
+
+            if (processedComments.current.has(commentId)) {
+                console.log('Comment already processed (debounced):', commentId);
+                return;
+            }
+
+            setComments(prevComments => {
+                if (prevComments.some(comment => comment.id === commentId)) {
+                    console.log('Comment already exists in state:', commentId);
+                    return prevComments;
+                }
+
+                processedComments.current.add(commentId);
+                console.log('Adding new comment:', commentId);
+
+                const newComment = {
+                    ...payload.new,
+                    user: payload.new.user_id === currentUser.id ? currentUser : null,
+                    replies: []
+                };
+                return [newComment, ...prevComments];
+            });
+        }, 100),
+        [currentUser]
+    );
 
     useEffect(() => {
         if (!mediaItemId) return;
 
-        // Fetch initial comments
         fetchComments();
+        processedComments.current.clear();
 
-        // Set up realtime subscription with UUID handling
-        const commentsSubscription = supabaseRealtime
-            .channel(`comments-channel-${mediaItemId}`)
+        const channel = supabaseRealtime.channel(`comments-${mediaItemId}-${Date.now()}`);
+
+        const subscription = channel
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
                 table: 'comments',
                 filter: `media_item_id=eq.${mediaItemId}`
             }, (payload) => {
-                setComments(prev => [payload.new, ...prev]);
+                console.log('Received new comment:', payload.new.id);
+                addNewComment(payload);
             })
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
-                table: 'comment_replies'
+                table: 'comment_replies',
+                filter: `comment_id=in.(${comments.map(c => c.id).join(',')})`
             }, (payload) => {
-                setComments(prev => prev.map(comment =>
-                    comment.id === payload.new.comment_id
-                        ? {
-                            ...comment,
-                            replies: [
-                                ...(comment.replies || []),
-                                {
-                                    ...payload.new,
-                                    user: currentUser
-                                }
-                            ]
+                setComments(prevComments => {
+                    return prevComments.map(comment => {
+                        if (comment.id === payload.new.comment_id) {
+                            // Check if reply already exists
+                            const replyExists = comment.replies?.some(reply => reply.id === payload.new.id);
+                            if (replyExists) return comment;
+
+                            // Add new reply
+                            const updatedReplies = [...(comment.replies || []), {
+                                ...payload.new,
+                                user: payload.new.user_id === currentUser.id ? currentUser : null
+                            }];
+                            return { ...comment, replies: updatedReplies };
                         }
-                        : comment
-                ));
+                        return comment;
+                    });
+                });
             })
             .subscribe();
 
         return () => {
-            supabaseRealtime.removeChannel(commentsSubscription);
+            console.log('Cleaning up subscription');
+            addNewComment.cancel();
+            processedComments.current.clear();
+            supabaseRealtime.removeChannel(channel);
         };
-    }, [mediaItemId]);
+    }, [mediaItemId, currentUser?.id, addNewComment]);
 
     const fetchComments = async () => {
         try {
@@ -145,13 +185,13 @@ const Comments = ({ mediaItemId, currentUser }) => {
     if (!mediaItemId) return null;
 
     return (
-        <div className="space-y-4">
-            <div className="space-y-2">
+        <div>
+            {/* Comment form */}
+            <div className="space-y-4 mb-6">
                 <Textarea
-                    placeholder="Add a comment..."
+                    placeholder="Write a comment..."
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    className="min-h-[100px]"
                 />
                 <Button
                     onClick={handleSubmitComment}
@@ -161,20 +201,12 @@ const Comments = ({ mediaItemId, currentUser }) => {
                 </Button>
             </div>
 
-            {error && (
-                <p className="text-sm text-destructive">{error}</p>
-            )}
-
+            {/* Comments list */}
             <div className="space-y-4">
                 {comments.map((comment) => {
-                    if (!comment.user) {
-                        console.warn('Comment has no user data:', comment);
-                        return null;
-                    }
-
                     return (
-                        <div key={comment.id} className="space-y-2">
-                            <div className="flex items-start gap-2 bg-muted p-3 rounded-lg">
+                        <div key={`comment-${comment.id}-${comment.created_at}`} className="space-y-2">
+                            <div className="flex items-start gap-2">
                                 <Avatar>
                                     <AvatarFallback>
                                         {comment.user?.username?.charAt(0).toUpperCase() || 'U'}
@@ -190,16 +222,14 @@ const Comments = ({ mediaItemId, currentUser }) => {
                                         </span>
                                     </div>
                                     <p className="mt-1">{comment.content}</p>
-                                    {replyingTo !== comment.id && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setReplyingTo(comment.id)}
-                                            className="mt-2"
-                                        >
-                                            Reply
-                                        </Button>
-                                    )}
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="mt-1"
+                                        onClick={() => setReplyingTo(comment.id)}
+                                    >
+                                        Reply
+                                    </Button>
                                 </div>
                             </div>
 
@@ -244,7 +274,10 @@ const Comments = ({ mediaItemId, currentUser }) => {
                                         }
 
                                         return (
-                                            <div key={reply.id} className="flex items-start gap-2 bg-muted/50 p-3 rounded-lg">
+                                            <div
+                                                key={`reply-${reply.id}-${reply.created_at}`}
+                                                className="flex items-start gap-2 bg-muted/50 p-3 rounded-lg"
+                                            >
                                                 <Avatar>
                                                     <AvatarFallback>
                                                         {reply.user?.username?.charAt(0).toUpperCase() || 'U'}

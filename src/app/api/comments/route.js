@@ -51,9 +51,28 @@ export async function POST(request) {
 
     try {
         const { media_item_id, content } = await request.json();
-        const commentId = uuidv4(); // Generate UUID for new comment
+        const commentId = uuidv4();
 
-        const { data: comment, error } = await supabase
+        // First, get the media item details and owner
+        const { data: mediaItem, error: mediaError } = await supabase
+            .from('media_items')
+            .select(`
+                title, 
+                user_id,
+                user:users!media_items_user_id_fkey (id)
+            `)
+            .eq('id', media_item_id)
+            .single();
+
+        if (mediaError) {
+            console.error('Error fetching media item:', mediaError);
+            throw mediaError;
+        }
+
+        console.log('Media item with user:', mediaItem);
+
+        // Create the comment
+        const { data: comment, error: commentError } = await supabase
             .from('comments')
             .insert({
                 id: commentId,
@@ -70,11 +89,49 @@ export async function POST(request) {
             `)
             .single();
 
-        if (error) throw error;
+        if (commentError) {
+            console.error('Error creating comment:', commentError);
+            throw commentError;
+        }
+
+        console.log('Created comment:', comment);
+
+        // Create notification only if the media item owner exists and it's not the commenter
+        if (mediaItem.user && mediaItem.user_id !== session.user.id) {
+            console.log('Creating notification for:', {
+                mediaItemOwner: mediaItem.user_id,
+                commenter: session.user.id,
+                mediaTitle: mediaItem.title
+            });
+
+            const { data: notification, error: notificationError } = await supabase
+                .from('notifications')
+                .insert({
+                    id: uuidv4(),
+                    sender_id: session.user.id,
+                    receiver_id: mediaItem.user_id,
+                    type: 'comment',
+                    media_item_id,
+                    comment_id: commentId,
+                    message: `${session.user.username} commented on your media item: ${mediaItem.title}`,
+                    is_read: false
+                })
+                .select();
+
+            if (notificationError) {
+                console.error('Error creating notification:', notificationError);
+                // Don't throw the error, just log it
+                // This way the comment still gets created even if notification fails
+            } else {
+                console.log('Created notification:', notification);
+            }
+        } else {
+            console.log('No notification created - user not found or commenting on own media item');
+        }
 
         return NextResponse.json({ comment });
     } catch (error) {
-        console.error('Error creating comment:', error);
+        console.error('Error in comment creation process:', error);
         return NextResponse.json(
             { error: 'Failed to create comment' },
             { status: 500 }

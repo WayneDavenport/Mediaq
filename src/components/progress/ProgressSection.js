@@ -64,7 +64,7 @@ export default function ProgressSection({
     );
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 relative z-40">
             {showLockForm ? (
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">

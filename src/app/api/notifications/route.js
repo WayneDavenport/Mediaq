@@ -14,32 +14,23 @@ export async function GET(request) {
             .from('notifications')
             .select(`
                 *,
-                media_items (
-                    id,
-                    title,
-                    media_type
-                ),
-                comments (
-                    id,
-                    content,
-                    user:users (username)
-                ),
-                comment_replies (
-                    id,
-                    content,
-                    user:users (username)
-                )
+                sender:sender_id(id, username),
+                media_items(title),
+                comments(content),
+                comment_replies(content)
             `)
-            .eq('user_id', session.user.id)
-            .order('created_at', { ascending: false })
-            .limit(10);
+            .eq('receiver_id', session.user.id)
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
 
         return NextResponse.json({ notifications });
     } catch (error) {
         console.error('Error fetching notifications:', error);
-        return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });
+        return NextResponse.json(
+            { error: 'Failed to fetch notifications' },
+            { status: 500 }
+        );
     }
 }
 
@@ -56,13 +47,17 @@ export async function PUT(request) {
         const { error } = await supabase
             .from('notifications')
             .update({ is_read: true })
-            .in('id', notificationIds);
+            .in('id', notificationIds)
+            .eq('receiver_id', session.user.id); // Ensure user can only mark their own notifications
 
         if (error) throw error;
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ message: 'Notifications marked as read' });
     } catch (error) {
-        console.error('Error updating notifications:', error);
-        return NextResponse.json({ error: 'Failed to update notifications' }, { status: 500 });
+        console.error('Error marking notifications as read:', error);
+        return NextResponse.json(
+            { error: 'Failed to mark notifications as read' },
+            { status: 500 }
+        );
     }
 } 

@@ -25,7 +25,7 @@ export default function SignUp() {
         username: '',
         password: '',
         confirmPassword: '',
-        reading_speed: 250
+        reading_speed: 0.667 // Updated to pages per minute
     });
     const [loading, setLoading] = useState(false);
 
@@ -114,9 +114,9 @@ export default function SignUp() {
     };
 
     const getReadingSpeedLabel = (value) => {
-        if (value <= 10) return "Slow";
-        if (value <= 20) return "Normal";
-        if (value <= 30) return "Fast";
+        if (value <= 0.4) return "Slow";
+        if (value <= 0.667) return "Normal";
+        if (value <= 0.9) return "Fast";
         return "Very Fast";
     };
 
@@ -217,16 +217,16 @@ export default function SignUp() {
 
                             <div className="space-y-2">
                                 <Label htmlFor="reading_speed">
-                                    Reading Speed: {formData.reading_speed} pages per 30 minutes
+                                    Reading Speed: {formData.reading_speed.toFixed(3)} pages per minute
                                     <span className="ml-2 text-sm text-muted-foreground">
                                         ({getReadingSpeedLabel(formData.reading_speed)})
                                     </span>
                                 </Label>
                                 <Slider
                                     id="reading_speed"
-                                    min={5}
-                                    max={40}
-                                    step={5}
+                                    min={0.2}
+                                    max={1.2}
+                                    step={0.067}
                                     value={[formData.reading_speed]}
                                     onValueChange={(value) => setFormData(prev => ({
                                         ...prev,

@@ -31,7 +31,9 @@ export default function Dashboard() {
     useOutsideClick(ref, (event) => {
         // Check if the click is within a Select/dropdown component
         const isSelectClick = event.target.closest('[role="combobox"]') ||
-            event.target.closest('[role="listbox"]');
+            event.target.closest('[role="listbox"]') ||
+            event.target.closest('[role="option"]') ||
+            event.target.closest('[data-radix-select-viewport]');
 
         if (!isSelectClick) {
             setExpandedId(null);

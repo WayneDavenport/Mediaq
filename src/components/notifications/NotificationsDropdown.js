@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,35 +15,47 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
 import supabaseRealtime from '@/lib/supabaseRealtimeClient';
+import useNotificationStore from '@/store/notificationStore';
 
 export default function NotificationsDropdown() {
-    const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
     const router = useRouter();
+    const { data: session } = useSession();
+    const {
+        notifications,
+        unreadCount,
+        setNotifications,
+        addNotification,
+        markAsRead,
+        markMultipleAsRead
+    } = useNotificationStore();
 
     useEffect(() => {
-        fetchNotifications();
-        setupRealtimeSubscription();
-    }, []);
+        if (session?.user?.id) {
+            fetchNotifications();
+            const subscription = setupRealtimeSubscription();
+            return () => {
+                if (subscription) {
+                    supabaseRealtime.removeChannel(subscription);
+                }
+            };
+        }
+    }, [session?.user?.id]);
 
     const setupRealtimeSubscription = () => {
-        const subscription = supabaseRealtime
-            .channel('notifications-channel')
+        return supabaseRealtime
+            .channel(`notifications-${session?.user?.id}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
-                table: 'notifications'
+                table: 'notifications',
+                filter: `receiver_id=eq.${session?.user?.id}`
             }, (payload) => {
-                setNotifications(prev => [payload.new, ...prev]);
-                if (!payload.new.is_read) {
-                    setUnreadCount(prev => prev + 1);
+                // Only add if it's for the current user and not a duplicate
+                if (payload.new.receiver_id === session?.user?.id) {
+                    addNotification(payload.new);
                 }
             })
             .subscribe();
-
-        return () => {
-            supabaseRealtime.removeChannel(subscription);
-        };
     };
 
     const fetchNotifications = async () => {
@@ -51,7 +64,6 @@ export default function NotificationsDropdown() {
             const data = await response.json();
             if (data.notifications) {
                 setNotifications(data.notifications);
-                setUnreadCount(data.notifications.filter(n => !n.is_read).length);
             }
         } catch (error) {
             console.error('Error fetching notifications:', error);
@@ -59,7 +71,6 @@ export default function NotificationsDropdown() {
     };
 
     const handleNotificationClick = async (notification) => {
-        // Mark as read
         if (!notification.is_read) {
             try {
                 await fetch('/api/notifications', {
@@ -67,7 +78,7 @@ export default function NotificationsDropdown() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ notificationIds: [notification.id] })
                 });
-                setUnreadCount(prev => Math.max(0, prev - 1));
+                markAsRead(notification.id);
             } catch (error) {
                 console.error('Error marking notification as read:', error);
             }
@@ -90,14 +101,40 @@ export default function NotificationsDropdown() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-80" align="end">
-                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                <DropdownMenuLabel className="flex justify-between items-center">
+                    <span>Notifications</span>
+                    {unreadCount > 0 && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async (e) => {
+                                e.preventDefault();
+                                const unreadIds = notifications
+                                    .filter(n => !n.is_read)
+                                    .map(n => n.id);
+                                try {
+                                    await fetch('/api/notifications', {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ notificationIds: unreadIds })
+                                    });
+                                    markMultipleAsRead(unreadIds);
+                                } catch (error) {
+                                    console.error('Error marking all as read:', error);
+                                }
+                            }}
+                        >
+                            Mark all as read
+                        </Button>
+                    )}
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {notifications.length === 0 ? (
                     <DropdownMenuItem disabled>No notifications</DropdownMenuItem>
                 ) : (
                     notifications.map(notification => (
                         <DropdownMenuItem
-                            key={notification.id}
+                            key={`notification-${notification.id}-${notification.created_at}`}
                             className={`cursor-pointer ${!notification.is_read ? 'bg-muted/50' : ''}`}
                             onClick={() => handleNotificationClick(notification)}
                         >

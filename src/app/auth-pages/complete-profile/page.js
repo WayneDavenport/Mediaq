@@ -21,7 +21,7 @@ export default function CompleteProfile() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [userData, setUserData] = useState({
-        reading_speed: 250,
+        reading_speed: 0.667, // Default to 0.667 pages per minute
         username: session?.user?.name || '',
     });
 
@@ -33,9 +33,9 @@ export default function CompleteProfile() {
     }, [session, router]);
 
     const getReadingSpeedLabel = (value) => {
-        if (value <= 10) return "Slow";
-        if (value <= 20) return "Normal";
-        if (value <= 30) return "Fast";
+        if (value <= 0.4) return "Slow";
+        if (value <= 0.667) return "Normal";
+        if (value <= 0.9) return "Fast";
         return "Very Fast";
     };
 
@@ -99,16 +99,16 @@ export default function CompleteProfile() {
 
                         <div className="space-y-2">
                             <Label htmlFor="reading_speed">
-                                Reading Speed: {userData.reading_speed} pages per 30 minutes
+                                Reading Speed: {userData.reading_speed.toFixed(3)} pages per minute
                                 <span className="ml-2 text-sm text-muted-foreground">
                                     ({getReadingSpeedLabel(userData.reading_speed)})
                                 </span>
                             </Label>
                             <Slider
                                 id="reading_speed"
-                                min={5}
-                                max={40}
-                                step={5}
+                                min={0.2}
+                                max={1.2}
+                                step={0.067}
                                 value={[userData.reading_speed]}
                                 onValueChange={(value) => setUserData(prev => ({
                                     ...prev,

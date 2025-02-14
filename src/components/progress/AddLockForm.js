@@ -21,16 +21,24 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
     const methods = useForm();
     const { register, handleSubmit, watch, setValue } = methods;
 
+    // Add this logging
+    useEffect(() => {
+        console.log('Incomplete items:', incompleteItems);
+    }, [incompleteItems]);
+
     const handleKeyParentChange = (value) => {
+        console.log('Selected value:', value);
         setValue('key_parent', value);
 
-        if (value && !isNaN(value)) {
-            // If value is a number (item ID)
-            setValue('key_parent_id', parseInt(value));
+        if (value && value.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+            // If value is a UUID (item ID)
+            console.log('Setting UUID:', value);
+            setValue('key_parent_id', value);  // Don't parse as integer
             setValue('key_parent_text', null);
 
             // Find the selected item to determine media type
-            const selectedItem = incompleteItems.find(item => item.id === parseInt(value));
+            const selectedItem = incompleteItems.find(item => item.id === value);  // Direct comparison
+            console.log('Selected item:', selectedItem);
             if (selectedItem) {
                 setValue('media_type', selectedItem.media_type);
             }
@@ -81,13 +89,18 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
                 };
                 onSubmit(formData);
             })} className="space-y-4">
-                <div className="space-y-2">
+                <div className="space-y-2 relative z-50">
                     <Label>Lock Type</Label>
                     <Select onValueChange={handleKeyParentChange}>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select lock type..." />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent
+                            position="popper"
+                            className="z-[100]"
+                            sideOffset={4}
+                            align="start"
+                        >
                             <SelectItem value="Movie">Movie</SelectItem>
                             <SelectItem value="Book">Book</SelectItem>
                             <SelectItem value="Show">TV Show</SelectItem>
@@ -98,7 +111,7 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
                                 </SelectItem>
                             ))}
                             {incompleteItems.map(item => (
-                                <SelectItem key={item.id} value={item.id.toString()}>
+                                <SelectItem key={item.id} value={item.id}>
                                     {item.title}
                                 </SelectItem>
                             ))}
@@ -123,7 +136,7 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
                             placeholder="Number of pages..."
                         />
                         <div className="text-sm text-muted-foreground">
-                            Reading speed: {(userReadingSpeed * 30).toFixed(1)} pages per 30 minutes
+                            Reading speed: {userReadingSpeed.toFixed(2)} pages per minute
                         </div>
                         <div className="text-sm text-muted-foreground">
                             Estimated time: {calculateReadingTime(goalPages, userReadingSpeed) || 0} minutes
