@@ -10,12 +10,7 @@
 }
 
 .mediaGrid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-height: calc(100vh - 120px);
-    /* Adjust based on your header height */
-    overflow-y: auto;
+    @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4;
 }
 
 .mediaCard {
@@ -27,17 +22,30 @@
     align-items: center;
     gap: 1rem;
     padding: 0.5rem;
-    height: 5rem;
+    height: 6rem;
     background: hsl(var(--background));
     color: hsl(var(--foreground));
 }
 
 .posterWrapper {
-    width: 4rem;
-    height: 4rem;
+    width: 5rem;
+    height: 5rem;
     border-radius: 0.25rem;
     overflow: hidden;
     flex-shrink: 0;
+    position: relative;
+}
+
+.categoryLabel {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    background: hsl(var(--background)/0.8);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    backdrop-filter: blur(2px);
+    z-index: 10;
 }
 
 .mediaTitle {
@@ -141,4 +149,8 @@
     @media (max-width: 640px) {
         align-self: center;
     }
+}
+
+.sortingControls {
+    @apply flex items-center gap-4 mb-6 p-4 rounded-lg bg-muted/50;
 }

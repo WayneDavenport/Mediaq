@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import ProgressSection from "@/components/progress/ProgressSection";
 import { Trash2 } from 'lucide-react';
 import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import MediaTypeIcon from "@/components/ui/media-type-icon";
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 
@@ -27,6 +30,7 @@ export default function Dashboard() {
     const [updateModalOpen, setUpdateModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const id = useId();
+    const [sortOption, setSortOption] = useState("queue");
 
     useOutsideClick(ref, (event) => {
         // Check if the click is within a Select/dropdown component
@@ -158,6 +162,35 @@ export default function Dashboard() {
         }
     };
 
+    const getSortedMediaItems = () => {
+        const sorted = [...mediaItems];
+
+        switch (sortOption) {
+            case "queue":
+                return sorted.sort((a, b) =>
+                    (a.user_media_progress?.queue_number || 0) - (b.user_media_progress?.queue_number || 0)
+                );
+
+            case "title":
+                return sorted.sort((a, b) =>
+                    a.title.localeCompare(b.title)
+                );
+
+            case "media-type":
+                return sorted
+                    .sort((a, b) => a.title.localeCompare(b.title)) // First sort by title
+                    .sort((a, b) => a.media_type.localeCompare(b.media_type)); // Then by media type
+
+            case "category":
+                return sorted
+                    .sort((a, b) => a.title.localeCompare(b.title)) // First sort by title
+                    .sort((a, b) => a.category.localeCompare(b.category)); // Then by category
+
+            default:
+                return sorted;
+        }
+    };
+
     if (status === "loading" || loading) {
         return <div>Loading...</div>;
     }
@@ -182,25 +215,60 @@ export default function Dashboard() {
 
             <motion.div className={styles.dashboardContainer}>
                 <div>
-                    <h1 className="text-2xl font-bold mb-6">
-                        MediaQueue
-                    </h1>
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-2xl font-bold">
+                            MediaQueue
+                        </h1>
 
+                        <RadioGroup
+                            defaultValue="queue"
+                            value={sortOption}
+                            onValueChange={setSortOption}
+                            className="flex space-x-4"
+                        >
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="queue" id="queue" />
+                                <Label htmlFor="queue">Queue Order</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="title" id="title" />
+                                <Label htmlFor="title">Title</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="media-type" id="media-type" />
+                                <Label htmlFor="media-type">Media Type</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="category" id="category" />
+                                <Label htmlFor="category">Category</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
 
                     <div className={styles.mediaGrid}>
-                        {mediaItems.map((item) => (
+                        {getSortedMediaItems().map((item) => (
                             <motion.div
                                 key={item.id}
                                 layoutId={`card-${item.id}-${id}`}
                                 onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
                                 className={styles.mediaCard}
                             >
-                                <Card className="overflow-hidden">
+                                <Card className="overflow-hidden group relative">
                                     <div className={styles.mediaContent}>
                                         <motion.div
                                             layoutId={`image-${item.id}-${id}`}
                                             className={styles.posterWrapper}
                                         >
+                                            {sortOption === "category" && (
+                                                <motion.div
+                                                    className={styles.categoryLabel}
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                >
+                                                    {item.category}
+                                                </motion.div>
+                                            )}
                                             <Image
                                                 src={(() => {
                                                     switch (item.media_type) {
@@ -218,17 +286,29 @@ export default function Dashboard() {
                                                     }
                                                 })()}
                                                 alt={item.title}
-                                                width={64}
-                                                height={64}
+                                                width={80}
+                                                height={80}
                                                 className="object-cover rounded"
                                             />
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                <div className="relative h-full flex flex-col">
+                                                    <div className="flex-1 flex items-center justify-center p-2">
+                                                        <motion.h2
+                                                            layoutId={`title-${item.id}-${id}`}
+                                                            className="text-white text-sm text-center font-medium line-clamp-2"
+                                                        >
+                                                            {item.title}
+                                                        </motion.h2>
+                                                    </div>
+                                                    <div className="absolute bottom-1 right-1">
+                                                        <MediaTypeIcon
+                                                            type={item.media_type}
+                                                            className="text-white drop-shadow-md h-4 w-4 opacity-100"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </motion.div>
-                                        <motion.h2
-                                            layoutId={`title-${item.id}-${id}`}
-                                            className={styles.mediaTitle}
-                                        >
-                                            {item.title}
-                                        </motion.h2>
                                     </div>
                                 </Card>
                             </motion.div>
