@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import MediaTypeIcon from "@/components/ui/media-type-icon";
+import ProgressChart from "@/components/progress/ProgressChart";
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 
@@ -290,7 +291,7 @@ export default function Dashboard() {
                                                 height={80}
                                                 className="object-cover rounded"
                                             />
-                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 sm:block hidden">
                                                 <div className="relative h-full flex flex-col">
                                                     <div className="flex-1 flex items-center justify-center p-2">
                                                         <motion.h2
@@ -309,6 +310,19 @@ export default function Dashboard() {
                                                 </div>
                                             </div>
                                         </motion.div>
+                                        {/* Add mobile-only title and icon */}
+                                        <div className="sm:hidden flex flex-1 justify-between items-center">
+                                            <motion.h2
+                                                layoutId={`title-${item.id}-${id}`}
+                                                className="text-sm font-medium line-clamp-2"
+                                            >
+                                                {item.title}
+                                            </motion.h2>
+                                            <MediaTypeIcon
+                                                type={item.media_type}
+                                                className="h-4 w-4 opacity-100"
+                                            />
+                                        </div>
                                     </div>
                                 </Card>
                             </motion.div>
@@ -316,8 +330,11 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div>
-                    {/* Right column - reserved for future analytics */}
+                <div className={styles.chartContainer}>
+                    <ProgressChart
+                        mediaItems={mediaItems}
+                        sortOption={sortOption}
+                    />
                 </div>
             </motion.div>
 
