@@ -24,6 +24,8 @@ export async function GET(request) {
             ? data[0].queue_number + 1
             : 1;
 
+        console.log('Generated next queue number:', nextQueueNumber);
+
         return NextResponse.json({ nextQueueNumber });
     } catch (error) {
         console.error('Error getting next queue number:', error);

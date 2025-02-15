@@ -28,19 +28,67 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
         const value = form.watch('key_parent');
         if (!value) return;
 
-        const numericValue = parseInt(value);
-        const selectedItem = incompleteItems.find(i => Number(i.id) === numericValue);
+        // Check if the value is a UUID (for specific items)
+        const selectedItem = incompleteItems.find(i => i.id === value);
 
-        if (!isNaN(numericValue) && selectedItem) {
-            form.setValue('key_parent_id', numericValue);
-            form.setValue('key_parent_text', '');
+        if (selectedItem) {
+            // If a specific media item is selected
+            form.setValue('key_parent_id', value); // Use the UUID directly
+            form.setValue('key_parent_text', null);
             form.setValue('lock_type', 'specific_item');
         } else {
+            // If a category or media type is selected
             form.setValue('key_parent_id', null);
             form.setValue('key_parent_text', value);
             form.setValue('lock_type', allCategories.includes(value) ? 'category' : 'media_type');
         }
     }, [form.watch('key_parent')]);
+
+    // Add this function to handle lock creation
+    const createLock = async (mediaItemId) => {
+        if (!form.watch('locked')) return;
+
+        const lockData = {
+            media_item_id: mediaItemId,
+            key_parent: form.watch('key_parent'),
+            key_parent_id: form.watch('key_parent_id'),
+            key_parent_text: form.watch('key_parent_text'),
+            goal_time: form.watch('goal_time') || 0,
+            goal_pages: form.watch('goal_pages') || 0,
+            goal_episodes: form.watch('goal_episodes') || 0,
+        };
+
+        console.log('Creating lock with data:', lockData); // Debug log
+
+        try {
+            const response = await fetch('/api/media-items/add-lock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(lockData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Lock creation failed:', errorData); // Debug log
+                throw new Error(errorData.error || 'Failed to create lock');
+            }
+
+            const result = await response.json();
+            console.log('Lock created successfully:', result); // Debug log
+            return result;
+        } catch (error) {
+            console.error('Error creating lock:', error);
+            throw error;
+        }
+    };
+
+    // Add createLock to form context so it can be called after media item creation
+    React.useEffect(() => {
+        console.log('Setting createLock function in form'); // Debug log
+        form.setValue('createLock', createLock);
+    }, [form]);
 
     // Add this new useEffect to handle goal_time updates
     React.useEffect(() => {
@@ -48,8 +96,7 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
         const goalValue = form.watch(['goal_pages', 'goal_episodes', 'goal_time']);
         if (!keyParent) return;
 
-        const numericValue = parseInt(keyParent);
-        const selectedItem = incompleteItems.find(i => Number(i.id) === numericValue);
+        const selectedItem = incompleteItems.find(i => i.id === keyParent);
 
         if (!selectedItem) {
             if (keyParent === 'Book') {
@@ -115,8 +162,7 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
                                         <SelectValue>
                                             {(() => {
                                                 if (!field.value) return "Select Key Parent";
-                                                const numericValue = parseInt(field.value);
-                                                const selectedItem = incompleteItems.find(i => Number(i.id) === numericValue);
+                                                const selectedItem = incompleteItems.find(i => i.id === field.value);
                                                 return selectedItem ? selectedItem.title : field.value;
                                             })()}
                                         </SelectValue>
@@ -138,7 +184,7 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
                                         </SelectGroup>
                                         <SelectGroup label="Your Media Items">
                                             {incompleteItems.map((item) => (
-                                                <SelectItem key={item.id} value={item.id.toString()}>
+                                                <SelectItem key={item.id} value={item.id}>
                                                     {item.title}
                                                 </SelectItem>
                                             ))}
@@ -155,8 +201,7 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
                             control={form.control}
                             name={(() => {
                                 const keyParent = form.watch('key_parent');
-                                const numericValue = parseInt(keyParent);
-                                const selectedItem = incompleteItems.find(i => Number(i.id) === numericValue);
+                                const selectedItem = incompleteItems.find(i => i.id === keyParent);
 
                                 if (!selectedItem) {
                                     switch (keyParent) {
@@ -183,8 +228,7 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
                             })()}
                             render={({ field }) => {
                                 const keyParent = form.watch('key_parent');
-                                const numericValue = parseInt(keyParent);
-                                const selectedItem = incompleteItems.find(i => Number(i.id) === numericValue);
+                                const selectedItem = incompleteItems.find(i => i.id === keyParent);
                                 console.log('Selected item:', selectedItem);
 
                                 let max = 240;

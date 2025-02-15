@@ -251,45 +251,13 @@ const Staging = () => {
     };
 
     const onSubmit = async (data) => {
-        if (!session?.user?.email) {
-            toast.error('No user session found');
-            return;
-        }
-
-        setIsLoading(true);
-
         try {
-            const keyParent = form.watch('key_parent');
-            const numericValue = parseInt(keyParent);
-            const selectedItem = incompleteItems.find(i => Number(i.id) === numericValue);
-            const isCategory = allCategories.includes(keyParent);
+            setIsLoading(true);
 
-            // Convert media types to lowercase when saving
-            const mediaTypes = ['Movie', 'Book', 'Show', 'Game'];
-            let keyParentText = selectedItem ? null : keyParent;
-            if (mediaTypes.includes(keyParent)) {
-                keyParentText = keyParent.toLowerCase();
-            }
-
-            // Calculate total duration for TV shows
-            let duration = data.duration;
-            if (data.media_type === 'tv' && data.total_episodes) {
-                duration = data.total_episodes * (data.average_runtime || 30);
-            }
-            // Calculate total duration for books
-            if (data.media_type === 'book' && data.page_count) {
-                duration = (data.page_count / (session.user.reading_speed || 200)).toFixed(3);
-            }
-
-
-            const lockData = {
-                user_id: session.user.id,
-                lock_type: selectedItem ? 'specific_item' : (isCategory ? 'category' : 'media_type'),
-                key_parent_id: selectedItem ? numericValue : null,
-                key_parent_text: keyParentText,
-                goal_time: data.goal_time,
-                goal_pages: data.goal_pages,
-                goal_episodes: data.goal_episodes,
+            // Add the queue number to the submission data
+            const submissionData = {
+                ...data,
+                queue_number: nextQueueNumber
             };
 
             const response = await fetch('/api/media-items', {
@@ -297,18 +265,33 @@ const Staging = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    ...data,
-                    ...lockData,
-                    duration,
-                    queue_number: nextQueueNumber,
-                    user_email: session.user.email,
-                }),
+                body: JSON.stringify(submissionData),
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to add item');
+                throw new Error('Failed to add item');
+            }
+
+            const result = await response.json();
+            console.log('Media item created:', result);
+
+            // If the item should be locked, create the lock
+            if (data.locked && data.createLock) {
+                console.log('Attempting to create lock...'); // Debug lock creation attempt
+                try {
+                    await data.createLock(result.data.id);
+                    console.log('Lock created successfully');
+                } catch (error) {
+                    console.error('Failed to create lock:', error);
+                    toast.error('Item added but lock creation failed', {
+                        description: error.message
+                    });
+                }
+            } else {
+                console.log('Skipping lock creation:', {
+                    locked: data.locked,
+                    hasCreateLock: !!data.createLock
+                }); // Debug why lock creation was skipped
             }
 
             toast.success(`${data.title} added to your queue!`, {
