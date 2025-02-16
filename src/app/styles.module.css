@@ -13,8 +13,6 @@
     margin-left: 8%;
 }
 
-
-
 .artPlaceholder {
     position: relative;
     display: flex;
@@ -26,7 +24,6 @@
     overflow: hidden;
 }
 
-
 .content {
     display: flex;
     flex-direction: column;
@@ -36,16 +33,12 @@
     margin-bottom: 2rem;
 }
 
-
 .heading {
     font-size: 9rem;
     font-weight: bold;
     color: whitesmoke;
     margin-top: 2rem;
-
 }
-
-
 
 .description {
     font-size: 1.125rem;
@@ -58,6 +51,7 @@
     display: flex;
     gap: 2rem;
     color: whitesmoke;
+    align-items: center;
 }
 
 .cancel,
@@ -71,8 +65,6 @@
 
 .cancel {
     background-color: rgb(255, 136, 0);
-
-
 }
 
 .signInButton {
@@ -84,11 +76,9 @@
     background-color: #10B981;
 }
 
-
 @media (min-width: 768px) {
     .grid {
         grid-template-columns: repeat(2, 1fr);
-
     }
 }
 
@@ -100,29 +90,52 @@
     .container {
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: top;
         align-items: center;
-        margin-left: 0%;
+        padding: 1rem;
+        margin: 0;
+        text-align: center;
+    }
 
+    .content {
+        margin: .6rem;
+        align-items: center;
     }
 
     .heading {
-        font-size: 6rem;
-        font-weight: bold;
-        color: whitesmoke;
-        margin-top: 2rem;
-
+        font-size: clamp(4rem, 15vw, 8rem);
+        margin-top: .6rem;
+        text-align: center;
     }
 
     .description {
         font-size: 1rem;
-
+        margin-bottom: 2rem;
+        padding: 0 1rem;
+        text-align: center;
     }
 
     .actions {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 2rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+}
+
+/* Small mobile adjustments */
+@media (max-width: 380px) {
+    .heading {
+        font-size: clamp(2.5rem, 12vw, 4rem);
+    }
+
+    .description {
+        font-size: 0.875rem;
+    }
+
+    .actions {
+        gap: 0.75rem;
     }
 }

@@ -69,18 +69,8 @@ export default function NavBar() {
                         </Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                        <SheetHeader className="relative pr-8">
+                        <SheetHeader>
                             <SheetTitle>Menu</SheetTitle>
-                            <div className="absolute right-0 top-0">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-9 w-9 rounded-md border-0 hover:bg-accent"
-                                >
-                                    <X className="h-4 w-4" />
-                                    <span className="sr-only">Close</span>
-                                </Button>
-                            </div>
                         </SheetHeader>
                         <div className="flex flex-col space-y-4 mt-4">
                             {navLinks.map((link) => (
