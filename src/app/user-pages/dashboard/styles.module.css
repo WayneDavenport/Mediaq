@@ -192,6 +192,14 @@
     margin: 1rem 0;
 }
 
+.utilitySection {
+    padding-top: 1rem;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
 .expandedPoster {
     flex-shrink: 0;
     border-radius: 0.5rem;

@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import UpdateProgressModal from "@/components/progress/UpdateProgressModal";
 import { Button } from "@/components/ui/button";
 import ProgressSection from "@/components/progress/ProgressSection";
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -287,19 +287,16 @@ export default function Dashboard() {
                                                     }
                                                 })()}
                                                 alt={item.title}
-                                                width={80}
-                                                height={80}
-                                                className="object-cover rounded"
+                                                width={160}
+                                                height={160}
+                                                className="object-cover rounded w-20 h-20"
                                             />
                                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 sm:block hidden">
                                                 <div className="relative h-full flex flex-col">
                                                     <div className="flex-1 flex items-center justify-center p-2">
-                                                        <motion.h2
-                                                            layoutId={`title-${item.id}-${id}`}
-                                                            className="text-white text-sm text-center font-medium line-clamp-2"
-                                                        >
+                                                        <h2 className="text-white text-sm text-center font-medium line-clamp-2">
                                                             {item.title}
-                                                        </motion.h2>
+                                                        </h2>
                                                     </div>
                                                     <div className="absolute bottom-1 right-1">
                                                         <MediaTypeIcon
@@ -362,16 +359,16 @@ export default function Dashboard() {
                                             {item.title}
                                         </motion.h2>
                                         <Button
-                                            variant="destructive"
+                                            variant="ghost"
                                             size="icon"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleDelete(item.id);
+                                                setExpandedId(null);
                                             }}
-                                            className="hover:bg-destructive/90"
+                                            className="hover:bg-gray-200 dark:hover:bg-gray-700"
                                         >
-                                            <Trash2 className="h-4 w-4" />
-                                            <span className="sr-only">Delete item</span>
+                                            <X className="h-4 w-4" />
+                                            <span className="sr-only">Close</span>
                                         </Button>
                                     </div>
                                     <div className={styles.expandedContent}>
@@ -477,6 +474,20 @@ export default function Dashboard() {
                                         <div className={styles.description}>
                                             {item.description}
                                         </div>
+                                    </div>
+                                    <div className={styles.utilitySection}>
+                                        <Button
+                                            variant="destructive"
+                                            size="icon"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDelete(item.id);
+                                            }}
+                                            className="hover:bg-destructive/90"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                            <span className="sr-only">Delete item</span>
+                                        </Button>
                                     </div>
                                 </Card>
                             ))}
