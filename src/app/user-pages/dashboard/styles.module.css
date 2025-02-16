@@ -213,3 +213,11 @@
 .sortingControls {
     @apply flex items-center gap-4 mb-6 p-4 rounded-lg bg-muted/50;
 }
+
+@media (max-width: 640px) {
+    .expandedCard {
+        width: 92vw;
+        max-height: 85vh;
+        margin: auto;
+    }
+}

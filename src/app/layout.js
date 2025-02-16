@@ -38,7 +38,24 @@ export default function RootLayout({ children }) {
             {children}
           </AuthProvider>
         </ThemeProvider>
-        <Toaster />
+        {/* Desktop Toaster */}
+        <div className="hidden sm:block">
+          <Toaster />
+        </div>
+        {/* Mobile Toaster */}
+        <div className="block sm:hidden">
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                maxWidth: '90vw',
+                top: '30%',
+                transform: 'translateY(-30%)',
+              },
+            }}
+            closeButton
+          />
+        </div>
       </body>
     </html>
   );

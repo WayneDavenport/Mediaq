@@ -3,11 +3,11 @@
 }
 
 .navContent {
-    @apply container flex h-14 items-center justify-between;
+    @apply container flex h-14 items-center justify-between px-4;
 }
 
 .navLinks {
-    @apply flex items-center space-x-4;
+    @apply items-center space-x-4;
 }
 
 .rightSection {

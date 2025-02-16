@@ -34,6 +34,9 @@ body {
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --header-height: 60px;
   }
 
   .dark {
@@ -73,4 +76,66 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Add native-like touch behaviors */
+@layer utilities {
+  .touch-callout-none {
+    -webkit-touch-callout: none;
+  }
+
+  .tap-highlight-none {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .overscroll-none {
+    overscroll-behavior: none;
+  }
+
+  .momentum-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Native-like bottom sheet animation */
+  .sheet-animation {
+    @apply transition-transform duration-300 ease-out;
+  }
+
+  /* Mobile-safe padding areas */
+  .safe-padding {
+    padding-top: var(--safe-area-top);
+    padding-bottom: var(--safe-area-bottom);
+  }
+}
+
+/* Enhance mobile touch targets */
+@media (max-width: 640px) {
+
+  button,
+  a,
+  [role="button"] {
+    @apply min-h-[44px] min-w-[44px];
+    /* iOS standard */
+  }
+
+  /* Prevent text selection during animations */
+  [class*='animate-'] {
+    @apply select-none;
+  }
+}
+
+/* Optimize scrolling */
+* {
+  @apply overscroll-none momentum-scroll;
+}
+
+/* Prevent rubber-banding on iOS */
+html,
+body {
+  @apply overscroll-none h-full;
+}
+
+/* Prevent pull-to-refresh on mobile */
+body {
+  @apply overflow-x-hidden;
 }

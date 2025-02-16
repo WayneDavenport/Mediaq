@@ -24,64 +24,76 @@ export default function SearchPage() {
     const stagingItem = useSearchStore((state) => state.stagingItem);
 
     if (status === "loading") {
-        return <div>Loading...</div>;
+        return <div className="flex h-screen items-center justify-center">Loading...</div>;
     }
 
     if (status === "unauthenticated") {
-        return <div>Please sign in to access this page</div>;
+        return <div className="flex h-screen items-center justify-center">Please sign in to access this page</div>;
     }
 
     return (
-        <div className="container mx-auto p-4">
-            <h1 className="text-3xl font-bold mb-6">Media Search</h1>
+        <div className="min-h-screen w-full p-4 sm:p-6 lg:p-8 flex justify-center">
+            <div className="w-full max-w-7xl">
+                {/* Header with responsive spacing */}
+                <div className="flex items-center justify-between mb-6 px-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold">Media Search</h1>
+                    <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0"
+                    >
+                        <Link href='/user-pages/dashboard'>Dashboard</Link>
+                    </Button>
+                </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {!stagingItem && (
-                    <Card className="p-4">
-                        <Select
-                            value={mediaType}
-                            onValueChange={(value) => setMediaType(value)}
-                        >
-                            <SelectTrigger className="w-full mb-4">
-                                <SelectValue placeholder="Select media type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="movie">Movie</SelectItem>
-                                <SelectItem value="tv">TV Show</SelectItem>
+                {/* Main content area */}
+                <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6">
+                    {/* Search section */}
+                    {!stagingItem && (
+                        <Card className="w-full">
+                            <div className="p-4 space-y-4">
+                                <Select
+                                    value={mediaType}
+                                    onValueChange={(value) => setMediaType(value)}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select media type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="movie">Movie</SelectItem>
+                                        <SelectItem value="tv">TV Show</SelectItem>
+                                        <SelectItem value="book">Book</SelectItem>
+                                        <SelectItem value="videoGame">Video Game</SelectItem>
+                                    </SelectContent>
+                                </Select>
 
-                                <SelectItem value="book">Book</SelectItem>
-
-                                <SelectItem value="videoGame">Video Game</SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        {mediaType === 'movie' && <MovieSearch />}
-                        {mediaType === 'tv' && <TvSearch />}
-
-                        {mediaType === 'book' && <BookSearch />}
-
-                        {mediaType === 'videoGame' && <VideoGameSearch />}
-                    </Card>
-                )}
-
-                <Card>
-                    <CardContent className="p-6">
-                        {stagingItem ? (
-                            <Staging />
-                        ) : (
-                            <div className="text-center">
-                                <p className="text-muted-foreground">
-                                    Search for any books, movies, shows, or video games to add to your queue!
-                                </p>
+                                <div className="overflow-y-auto max-h-[calc(100vh-300px)] sm:max-h-[600px] rounded-lg">
+                                    {mediaType === 'movie' && <MovieSearch />}
+                                    {mediaType === 'tv' && <TvSearch />}
+                                    {mediaType === 'book' && <BookSearch />}
+                                    {mediaType === 'videoGame' && <VideoGameSearch />}
+                                </div>
                             </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
+                        </Card>
+                    )}
 
-            <Button asChild className="mt-6">
-                <Link href='/user-pages/dashboard'>Back to Dashboard</Link>
-            </Button>
+                    {/* Staging section */}
+                    <Card className="w-full">
+                        <CardContent className="p-4 sm:p-6">
+                            {stagingItem ? (
+                                <Staging />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center space-y-4">
+                                    <p className="text-muted-foreground max-w-md">
+                                        Search for any books, movies, shows, or video games to add to your queue!
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
         </div>
     );
 }
