@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
@@ -116,7 +116,7 @@ export default function NavBar() {
                                 <Link href="/user-pages/settings">Settings</Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem>
-                                <Link href="/user-pages/profile">Profile</Link>
+                                <span onClick={() => signOut()}>Logout</span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
