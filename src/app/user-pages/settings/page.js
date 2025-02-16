@@ -40,6 +40,7 @@ export default function Settings() {
     const [newReadingSpeed, setNewReadingSpeed] = useState(null);
     const [isUpdatingDurations, setIsUpdatingDurations] = useState(false);
     const [pendingReadingSpeed, setPendingReadingSpeed] = useState(null);
+    const [showGenericLockDialog, setShowGenericLockDialog] = useState(false);
 
     const pagesPerTwentyMin = (userData.reading_speed * 20).toFixed(1);
 
@@ -90,22 +91,13 @@ export default function Settings() {
                 throw new Error('Failed to update settings');
             }
 
-            // Then update book durations
-            const durationResponse = await fetch('/api/user/update-book-durations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    reading_speed: userData.reading_speed,
-                }),
-            });
-
-            if (!durationResponse.ok) {
-                throw new Error('Failed to update book durations');
+            // Check if reading speed changed
+            if (userData.reading_speed !== session.user.reading_speed) {
+                setShowGenericLockDialog(true);
+            } else {
+                await update();
+                toast.success('Settings updated successfully');
             }
-
-            const result = await durationResponse.json();
-            await update(); // Update the session
-            toast.success(`Settings updated and ${result.updatedCount} book duration estimates adjusted`);
         } catch (error) {
             toast.error(error.message || "Failed to update");
         } finally {
@@ -137,6 +129,31 @@ export default function Settings() {
             toast.error(error.message || "Failed to update settings");
         } finally {
             setShowUpdateDialog(false);
+        }
+    };
+
+    const updateDurations = async (genericLockPreference) => {
+        try {
+            const response = await fetch('/api/user/update-book-durations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    reading_speed: userData.reading_speed,
+                    update_generic_locks_by: genericLockPreference
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update durations');
+            }
+
+            const result = await response.json();
+            await update();
+            toast.success(`Updated ${result.specificLocksUpdated} specific book locks and ${result.genericLocksUpdated} generic book locks`);
+        } catch (error) {
+            toast.error(error.message || "Failed to update durations");
+        } finally {
+            setShowGenericLockDialog(false);
         }
     };
 
@@ -251,6 +268,25 @@ export default function Settings() {
                             disabled={isUpdatingDurations}
                         >
                             {isUpdatingDurations ? "Updating..." : "Update Durations"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={showGenericLockDialog} onOpenChange={setShowGenericLockDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Update Generic Book Locks</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            How would you like to update your generic book locks with the new reading speed?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => updateDurations('maintain_time')}>
+                            Maintain Time Goals
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={() => updateDurations('maintain_pages')}>
+                            Maintain Page Goals
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

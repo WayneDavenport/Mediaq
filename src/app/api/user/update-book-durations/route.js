@@ -10,42 +10,77 @@ export async function POST(request) {
     }
 
     try {
-        const { reading_speed } = await request.json();
+        const { reading_speed, update_generic_locks_by = 'maintain_pages' } = await request.json();
 
-        // First, get all book media items for the user
-        const { data: books, error: fetchError } = await supabase
-            .from('media_items')
+        // First update specific book locks (key_parent_id)
+        const { data: specificBookLocks, error: fetchError } = await supabase
+            .from('locked_items')
             .select(`
                 id,
-                books!inner(page_count),
-                user_media_progress!inner(completed)
+                key_parent_id,
+                pages_completed,
+                goal_time,
+                media_items!key_parent_id(
+                    books!inner(page_count)
+                )
             `)
-            .eq('user_id', session.user.id)
-            .eq('media_type', 'book')
-            .eq('user_media_progress.completed', false);
+            .not('key_parent_id', 'is', null)
+            .eq('user_id', session.user.id);
 
         if (fetchError) throw fetchError;
 
-        // Update durations for each book
-        const updates = books.map(book => ({
-            id: book.id,
-            user_id: session.user.id,
-            duration: Math.round(book.books.page_count / reading_speed)
-        }));
+        // Update goal_time for specific book locks based on remaining pages
+        for (const lock of specificBookLocks) {
+            const totalPages = lock.media_items.books.page_count;
+            const remainingPages = totalPages - (lock.pages_completed || 0);
+            const newGoalTime = Math.round(remainingPages / reading_speed);
 
-        const { error: updateError } = await supabase
-            .from('user_media_progress')
-            .upsert(
-                updates.map(update => ({
-                    id: update.id,
-                    user_id: update.user_id,
-                    duration: update.duration
-                }))
-            );
+            const { error: updateError } = await supabase
+                .from('locked_items')
+                .update({ goal_time: newGoalTime })
+                .eq('id', lock.id)
+                .eq('user_id', session.user.id);
 
-        if (updateError) throw updateError;
+            if (updateError) throw updateError;
+        }
 
-        return NextResponse.json({ success: true, updatedCount: updates.length });
+        // Handle generic book locks (key_parent_text = 'book')
+        const { data: genericBookLocks, error: genericFetchError } = await supabase
+            .from('locked_items')
+            .select('id, goal_time, goal_pages')
+            .eq('key_parent_text', 'book')
+            .eq('user_id', session.user.id);
+
+        if (genericFetchError) throw genericFetchError;
+
+        // Update generic book locks based on user preference
+        for (const lock of genericBookLocks) {
+            let updates = {};
+
+            if (update_generic_locks_by === 'maintain_pages' && lock.goal_pages) {
+                // Update time based on existing pages
+                updates.goal_time = Math.round(lock.goal_pages / reading_speed);
+            } else if (update_generic_locks_by === 'maintain_time' && lock.goal_time) {
+                // Update pages based on existing time
+                updates.goal_pages = Math.round(lock.goal_time * reading_speed);
+            }
+
+            if (Object.keys(updates).length > 0) {
+                const { error: updateError } = await supabase
+                    .from('locked_items')
+                    .update(updates)
+                    .eq('id', lock.id)
+                    .eq('user_id', session.user.id);
+
+                if (updateError) throw updateError;
+            }
+        }
+
+        return NextResponse.json({
+            success: true,
+            specificLocksUpdated: specificBookLocks.length,
+            genericLocksUpdated: genericBookLocks.length
+        });
     } catch (error) {
         return NextResponse.json(
             { error: error.message || 'Failed to update book durations' },
