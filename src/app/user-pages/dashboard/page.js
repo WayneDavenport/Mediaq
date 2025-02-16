@@ -200,6 +200,23 @@ export default function Dashboard() {
         return <div>Access Denied</div>;
     }
 
+    if (mediaItems.length === 0) {
+        return (
+            <div className="container max-w-2xl mx-auto p-4 text-center space-y-4">
+                <h1 className="text-2xl font-bold">Welcome to MediaQueue!</h1>
+                <p className="text-muted-foreground">
+                    Your queue is empty. Start by adding some movies, books, TV shows, or games to track.
+                </p>
+                <Link
+                    href="/user-pages/search"
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                >
+                    Search for Media
+                </Link>
+            </div>
+        );
+    }
+
     return (
         <>
             <AnimatePresence>

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
 import MediaModal from '@/components/gallery/MediaModal';
+import Link from 'next/link';
 
 function GalleryContent() {
     const { data: session, status } = useSession();
@@ -89,6 +90,28 @@ function GalleryContent() {
     if (status === 'unauthenticated') {
         router.push('/');
         return null;
+    }
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    // Add this check for empty state
+    if (mediaItems.length === 0) {
+        return (
+            <div className="container max-w-2xl mx-auto p-4 text-center space-y-4">
+                <h1 className="text-3xl font-bold">Media Gallery</h1>
+                <p className="text-muted-foreground">
+                    Your gallery is empty. Discover and add media items to start building your collection.
+                </p>
+                <Link
+                    href="/user-pages/search"
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                >
+                    Start Searching
+                </Link>
+            </div>
+        );
     }
 
     // Separate queued and unqueued items
@@ -199,10 +222,6 @@ function GalleryContent() {
             </Carousel>
         </div>
     );
-
-    if (loading) {
-        return <div>Loading...</div>;
-    }
 
     return (
         <>
