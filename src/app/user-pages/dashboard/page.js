@@ -18,6 +18,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import MediaTypeIcon from "@/components/ui/media-type-icon";
 import ProgressChart from "@/components/progress/ProgressChart";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 
@@ -238,11 +239,30 @@ export default function Dashboard() {
                             MediaQueue
                         </h1>
 
+                        {/* Mobile Sort Dropdown */}
+                        <div className="block sm:hidden">
+                            <Select
+                                value={sortOption}
+                                onValueChange={setSortOption}
+                            >
+                                <SelectTrigger className="w-[140px]">
+                                    <SelectValue placeholder="Sort by" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="queue">Queue Order</SelectItem>
+                                    <SelectItem value="title">Title</SelectItem>
+                                    <SelectItem value="media-type">Media Type</SelectItem>
+                                    <SelectItem value="category">Category</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Desktop Radio Group */}
                         <RadioGroup
                             defaultValue="queue"
                             value={sortOption}
                             onValueChange={setSortOption}
-                            className="flex space-x-4"
+                            className="hidden sm:flex space-x-4"
                         >
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="queue" id="queue" />

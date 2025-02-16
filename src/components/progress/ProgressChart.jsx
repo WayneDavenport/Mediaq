@@ -15,9 +15,16 @@ import {
     Cell,
     Legend
 } from "recharts";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 const formatDuration = (minutes) => {
     if (minutes >= 60) {
@@ -64,9 +71,9 @@ const getProgressData = (items, groupBy = 'category') => {
     return Object.values(groups);
 };
 
-const ProgressChart = ({ mediaItems, sortOption: parentSortOption }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+const ProgressChart = ({ mediaItems }) => {
     const [localSortOption, setLocalSortOption] = useState("category");
+    const [showBarChart, setShowBarChart] = useState(false);
     const data = getProgressData(mediaItems, localSortOption);
 
     const totalQueued = data.reduce((sum, item) => sum + item.queued, 0);
@@ -77,170 +84,128 @@ const ProgressChart = ({ mediaItems, sortOption: parentSortOption }) => {
     }));
 
     const COLORS = [
-        'hsl(var(--chart-1))', // salmon red
-        'hsl(var(--chart-2))', // teal
-        'hsl(var(--chart-3))', // dark blue
-        'hsl(var(--chart-4))', // yellow
-        'hsl(var(--chart-5))'  // orange
+        'hsl(var(--chart-1))',
+        'hsl(var(--chart-2))',
+        'hsl(var(--chart-3))',
+        'hsl(var(--chart-4))',
+        'hsl(var(--chart-5))'
     ];
 
     return (
-        <>
-            <AnimatePresence>
-                {isExpanded && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[50]"
-                        onClick={() => setIsExpanded(false)}
-                    />
-                )}
-            </AnimatePresence>
+        <Card className="p-4">
+            <div className="flex flex-col space-y-4">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-semibold">Progress Overview</h2>
+                    <p className="text-sm text-muted-foreground">
+                        Total Duration: {formatDuration(totalQueued)}
+                    </p>
+                </div>
 
-            <motion.div
-                layoutId="progress-chart"
-                onClick={() => !isExpanded && setIsExpanded(true)}
-                style={{
-                    width: isExpanded ? '800px' : '100%',
-                    maxHeight: isExpanded ? '85vh' : 'auto',
-                    zIndex: isExpanded ? 51 : 'auto'
-                }}
-            >
-                <Card className={`p-4 h-full ${isExpanded ? 'overflow-y-auto' : ''}`}>
-                    <motion.div layoutId="progress-chart-content" className="h-full flex flex-col">
-                        <motion.div layoutId="progress-chart-header" className="flex flex-col mb-4">
-                            <h2 className="text-lg font-semibold">
-                                Progress Overview
-                            </h2>
-                            <p className="text-sm text-muted-foreground">
-                                Total Duration: {formatDuration(totalQueued)}
-                            </p>
-                            {isExpanded && (
-                                <RadioGroup
-                                    value={localSortOption}
-                                    onValueChange={setLocalSortOption}
-                                    className="flex space-x-4 mt-4"
-                                >
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="category" id="category" />
-                                        <Label htmlFor="category">Category</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="media_type" id="media_type" />
-                                        <Label htmlFor="media_type">Media Type</Label>
-                                    </div>
-                                </RadioGroup>
-                            )}
-                        </motion.div>
+                <div className="flex justify-between items-center gap-4">
+                    <Select
+                        value={localSortOption}
+                        onValueChange={setLocalSortOption}
+                    >
+                        <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Group by" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="category">Category</SelectItem>
+                            <SelectItem value="media_type">Media Type</SelectItem>
+                        </SelectContent>
+                    </Select>
 
+                    <div className="flex items-center space-x-2">
+                        <Label htmlFor="chart-type">Bar Chart</Label>
+                        <Switch
+                            id="chart-type"
+                            checked={showBarChart}
+                            onCheckedChange={setShowBarChart}
+                        />
+                    </div>
+                </div>
+
+                <div className="h-[300px]">
+                    <AnimatePresence mode="wait">
                         <motion.div
-                            layoutId="progress-chart-body"
-                            className="flex-1"
+                            key={showBarChart ? 'bar' : 'pie'}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            transition={{ duration: 0.5 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="h-full"
                         >
-                            {!isExpanded ? (
-                                <div className="h-[200px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={pieData}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={60}
-                                                outerRadius={80}
-                                                paddingAngle={5}
-                                                dataKey="value"
-                                                label={false}
-                                                labelLine={false}
-                                                startAngle={90}
-                                                endAngle={-270}
-                                                animationBegin={0}
-                                                animationDuration={1500}
-                                                animationEasing="ease-out"
-                                            >
-                                                {pieData.map((entry, index) => (
-                                                    <Cell
-                                                        key={`cell-${index}`}
-                                                        fill={COLORS[index % COLORS.length]}
-                                                        className="stroke-background"
-                                                        strokeWidth={2}
-                                                    />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip
-                                                formatter={(value, name) => [formatDuration(value), name]}
-                                                contentStyle={{
-                                                    backgroundColor: 'hsl(var(--background))',
-                                                    border: '1px solid hsl(var(--border))',
-                                                    borderRadius: '0.5rem',
-                                                    color: 'hsl(var(--foreground))',
-                                                    fontWeight: 500
-                                                }}
-                                                itemStyle={{
-                                                    color: 'hsl(var(--foreground))',
-                                                    fontWeight: 500
-                                                }}
-                                                labelStyle={{
-                                                    color: 'hsl(var(--foreground))',
-                                                    fontWeight: 600
-                                                }}
-                                            />
-                                            <Legend
-                                                verticalAlign="middle"
-                                                align="right"
-                                                layout="vertical"
-                                                wrapperStyle={{
-                                                    paddingLeft: '2rem'
-                                                }}
-                                            />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            ) : (
-                                <div className="h-full">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart
-                                            data={data}
-                                            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                            <ResponsiveContainer width="100%" height="100%">
+                                {!showBarChart ? (
+                                    <PieChart>
+                                        <Pie
+                                            data={pieData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                            label={false}
+                                            labelLine={false}
                                         >
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                            <XAxis
-                                                dataKey="name"
-                                                tickLine={false}
-                                                axisLine={false}
-                                            />
-                                            <YAxis
-                                                tickLine={false}
-                                                axisLine={false}
-                                                tickFormatter={formatDuration}
-                                            />
-                                            <Tooltip
-                                                formatter={(value) => [formatDuration(value), 'Duration']}
-                                            />
-                                            <Bar
-                                                dataKey="queued"
-                                                fill="hsl(var(--primary))"
-                                                radius={[4, 4, 0, 0]}
-                                                name="Time Queued"
-                                            />
-                                            <Bar
-                                                dataKey="completed"
-                                                fill="hsl(var(--primary-foreground))"
-                                                radius={[4, 4, 0, 0]}
-                                                name="Time Completed"
-                                            />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            )}
+                                            {pieData.map((entry, index) => (
+                                                <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={COLORS[index % COLORS.length]}
+                                                    className="stroke-background"
+                                                    strokeWidth={2}
+                                                />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            formatter={(value, name) => [formatDuration(value), name]}
+                                        />
+                                        <Legend
+                                            verticalAlign="middle"
+                                            align="right"
+                                            layout="vertical"
+                                        />
+                                    </PieChart>
+                                ) : (
+                                    <BarChart
+                                        data={data}
+                                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis
+                                            dataKey="name"
+                                            tickLine={false}
+                                            axisLine={false}
+                                        />
+                                        <YAxis
+                                            tickLine={false}
+                                            axisLine={false}
+                                            tickFormatter={formatDuration}
+                                        />
+                                        <Tooltip
+                                            formatter={(value) => [formatDuration(value), 'Duration']}
+                                        />
+                                        <Bar
+                                            dataKey="queued"
+                                            fill="hsl(var(--primary))"
+                                            radius={[4, 4, 0, 0]}
+                                            name="Time Queued"
+                                        />
+                                        <Bar
+                                            dataKey="completed"
+                                            fill="hsl(var(--primary-foreground))"
+                                            radius={[4, 4, 0, 0]}
+                                            name="Time Completed"
+                                        />
+                                    </BarChart>
+                                )}
+                            </ResponsiveContainer>
                         </motion.div>
-                    </motion.div>
-                </Card>
-            </motion.div>
-        </>
+                    </AnimatePresence>
+                </div>
+            </div>
+        </Card>
     );
 };
 

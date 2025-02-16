@@ -17,8 +17,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Mediaq",
-  description: "Elevated Media Consumption",
+  title: 'MediaQ',
+  description: 'Track your media consumption',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 };
 
 export default function RootLayout({ children }) {

@@ -3,7 +3,7 @@
 }
 
 .navContent {
-    @apply container flex h-14 items-center justify-between px-4;
+    @apply flex h-14 items-center justify-between px-4 max-w-screen-2xl mx-auto;
 }
 
 .navLinks {
