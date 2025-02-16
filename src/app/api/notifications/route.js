@@ -14,16 +14,19 @@ export async function GET(request) {
             .from('notifications')
             .select(`
                 *,
-                sender:sender_id(id, username),
-                media_items(title),
-                comments(content),
-                comment_replies(content)
+                user:users!notifications_sender_id_fkey (
+                    id,
+                    username
+                )
             `)
             .eq('receiver_id', session.user.id)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
+        console.log('Raw notifications:', notifications);
+
+        // No need to format, just return the data with the joined user information
         return NextResponse.json({ notifications });
     } catch (error) {
         console.error('Error fetching notifications:', error);

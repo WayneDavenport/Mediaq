@@ -139,8 +139,8 @@ export default function NotificationsDropdown() {
                 >
                     <LightBulbIcon
                         className={`h-5 w-5 transition-all ${(unreadCount + friendRequests.length) > 0
-                                ? 'text-primary [filter:drop-shadow(0_0_8px_hsl(var(--primary)))] animate-pulse'
-                                : ''
+                            ? 'text-primary [filter:drop-shadow(0_0_8px_hsl(var(--primary)))] animate-pulse'
+                            : ''
                             }`}
                     />
                     {(unreadCount + friendRequests.length) > 0 && (
@@ -235,7 +235,11 @@ export default function NotificationsDropdown() {
                                     onClick={() => handleNotificationClick(notification)}
                                 >
                                     <div className="flex flex-col gap-1">
-                                        <p className="text-sm">{notification.message}</p>
+                                        <p className="text-sm">
+                                            <span className="font-medium">{notification.user?.username || 'Unknown User'}</span>
+                                            {' '}
+                                            {notification.message}
+                                        </p>
                                         <p className="text-xs text-muted-foreground">
                                             {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                                         </p>
