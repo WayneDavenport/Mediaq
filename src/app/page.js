@@ -27,6 +27,7 @@ export default function Home() {
         <div className={styles.content}>
           <h1 className={styles.heading}>Mediaq</h1>
           <p className={styles.description}>
+            Impact-Site-Verification: c5968420-4242-4be1-831d-0cf027548400
             Welcome to Mediaq, your central hub for organizing your movies, books, video games, and more.  Keep track of everything you want to watch, read, or play in one convenient place.  Explore a vast library of content, fill your queue, and connect with friends to share recommendations and discover new favorites.  Organize your media effortlessly and stay updated on the latest releases. Join Mediaq and transform how you manage your media!
           </p>
 
