@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,13 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false 
         }
     }, [isFriendItem, isOpen]);
 
+    useEffect(() => {
+        if (isOpen && isFriendItem) {
+            setIsAdding(false);
+            setShowCategoryDialog(false);
+        }
+    }, [isOpen, isFriendItem]);
+
     const fetchNextQueueNumber = async () => {
         try {
             const response = await fetch('/api/media-items/queue-number');
@@ -42,17 +49,104 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false 
 
         setIsAdding(true);
         try {
+            // Format the data based on media type
+            let formattedData = {
+                ...item,
+                queue_number: nextQueueNumber,
+                user_email: session.user.email,
+                category: category
+            };
+
+            // Add media type specific data
+            switch (item.media_type) {
+                case 'book':
+                    console.log('Book data:', {
+                        page_count: item.books?.page_count,
+                        reading_speed: session.user.reading_speed,
+                        calculated_duration: item.books?.page_count ?
+                            Math.ceil(item.books.page_count / (session.user.reading_speed || 1)) : 0
+                    });
+
+                    formattedData = {
+                        ...formattedData,
+                        authors: typeof item.books?.authors === 'string' ?
+                            item.books.authors : // keep as string if it already is
+                            JSON.stringify(item.books?.authors), // stringify if it's an array
+                        average_rating: item.books?.average_rating,
+                        categories: typeof item.books?.categories === 'string' ?
+                            item.books.categories : // keep as string if it already is
+                            JSON.stringify(item.books?.categories), // stringify if it's an array
+                        google_books_id: item.books?.google_books_id,
+                        isbn: item.books?.isbn,
+                        language: item.books?.language,
+                        page_count: item.books?.page_count,
+                        preview_link: item.books?.preview_link,
+                        published_date: item.books?.published_date,
+                        publisher: item.books?.publisher,
+                        ratings_count: item.books?.ratings_count,
+                        reading_speed: Math.round(session.user.reading_speed || 1),
+                        duration: item.books?.page_count ?
+                            Math.ceil(item.books.page_count / (session.user.reading_speed || 1)) : 0,
+                        estimated_reading_time: item.books?.page_count ?
+                            Math.ceil(item.books.page_count / (session.user.reading_speed || 1)) : 0
+                    };
+                    console.log('Formatted book data:', formattedData);
+                    break;
+
+                case 'tv':
+                    formattedData = {
+                        ...formattedData,
+                        average_runtime: item.tv_shows?.episode_run_time,
+                        episode_run_times: item.tv_shows?.episode_run_times,
+                        original_language: item.tv_shows?.original_language,
+                        release_date: item.tv_shows?.first_air_date,
+                        seasons: item.tv_shows?.number_of_seasons,
+                        tmdb_id: item.tv_shows?.id,
+                        total_episodes: item.tv_shows?.number_of_episodes,
+                        vote_average: item.tv_shows?.vote_average,
+                        duration: (item.tv_shows?.episode_run_time || 30) * (item.tv_shows?.number_of_episodes || 1)
+                    };
+                    break;
+
+                case 'movie':
+                    formattedData = {
+                        ...formattedData,
+                        director: item.movies?.director,
+                        original_language: item.movies?.original_language,
+                        release_date: item.movies?.release_date,
+                        tmdb_id: Number(item.movies?.id),
+                        vote_average: Number(item.movies?.vote_average),
+                        runtime: Number(item.movies?.runtime),
+                        duration: Number(item.movies?.runtime) || 120
+                    };
+                    break;
+
+                case 'game':
+                    formattedData = {
+                        ...formattedData,
+                        achievements_count: item.games?.achievements_count,
+                        average_playtime: item.games?.playtime,
+                        esrb_rating: item.games?.esrb_rating,
+                        genres: item.games?.genres,
+                        metacritic: item.games?.metacritic,
+                        platforms: item.games?.platforms,
+                        publishers: item.games?.publishers,
+                        rating: item.games?.rating,
+                        rating_count: item.games?.rating_count,
+                        rawg_id: item.games?.id,
+                        release_date: item.games?.release_date,
+                        website: item.games?.website,
+                        duration: (item.games?.playtime || 4) * 60 // Convert hours to minutes
+                    };
+                    break;
+            }
+
             const response = await fetch('/api/media-items', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    ...item,
-                    queue_number: nextQueueNumber,
-                    user_email: session.user.email,
-                    category: category
-                })
+                body: JSON.stringify(formattedData)
             });
 
             if (!response.ok) {
@@ -68,9 +162,9 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false 
         }
     };
 
-    const handleAddClick = () => {
+    const handleAddClick = useCallback(() => {
         setShowCategoryDialog(true);
-    };
+    }, []);
 
     if (!item) return null;
 

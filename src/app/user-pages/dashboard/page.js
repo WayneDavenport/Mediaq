@@ -533,7 +533,9 @@ export default function Dashboard() {
                 )}
             </AnimatePresence>
             <Link href="/user-pages/search">
-                Search
+                <Button>
+                    Add Media
+                </Button>
             </Link>
             {selectedItem && (
                 <UpdateProgressModal

@@ -95,7 +95,7 @@ const ProgressChart = ({ mediaItems }) => {
         <Card className="p-4">
             <div className="flex flex-col space-y-4">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-semibold">Progress Overview</h2>
+                    <h2 className="text-lg font-semibold">Your Media Time Cost</h2>
                     <p className="text-sm text-muted-foreground">
                         Total Duration: {formatDuration(totalQueued)}
                     </p>
