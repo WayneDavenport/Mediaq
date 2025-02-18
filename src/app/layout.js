@@ -31,6 +31,9 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name='impact-site-verification' value='c5968420-4242-4be1-831d-0cf027548400' />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
