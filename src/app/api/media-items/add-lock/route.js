@@ -40,6 +40,7 @@ export async function POST(request) {
                 goal_episodes: goal_episodes || null,
                 completed_time: 0,
                 pages_completed: 0,
+                completed: false,
                 episodes_completed: 0,
                 user_id: session.user.id
             })

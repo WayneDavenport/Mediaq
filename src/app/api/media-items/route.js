@@ -185,6 +185,7 @@ export async function POST(request) {
                     goal_pages: data.goal_pages || 0,
                     goal_episodes: data.goal_episodes || 0,
                     completed_time: 0,
+                    completed: false,
                     pages_completed: 0,
                     episodes_completed: 0,
                     user_id: session.user.id

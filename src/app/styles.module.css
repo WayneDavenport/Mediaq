@@ -1,4 +1,10 @@
 /* index.module.css */
+
+@font-face {
+    font-family: 'SpecialElite';
+    src: url('/fonts/SpecialElite-Regular.ttf') format('truetype');
+}
+
 .container {
     min-height: 100vh;
     background-color: #0A0A0B;
@@ -38,6 +44,7 @@
     font-weight: bold;
     color: whitesmoke;
     margin-top: 2rem;
+    font-family: 'SpecialElite';
 }
 
 .description {
