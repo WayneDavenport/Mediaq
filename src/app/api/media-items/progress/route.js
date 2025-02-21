@@ -15,18 +15,30 @@ export async function PUT(request) {
             completed_duration,
             initial_duration,
             completed,
-            episodes_completed,
-            initial_episodes,
             pages_completed,
             initial_pages,
             media_type,
             category
         } = await request.json();
 
-        // Calculate progress differences
+        // Calculate differences
         const timeDiff = completed_duration - initial_duration;
-        const episodesDiff = episodes_completed - initial_episodes;
         const pagesDiff = pages_completed - initial_pages;
+
+        console.log('Progress update:', {
+            initial: {
+                duration: initial_duration,
+                pages: initial_pages
+            },
+            new: {
+                duration: completed_duration,
+                pages: pages_completed
+            },
+            differences: {
+                timeDiff,
+                pagesDiff
+            }
+        });
 
         // First, update the progress for the current item
         const updateData = {
@@ -34,10 +46,7 @@ export async function PUT(request) {
             completed
         };
 
-        if (episodes_completed !== undefined) {
-            updateData.episodes_completed = episodes_completed;
-        }
-        if (pages_completed !== undefined) {
+        if (media_type === 'book') {
             updateData.pages_completed = pages_completed;
         }
 
@@ -67,25 +76,51 @@ export async function PUT(request) {
         if (lockFetchError) throw lockFetchError;
 
         const affectedItems = [];
+        const newlyCompletedItems = [];
 
         // Update each locked item's completion tracking
         for (const lockedItem of lockedItems) {
-            const lockUpdateData = {
-                completed_time: (lockedItem.completed_time || 0) + timeDiff
-            };
+            console.log('Processing lock:', {
+                lockId: lockedItem.id,
+                currentProgress: {
+                    time: lockedItem.completed_time || 0,
+                    pages: lockedItem.pages_completed || 0
+                }
+            });
 
-            // Add media-specific progress tracking
-            let progressValue = timeDiff;
-            switch (media_type) {
-                case 'book':
+            const lockUpdateData = {};
+
+            if (lockedItem.key_parent_id === id) {
+                // For specific item locks, use exact values
+                if (media_type === 'book') {
+                    lockUpdateData.pages_completed = pages_completed;
+                    lockUpdateData.completed_time = completed_duration;
+                } else {
+                    lockUpdateData.completed_time = completed_duration;
+                }
+            } else {
+                // For category/media type locks, use incremental changes
+                if (media_type === 'book') {
                     lockUpdateData.pages_completed = (lockedItem.pages_completed || 0) + pagesDiff;
-                    progressValue = pagesDiff;
-                    break;
-                case 'tv':
-                    lockUpdateData.episodes_completed = (lockedItem.episodes_completed || 0) + episodesDiff;
-                    progressValue = episodesDiff;
-                    break;
+                    lockUpdateData.completed_time = (lockedItem.completed_time || 0) + timeDiff;
+                } else {
+                    lockUpdateData.completed_time = (lockedItem.completed_time || 0) + timeDiff;
+                }
             }
+
+            console.log('Lock update calculation:', {
+                lockId: lockedItem.id,
+                newValues: lockUpdateData,
+                goalPages: lockedItem.goal_pages,
+                goalTime: lockedItem.goal_time
+            });
+
+            // Check if goals are met
+            const isCompleted = media_type === 'book'
+                ? (lockUpdateData.pages_completed >= lockedItem.goal_pages)
+                : (lockUpdateData.completed_time >= lockedItem.goal_time);
+
+            lockUpdateData.completed = isCompleted;
 
             // Update the locked item
             const { error: lockUpdateError } = await supabase
@@ -96,21 +131,29 @@ export async function PUT(request) {
 
             if (lockUpdateError) throw lockUpdateError;
 
-            // Add to affected items list
-            affectedItems.push({
-                title: lockedItem.media_items.title,
-                progress: progressValue
-            });
+            if (isCompleted) {
+                newlyCompletedItems.push({
+                    title: lockedItem.media_items.title,
+                    completed: true
+                });
+            } else {
+                affectedItems.push({
+                    title: lockedItem.media_items.title,
+                    completed: false,
+                    progress: media_type === 'book' ? lockUpdateData.pages_completed : lockUpdateData.completed_time
+                });
+            }
         }
 
         return NextResponse.json({
             success: true,
-            affectedItems: affectedItems
+            affectedItems: [...newlyCompletedItems, ...affectedItems]
         });
+
     } catch (error) {
         console.error('Error updating progress:', error);
         return NextResponse.json(
-            { error: 'Failed to update progress' },
+            { error: 'Failed to update progress', details: error.message },
             { status: 500 }
         );
     }

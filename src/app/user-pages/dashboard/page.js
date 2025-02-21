@@ -165,31 +165,32 @@ export default function Dashboard() {
     };
 
     const getSortedMediaItems = () => {
-        const sorted = [...mediaItems];
+        // Filter out completed items from the queue
+        const activeItems = mediaItems.filter(item => !item.user_media_progress?.completed);
 
         switch (sortOption) {
             case "queue":
-                return sorted.sort((a, b) =>
+                return activeItems.sort((a, b) =>
                     (a.user_media_progress?.queue_number || 0) - (b.user_media_progress?.queue_number || 0)
                 );
 
             case "title":
-                return sorted.sort((a, b) =>
+                return activeItems.sort((a, b) =>
                     a.title.localeCompare(b.title)
                 );
 
             case "media-type":
-                return sorted
+                return activeItems
                     .sort((a, b) => a.title.localeCompare(b.title)) // First sort by title
                     .sort((a, b) => a.media_type.localeCompare(b.media_type)); // Then by media type
 
             case "category":
-                return sorted
+                return activeItems
                     .sort((a, b) => a.title.localeCompare(b.title)) // First sort by title
                     .sort((a, b) => a.category.localeCompare(b.category)); // Then by category
 
             default:
-                return sorted;
+                return activeItems;
         }
     };
 
@@ -238,7 +239,6 @@ export default function Dashboard() {
                         <h1 className="text-2xl font-bold">
                             MediaQueue
                         </h1>
-
                         {/* Mobile Sort Dropdown */}
                         <div className="block sm:hidden">
                             <Select

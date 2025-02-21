@@ -34,6 +34,11 @@ export default function ProgressDisplay({ item, onUpdateClick, mediaItems = [] }
 
     const getProgressDisplay = () => {
         if (isLocked) {
+            // Don't show lock info if it's completed
+            if (lockData.completed) {
+                return getRegularProgressDisplay();
+            }
+
             return (
                 <div className="space-y-2">
                     <div className="flex justify-between items-center">
@@ -80,6 +85,10 @@ export default function ProgressDisplay({ item, onUpdateClick, mediaItems = [] }
             );
         }
 
+        return getRegularProgressDisplay();
+    };
+
+    const getRegularProgressDisplay = () => {
         // Regular progress display for unlocked items
         return (
             <div className="space-y-2">

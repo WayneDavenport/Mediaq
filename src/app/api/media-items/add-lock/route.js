@@ -29,12 +29,23 @@ export async function POST(request) {
             throw new Error('Must provide either key_parent_id or key_parent_text');
         }
 
+        // Determine lock type
+        let lock_type;
+        if (key_parent_id) {
+            lock_type = 'specific';
+        } else if (['movie', 'book', 'tv', 'game'].includes(key_parent_text.toLowerCase())) {
+            lock_type = 'media_type';
+        } else {
+            lock_type = 'category';
+        }
+
         const { data, error } = await supabase
             .from('locked_items')
             .insert({
                 id: media_item_id,
                 key_parent_text: key_parent_id ? null : key_parent_text,
                 key_parent_id: key_parent_id || null,
+                lock_type,
                 goal_time: goal_time || null,
                 goal_pages: goal_pages || null,
                 goal_episodes: goal_episodes || null,

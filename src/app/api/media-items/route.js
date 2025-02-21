@@ -166,6 +166,7 @@ export async function POST(request) {
                 queue_number: data.queue_number,
                 duration: duration,
                 completed_duration: 0,
+                /* completed_timestampz: null, */
                 completed: false,
                 user_id: session.user.id,
             });
@@ -174,13 +175,23 @@ export async function POST(request) {
 
         // Update lock data with UUID
         if (data.locked) {
+            // Determine lock type
+            let lock_type;
+            if (data.key_parent_id) {
+                lock_type = 'specific';
+            } else if (['movie', 'book', 'tv', 'game'].includes(data.key_parent_text?.toLowerCase())) {
+                lock_type = 'media_type';
+            } else {
+                lock_type = 'category';
+            }
+
             const { error: lockError } = await supabase
                 .from('locked_items')
                 .insert({
                     id: mediaItem.id,
                     key_parent_id: data.key_parent_id,
                     key_parent_text: data.key_parent_text || '',
-                    lock_type: data.lock_type || 'specific_item',
+                    lock_type,
                     goal_time: data.goal_time || 0,
                     goal_pages: data.goal_pages || 0,
                     goal_episodes: data.goal_episodes || 0,
@@ -215,19 +226,25 @@ export async function GET(request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Specify the foreign key relationship for locked_items
+        // Get active items and their locks - specify the foreign key relationship
         const { data: items, error } = await supabase
             .from('media_items')
             .select(`
                 *,
-                books (*),
-                movies (*),
-                tv_shows (*),
-                games (*),
-                user_media_progress (*),
-                locked_items!locked_items_id_fkey (*)
+                locked_items!locked_items_id_fkey(*),
+                user_media_progress!user_media_progress_id_fkey(*),
+                books(*),
+                movies(*),
+                tv_shows(*),
+                games(*)
             `)
-            .eq('user_email', session.user.email);
+            .eq('user_id', session.user.id);
+
+        // Optionally get completed locks
+        const { data: completedLocks, error: completedLocksError } = await supabase
+            .from('completed_locks')
+            .select('*')
+            .eq('user_id', session.user.id);
 
         if (error) {
             console.error('Supabase error:', error);

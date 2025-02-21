@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,9 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import { Loader2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 export default function UpdateProgressModal({
     isOpen,
@@ -29,11 +32,26 @@ export default function UpdateProgressModal({
     onUpdate,
     refreshData
 }) {
-    const [progress, setProgress] = useState(item.user_media_progress?.completed_duration || 0);
+    const { data: session } = useSession();
+    const userReadingSpeed = session?.user?.reading_speed || 0.667;
+    const [progress, setProgress] = useState(0);
     const [showCompleteAlert, setShowCompleteAlert] = useState(false);
     const [isMarkingComplete, setIsMarkingComplete] = useState(false);
     const [affectedItems, setAffectedItems] = useState([]);
     const [showAffectedItemsAlert, setShowAffectedItemsAlert] = useState(false);
+    const [completedLocks, setCompletedLocks] = useState([]);
+    const [showCompletionAlert, setShowCompletionAlert] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (item.media_type === 'book') {
+            // For books, use actual pages_completed
+            setProgress(item.user_media_progress?.pages_completed || 0);
+        } else {
+            // For other media types, show minutes completed
+            setProgress(item.user_media_progress?.completed_duration || 0);
+        }
+    }, [item]);
 
     const getMaxValue = () => {
         switch (item.media_type) {
@@ -87,36 +105,31 @@ export default function UpdateProgressModal({
     };
 
     const handleUpdate = async (markAsComplete = false) => {
+        setIsLoading(true);
         try {
-            const updateData = {
-                id: item.user_media_progress.id,
-                completed_duration: progress,
-                initial_duration: item.user_media_progress?.completed_duration || 0,
-                completed: markAsComplete,
-                episodes_completed: undefined,
-                initial_episodes: undefined,
-                pages_completed: undefined,
-                initial_pages: undefined,
+            let updateData = {
+                id: item.id,
                 media_type: item.media_type,
-                category: item.category
+                category: item.category,
+                initial_duration: item.user_media_progress?.completed_duration || 0,
+                initial_pages: item.user_media_progress?.pages_completed || 0
             };
 
-            if (item.media_type === 'tv') {
-                const newEpisodes = Math.floor(progress / (item.tv_shows?.average_runtime || 30));
-                const initialEpisodes = item.user_media_progress?.episodes_completed || 0;
-                updateData.episodes_completed = newEpisodes;
-                updateData.initial_episodes = initialEpisodes;
-            } else if (item.media_type === 'book') {
-                updateData.pages_completed = progress;
-                updateData.initial_pages = item.user_media_progress?.pages_completed || 0;
+            if (item.media_type === 'book') {
+                updateData.pages_completed = progress;  // Current page count
+                updateData.completed_duration = Math.round(progress / userReadingSpeed);  // Convert pages to minutes
+                updateData.completed = markAsComplete || progress >= (item.books?.page_count || 0);
+            } else {
+                updateData.completed_duration = progress;  // Raw minutes
+                updateData.completed = markAsComplete || progress >= (item.user_media_progress?.duration || 0);
             }
+
+            console.log('Sending update:', updateData);
 
             const response = await fetch('/api/media-items/progress', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updateData)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updateData),
             });
 
             if (!response.ok) {
@@ -126,13 +139,31 @@ export default function UpdateProgressModal({
 
             const result = await response.json();
 
+            if (result.easterEggMessage) {
+                toast.info(result.easterEggMessage, {
+                    duration: 6000,  // Give them time to read it
+                    style: {
+                        background: '#f0f0f0',
+                        border: '2px dashed #666',
+                        fontFamily: 'monospace'
+                    }
+                });
+            }
+
             if (result.affectedItems?.length > 0) {
-                setAffectedItems(result.affectedItems);
-                setShowAffectedItemsAlert(true);
-            } else {
-                onUpdate(progress);
-                await refreshData();
-                onClose();
+                const completed = result.affectedItems.filter(item => item.completed);
+                const affected = result.affectedItems.filter(item => !item.completed);
+
+                if (completed.length > 0) {
+                    setCompletedLocks(completed);
+                    setShowCompletionAlert(true);
+                } else if (affected.length > 0) {
+                    setAffectedItems(affected);
+                    setShowAffectedItemsAlert(true);
+                } else {
+                    onUpdate(progress);
+                    onClose();
+                }
             }
             setShowCompleteAlert(false);
             setIsMarkingComplete(false);
@@ -140,6 +171,8 @@ export default function UpdateProgressModal({
         } catch (error) {
             console.error('Error updating progress:', error);
             toast.error(error.message || "Failed to update progress");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -176,15 +209,32 @@ export default function UpdateProgressModal({
 
                     <div className="py-6">
                         <div className="space-y-4">
-                            <Slider
-                                value={[progress]}
-                                onValueChange={([value]) => setProgress(value)}
-                                max={getMaxValue()}
-                                step={1}
-                                className="w-full"
-                            />
-                            <div className="text-center text-sm text-muted-foreground">
-                                {getDisplayValue()}
+                            <div className="space-y-2">
+                                <Label>
+                                    {item.media_type === 'book'
+                                        ? 'Pages Read'
+                                        : 'Time Completed (minutes)'}
+                                </Label>
+                                <div className="flex items-center space-x-2">
+                                    <Slider
+                                        value={[progress]}
+                                        onValueChange={([value]) => setProgress(value)}
+                                        max={item.media_type === 'book'
+                                            ? item.books?.page_count
+                                            : item.user_media_progress?.duration}
+                                        step={1}
+                                    />
+                                    <div className="w-20 text-right">
+                                        {item.media_type === 'book'
+                                            ? `${progress}/${item.books?.page_count} pages`
+                                            : `${progress}/${item.user_media_progress?.duration} min`}
+                                    </div>
+                                </div>
+                                {item.media_type === 'book' && (
+                                    <div className="text-sm text-muted-foreground">
+                                        Estimated time: {Math.round(progress / userReadingSpeed)} minutes
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -201,8 +251,15 @@ export default function UpdateProgressModal({
                             <Button variant="outline" onClick={onClose}>
                                 Cancel
                             </Button>
-                            <Button onClick={handleSaveClick}>
-                                Save Progress
+                            <Button onClick={handleSaveClick} disabled={isLoading}>
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Updating...
+                                    </>
+                                ) : (
+                                    'Save Progress'
+                                )}
                             </Button>
                         </div>
                     </div>
@@ -255,6 +312,37 @@ export default function UpdateProgressModal({
                     <AlertDialogFooter>
                         <AlertDialogAction onClick={handleAffectedItemsAlertClose}>
                             OK
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={showCompletionAlert} onOpenChange={setShowCompletionAlert}>
+                <AlertDialogContent className="fixed z-[1002]">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>🎉 Congratulations!</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You've unlocked the following items:
+                            <ul className="list-disc pl-6 mt-2">
+                                {completedLocks.map((item, index) => (
+                                    <li key={index} className="text-sm">
+                                        {item.title}
+                                    </li>
+                                ))}
+                            </ul>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => {
+                            setShowCompletionAlert(false);
+                            if (affectedItems.length > 0) {
+                                setShowAffectedItemsAlert(true);
+                            } else {
+                                onUpdate(progress);
+                                onClose();
+                            }
+                        }}>
+                            Continue
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

@@ -4,7 +4,7 @@ import AuthProvider from "@/SessionProvider";
 import NavBar from '@/components/navigation/NavBar'
 import { Toaster } from 'sonner';
 import { ThemeProvider } from "@/components/theme-provider"
-
+import PointerEventsHandler from "@/components/PointerEventsHandler";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +36,7 @@ export default function RootLayout({ children }) {
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={{ pointerEvents: 'auto' }}
       >
         <ThemeProvider
           attribute="class"
@@ -44,6 +45,7 @@ export default function RootLayout({ children }) {
           disableTransitionOnChange
         >
           <AuthProvider>
+            <PointerEventsHandler />
             <NavBar />
             {children}
           </AuthProvider>

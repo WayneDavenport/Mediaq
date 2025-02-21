@@ -37,11 +37,11 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
         if (value && value.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
             // If value is a UUID (item ID)
             console.log('Setting UUID:', value);
-            setValue('key_parent_id', value);  // Don't parse as integer
+            setValue('key_parent_id', value);
             setValue('key_parent_text', null);
 
             // Find the selected item to determine media type
-            const selectedItem = incompleteItems.find(item => item.id === value);  // Direct comparison
+            const selectedItem = incompleteItems.find(item => item.id === value);
             console.log('Selected item:', selectedItem);
             if (selectedItem) {
                 setValue('media_type', selectedItem.media_type);

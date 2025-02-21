@@ -55,10 +55,10 @@ const formSchema = z.object({
 
     // Lock fields
     locked: z.boolean().default(false),
+    key_parent: z.string().optional(),
     key_parent_id: z.string().uuid().nullable().optional(),
     key_parent_text: z.string().nullable().optional(),
-    pages_completed: z.number().nullable().optional(),
-    episodes_completed: z.number().nullable().optional(),
+    lock_type: z.enum(['specific', 'category', 'media_type']).optional(),
     goal_time: z.number().min(0).optional(),
     goal_pages: z.number().min(0).optional(),
     goal_episodes: z.number().min(0).optional(),
@@ -68,6 +68,7 @@ const formSchema = z.object({
     queue_number: z.number().nullable().optional(),
     completed_duration: z.number().min(0).optional(),
     completed: z.boolean().optional(),
+    /* completed_timestampz: z.string().nullable().optional(), */
     pages_completed: z.number().nullable().optional(),
     episodes_completed: z.number().nullable().optional(),
 
@@ -116,12 +117,22 @@ const formSchema = z.object({
     website: z.string().nullable().optional(),
 }).refine(data => {
     if (data.locked) {
-        return data.key_parent_id !== null || data.key_parent_text !== null;
+        // Ensure key_parent_id XOR key_parent_text exists
+        const hasKeyParentId = data.key_parent_id !== null && data.key_parent_id !== undefined;
+        const hasKeyParentText = data.key_parent_text !== null && data.key_parent_text !== undefined;
+        const validParentKey = (hasKeyParentId && !hasKeyParentText) || (!hasKeyParentId && hasKeyParentText);
+
+        // Ensure lock_type matches the key parent type
+        const validLockType =
+            (hasKeyParentId && data.lock_type === 'specific') ||
+            (!hasKeyParentId && ['category', 'media_type'].includes(data.lock_type));
+
+        return validParentKey && validLockType;
     }
     return true;
 }, {
-    message: "Either key_parent_id or key_parent_text must be provided when locked",
-    path: ["key_parent_id", "key_parent_text"],
+    message: "Invalid lock configuration. Check parent keys and lock type.",
+    path: ["locked", "key_parent_id", "key_parent_text", "lock_type"],
 });
 
 const Staging = () => {
@@ -144,8 +155,10 @@ const Staging = () => {
             poster_path: '',
             backdrop_path: '',
             locked: false,
+            key_parent: "",
             key_parent_id: null,
             key_parent_text: null,
+            lock_type: null,
             goal_time: 0,
             goal_pages: 0,
             goal_episodes: 0,
@@ -154,7 +167,6 @@ const Staging = () => {
             queue_number: null,
             completed_duration: 0,
             completed: false,
-            key_parent: "",
         },
     });
 
