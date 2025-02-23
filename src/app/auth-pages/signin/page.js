@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FcGoogle } from 'react-icons/fc';
+import { ToasterProvider } from "@/components/providers/toaster-provider"
 
 function SignInContent() {
     const { data: session } = useSession();
@@ -250,8 +251,11 @@ function SignInContent() {
 
 export default function SignIn() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <SignInContent />
-        </Suspense>
+        <>
+            <ToasterProvider />
+            <Suspense fallback={<div>Loading...</div>}>
+                <SignInContent />
+            </Suspense>
+        </>
     );
 }

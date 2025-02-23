@@ -1,5 +1,4 @@
 'use client'
-
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import UpdateProgressModal from "@/components/progress/UpdateProgressModal";
 import { Button } from "@/components/ui/button";
 import ProgressSection from "@/components/progress/ProgressSection";
-import { Trash2, X, Loader2, Plus } from 'lucide-react';
+import { Trash2, X, Loader2, Plus, ArrowUp, ArrowDown, MoveRight, Users, ExternalLink } from 'lucide-react';
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -20,9 +19,22 @@ import MediaTypeIcon from "@/components/ui/media-type-icon";
 import TimeCostChart from "@/components/progress/TImeCostChart";
 import ProgressChart from "@/components/progress/ProgressChart";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import SkeletonCard from '@/components/ui/skeleton-card';
-import { MarqueeBadge } from "@/components/ui/marquee-badge";
 import { cn } from "@/lib/utils";
+import { LoadingScreen } from "@/components/loading/loading-screen";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
+import { ToasterProvider } from "@/components/providers/toaster-provider"
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 
@@ -39,6 +51,7 @@ export default function Dashboard() {
     const [sortOption, setSortOption] = useState("queue");
     const [lockedItems, setLockedItems] = useState([]);
     const [activeChart, setActiveChart] = useState("progress");
+    const router = useRouter();
 
     useOutsideClick(ref, (event) => {
         // Check if the click is within a Select/dropdown component
@@ -248,14 +261,81 @@ export default function Dashboard() {
         return "";
     };
 
+    const handleMoveToTop = async (itemId) => {
+        try {
+            // Update through API route
+            const response = await fetch(`/api/media-items/${itemId}/queue-position`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ position: 'top' })
+            });
+
+            if (!response.ok) throw new Error('Failed to update queue position');
+
+            // Refresh the items
+            const refreshResponse = await fetch('/api/media-items');
+            const data = await refreshResponse.json();
+            if (data.items) setMediaItems(data.items);
+
+            toast.success("Moved to top of queue");
+        } catch (error) {
+            console.error('Error updating queue:', error);
+            toast.error("Failed to update queue");
+        }
+    };
+
+    const handleMoveToBottom = async (itemId) => {
+        try {
+            const response = await fetch(`/api/media-items/${itemId}/queue-position`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ position: 'bottom' })
+            });
+
+            if (!response.ok) throw new Error('Failed to update queue position');
+
+            // Refresh the items
+            const refreshResponse = await fetch('/api/media-items');
+            const data = await refreshResponse.json();
+            if (data.items) setMediaItems(data.items);
+
+            toast.success("Moved to bottom of queue");
+        } catch (error) {
+            console.error('Error updating queue:', error);
+            toast.error("Failed to update queue");
+        }
+    };
+
+    const handleCustomQueueNumber = async (itemId, newPosition) => {
+        try {
+            const response = await fetch(`/api/media-items/${itemId}/queue-position`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ position: newPosition })
+            });
+
+            if (!response.ok) throw new Error('Failed to update queue position');
+
+            // Refresh the items
+            const refreshResponse = await fetch('/api/media-items');
+            const data = await refreshResponse.json();
+            if (data.items) setMediaItems(data.items);
+
+            toast.success("Queue position updated");
+        } catch (error) {
+            console.error('Error updating queue:', error);
+            toast.error("Failed to update queue");
+        }
+    };
+
     if (status === "loading" || loading) {
-        return (
-            <div className="container mx-auto p-4 space-y-6">
-                <div className="flex items-center justify-center min-h-[60vh]">
-                    <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                </div>
-            </div>
-        );
+        return <LoadingScreen />;
     }
 
     if (status === "unauthenticated") {
@@ -267,7 +347,7 @@ export default function Dashboard() {
             <div className="container max-w-2xl mx-auto p-4 text-center space-y-4">
                 <h1 className="text-2xl font-bold">Welcome to MediaQueue!</h1>
                 <p className="text-muted-foreground">
-                    Your queue is empty. Start by adding some movies, books, TV shows, or games to track.
+                    Welcome to your Mediaq Dashboard! Here you can organize your media, track your progress, and get much more. Your queue is currently empty. Get started by adding some movies, books, TV shows, or games to track.
                 </p>
                 <Link
                     href="/user-pages/search"
@@ -281,6 +361,7 @@ export default function Dashboard() {
 
     return (
         <>
+            <ToasterProvider />
             <AnimatePresence>
                 {expandedId && (
                     <motion.div
@@ -691,18 +772,127 @@ export default function Dashboard() {
                                         </div>
                                     </div>
                                     <div className={styles.utilitySection}>
-                                        <Button
-                                            variant="destructive"
-                                            size="icon"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDelete(item.id);
-                                            }}
-                                            className="hover:bg-destructive/90"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                            <span className="sr-only">Delete item</span>
-                                        </Button>
+                                        {/* External Links Placeholder */}
+                                        <div className="flex gap-2 mb-4 p-2 border rounded-md">
+                                            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm text-muted-foreground">External Links Coming Soon</span>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-2">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleMoveToTop(item.id);
+                                                            }}
+                                                        >
+                                                            <ArrowUp className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Move to Top of Queue</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleMoveToBottom(item.id);
+                                                            }}
+                                                        >
+                                                            <ArrowDown className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Move to Bottom of Queue</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Popover>
+                                                            <PopoverTrigger asChild>
+                                                                <Button variant="outline" size="icon">
+                                                                    <MoveRight className="h-4 w-4" />
+                                                                </Button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-40">
+                                                                <div className="space-y-2">
+                                                                    <h4 className="font-medium text-sm">Queue Position</h4>
+                                                                    <Input
+                                                                        type="number"
+                                                                        min="1"
+                                                                        max={mediaItems.length}
+                                                                        placeholder="Enter position"
+                                                                        onChange={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleCustomQueueNumber(item.id, parseInt(e.target.value));
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Set Custom Queue Position</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                router.push(`/user-pages/gallery?mediaId=${item.id}`);
+                                                            }}
+                                                        >
+                                                            <Users className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Open in Gallery for Social Features</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="destructive"
+                                                            size="icon"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDelete(item.id);
+                                                            }}
+                                                            className="hover:bg-destructive/90"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Delete Item</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
                                     </div>
                                 </Card>
                             ))}

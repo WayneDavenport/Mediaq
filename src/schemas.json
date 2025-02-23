@@ -10,7 +10,7 @@
   },
   {
     "table_name": "books",
-    "table_definition": "(authors text, average_rating bigint, categories text, created_at timestamp with time zone, estimated_reading_time bigint, google_books_id text, id uuid REFERENCES books(id), id uuid REFERENCES books(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES books(id), isbn text, language text, page_count bigint, preview_link text, published_date text, publisher text, ratings_count integer, reading_speed smallint, user_id uuid REFERENCES books(user_id) ON DELETE CASCADE ON UPDATE CASCADE)"
+    "table_definition": "(authors text, average_rating bigint, categories text, created_at timestamp with time zone, estimated_reading_time bigint, google_books_id text, id uuid REFERENCES books(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES books(id), id uuid REFERENCES books(id), isbn text, language text, page_count bigint, preview_link text, published_date text, publisher text, ratings_count integer, reading_speed smallint, user_id uuid REFERENCES books(user_id) ON DELETE CASCADE ON UPDATE CASCADE)"
   },
   {
     "table_name": "comment_replies",
@@ -30,7 +30,7 @@
   },
   {
     "table_name": "friends",
-    "table_definition": "(created_at timestamp with time zone, friend_id uuid REFERENCES friends(friend_id) ON DELETE CASCADE ON UPDATE CASCADE, friend_id uuid REFERENCES friends(friend_id), friend_user_name text REFERENCES friends(friend_user_name) ON DELETE CASCADE ON UPDATE CASCADE, user_id uuid REFERENCES friends(user_id), user_id uuid REFERENCES friends(user_id) ON DELETE CASCADE ON UPDATE CASCADE)"
+    "table_definition": "(created_at timestamp with time zone, friend_id uuid REFERENCES friends(friend_id), friend_id uuid REFERENCES friends(friend_id) ON DELETE CASCADE ON UPDATE CASCADE, friend_user_name text REFERENCES friends(friend_user_name) ON DELETE CASCADE ON UPDATE CASCADE, user_id uuid REFERENCES friends(user_id) ON DELETE CASCADE ON UPDATE CASCADE, user_id uuid REFERENCES friends(user_id))"
   },
   {
     "table_name": "games",
@@ -38,7 +38,7 @@
   },
   {
     "table_name": "locked_items",
-    "table_definition": "(completed boolean, completed_time bigint, created_at timestamp with time zone, episodes_completed bigint, goal_episodes bigint, goal_pages bigint, goal_time bigint, id uuid REFERENCES locked_items(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES locked_items(id), id uuid REFERENCES locked_items(id), key_parent_id uuid REFERENCES locked_items(key_parent_id) ON DELETE CASCADE ON UPDATE CASCADE, key_parent_text text, lock_completed_timestampz timestamp with time zone, lock_type text, pages_completed bigint, user_id uuid REFERENCES locked_items(user_id) ON DELETE CASCADE ON UPDATE CASCADE)"
+    "table_definition": "(completed boolean, completed_time bigint, created_at timestamp with time zone, episodes_completed bigint, goal_episodes bigint, goal_pages bigint, goal_time bigint, id uuid REFERENCES locked_items(id), id uuid REFERENCES locked_items(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES locked_items(id), key_parent_id uuid REFERENCES locked_items(key_parent_id) ON DELETE CASCADE ON UPDATE CASCADE, key_parent_text text, lock_completed_timestampz timestamp with time zone, lock_type text, pages_completed bigint, user_id uuid REFERENCES locked_items(user_id) ON DELETE CASCADE ON UPDATE CASCADE)"
   },
   {
     "table_name": "media_items",
@@ -46,7 +46,7 @@
   },
   {
     "table_name": "movies",
-    "table_definition": "(created_at timestamp with time zone, director text, id uuid REFERENCES movies(id), id uuid REFERENCES movies(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES movies(id), original_language text, release_date text, runtime bigint, tmdb_id bigint, user_id uuid REFERENCES movies(user_id) ON DELETE CASCADE ON UPDATE CASCADE, vote_average double precision)"
+    "table_definition": "(created_at timestamp with time zone, director text, id uuid REFERENCES movies(id), id uuid REFERENCES movies(id), id uuid REFERENCES movies(id) ON DELETE CASCADE ON UPDATE CASCADE, original_language text, release_date text, runtime bigint, tmdb_id bigint, user_id uuid REFERENCES movies(user_id) ON DELETE CASCADE ON UPDATE CASCADE, vote_average double precision)"
   },
   {
     "table_name": "notifications",
@@ -54,11 +54,15 @@
   },
   {
     "table_name": "tv_shows",
-    "table_definition": "(average_runtime bigint, created_at timestamp with time zone, episode_run_times bigint, id uuid REFERENCES tv_shows(id), id uuid REFERENCES tv_shows(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES tv_shows(id), original_language text, release_date text, seasons bigint, tmdb_id bigint, total_episodes bigint, user_id uuid REFERENCES tv_shows(user_id) ON DELETE CASCADE ON UPDATE CASCADE, vote_average integer)"
+    "table_definition": "(average_runtime bigint, created_at timestamp with time zone, episode_run_times bigint, id uuid REFERENCES tv_shows(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES tv_shows(id), id uuid REFERENCES tv_shows(id), original_language text, release_date text, seasons bigint, tmdb_id bigint, total_episodes bigint, user_id uuid REFERENCES tv_shows(user_id) ON DELETE CASCADE ON UPDATE CASCADE, vote_average integer)"
   },
   {
     "table_name": "user_media_progress",
     "table_definition": "(completed boolean, completed_duration bigint, completed_timestampz timestamp with time zone, created_at timestamp with time zone, duration real, episodes_completed bigint, id uuid REFERENCES user_media_progress(id), id uuid REFERENCES user_media_progress(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES user_media_progress(id), pages_completed bigint, queue_number bigint, user_id uuid REFERENCES user_media_progress(user_id) ON DELETE CASCADE ON UPDATE CASCADE)"
+  },
+  {
+    "table_name": "user_recommendations",
+    "table_definition": "(created_at timestamp with time zone, id uuid REFERENCES user_recommendations(id), media_item_data jsonb, message text, receiver_id uuid REFERENCES user_recommendations(receiver_id) ON DELETE CASCADE, sender_id uuid REFERENCES user_recommendations(sender_id) ON DELETE CASCADE, status text)"
   },
   {
     "table_name": "users",
