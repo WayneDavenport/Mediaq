@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
+    "@modelcontextprotocol/server-postgres": "^0.6.2",
     "@motionone/dom": "^10.18.0",
     "@next-auth/supabase-adapter": "^0.2.1",
     "@radix-ui/react-alert-dialog": "^1.1.6",

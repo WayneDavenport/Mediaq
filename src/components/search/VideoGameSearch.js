@@ -127,63 +127,69 @@ const VideoGameSearch = () => {
                 </Alert>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {results.map((result) => (
-                    <Card key={`game-${result.game_details.rawg_id}`}>
-                        <CardContent className="p-4">
-                            {result.poster_path && (
-                                <img
-                                    src={result.poster_path}
-                                    alt={result.title}
-                                    className="w-full h-auto rounded-lg mb-4 aspect-video object-cover"
-                                />
-                            )}
-                            <h3 className="text-lg font-semibold mb-2">
-                                {result.title}
-                            </h3>
+            {isLoading ? (
+                <div className="flex items-center justify-center min-h-[200px]">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {results.map((result) => (
+                        <Card key={`game-${result.game_details.rawg_id}`}>
+                            <CardContent className="p-4">
+                                {result.poster_path && (
+                                    <img
+                                        src={result.poster_path}
+                                        alt={result.title}
+                                        className="w-full h-auto rounded-lg mb-4 aspect-video object-cover"
+                                    />
+                                )}
+                                <h3 className="text-lg font-semibold mb-2">
+                                    {result.title}
+                                </h3>
 
-                            {result.game_details.genres && (
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {result.game_details.genres.split(', ').map((genre, index) => (
-                                        <Badge key={index} variant="secondary">
-                                            {genre}
-                                        </Badge>
-                                    ))}
+                                {result.game_details.genres && (
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                        {result.game_details.genres.split(', ').map((genre, index) => (
+                                            <Badge key={index} variant="secondary">
+                                                {genre}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    {result.description?.substring(0, 150)}...
+                                </p>
+
+                                <div className="space-y-1 mb-4 text-sm text-muted-foreground">
+                                    {result.game_details.release_date && (
+                                        <p>Released: {result.game_details.release_date}</p>
+                                    )}
+                                    {result.game_details.publishers && (
+                                        <p>Publisher: {result.game_details.publishers}</p>
+                                    )}
+                                    {result.game_details.platforms && (
+                                        <p>Platforms: {result.game_details.platforms}</p>
+                                    )}
+                                    {result.game_details.metacritic > 0 && (
+                                        <p>Metacritic: {result.game_details.metacritic}</p>
+                                    )}
+                                    {result.game_details.average_playtime > 0 && (
+                                        <p>Average Playtime: {result.game_details.average_playtime} hours</p>
+                                    )}
                                 </div>
-                            )}
 
-                            <p className="text-sm text-muted-foreground mb-4">
-                                {result.description?.substring(0, 150)}...
-                            </p>
-
-                            <div className="space-y-1 mb-4 text-sm text-muted-foreground">
-                                {result.game_details.release_date && (
-                                    <p>Released: {result.game_details.release_date}</p>
-                                )}
-                                {result.game_details.publishers && (
-                                    <p>Publisher: {result.game_details.publishers}</p>
-                                )}
-                                {result.game_details.platforms && (
-                                    <p>Platforms: {result.game_details.platforms}</p>
-                                )}
-                                {result.game_details.metacritic > 0 && (
-                                    <p>Metacritic: {result.game_details.metacritic}</p>
-                                )}
-                                {result.game_details.average_playtime > 0 && (
-                                    <p>Average Playtime: {result.game_details.average_playtime} hours</p>
-                                )}
-                            </div>
-
-                            <Button
-                                onClick={() => handleAdd(result)}
-                                className="w-full"
-                            >
-                                Add to Queue
-                            </Button>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+                                <Button
+                                    onClick={() => handleAdd(result)}
+                                    className="w-full"
+                                >
+                                    Add to Queue
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
 
             {results.length > 0 && totalPages > 1 && (
                 <Pagination>

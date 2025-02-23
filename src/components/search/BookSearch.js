@@ -126,60 +126,66 @@ const BookSearch = () => {
                 </Button>
             </form>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {results.map((result) => (
-                    <Card key={`book-${result.book_details.google_books_id}`}>
-                        <CardContent className="p-4">
-                            {result.poster_path && (
-                                <img
-                                    src={result.poster_path}
-                                    alt={result.title}
-                                    className="w-full h-auto rounded-lg mb-4"
-                                />
-                            )}
-                            <h3 className="text-lg font-semibold mb-2">
-                                {result.title}
-                            </h3>
-                            {result.book_details.authors?.length > 0 && (
-                                <p className="text-sm text-muted-foreground mb-2">
-                                    By: {result.book_details.authors.join(', ')}
+            {isLoading ? (
+                <div className="flex items-center justify-center min-h-[200px]">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {results.map((result) => (
+                        <Card key={`book-${result.book_details.google_books_id}`}>
+                            <CardContent className="p-4">
+                                {result.poster_path && (
+                                    <img
+                                        src={result.poster_path}
+                                        alt={result.title}
+                                        className="w-full h-auto rounded-lg mb-4"
+                                    />
+                                )}
+                                <h3 className="text-lg font-semibold mb-2">
+                                    {result.title}
+                                </h3>
+                                {result.book_details.authors?.length > 0 && (
+                                    <p className="text-sm text-muted-foreground mb-2">
+                                        By: {result.book_details.authors.join(', ')}
+                                    </p>
+                                )}
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    {result.description?.substring(0, 150)}...
                                 </p>
-                            )}
-                            <p className="text-sm text-muted-foreground mb-4">
-                                {result.description?.substring(0, 150)}...
-                            </p>
-                            <div className="space-y-1 mb-4">
-                                {result.book_details.publisher && (
-                                    <p className="text-sm text-muted-foreground">
-                                        Publisher: {result.book_details.publisher}
-                                    </p>
-                                )}
-                                {result.book_details.page_count > 0 && (
-                                    <p className="text-sm text-muted-foreground">
-                                        Pages: {result.book_details.page_count}
-                                    </p>
-                                )}
-                                {result.book_details.published_date && (
-                                    <p className="text-sm text-muted-foreground">
-                                        Published: {result.book_details.published_date}
-                                    </p>
-                                )}
-                                {result.genres && result.genres.length > 0 && (
-                                    <p className="text-sm text-muted-foreground">
-                                        Genres: {result.genres.join(', ')}
-                                    </p>
-                                )}
-                            </div>
-                            <Button
-                                onClick={() => handleAdd(result)}
-                                className="w-full"
-                            >
-                                Add to Queue
-                            </Button>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+                                <div className="space-y-1 mb-4">
+                                    {result.book_details.publisher && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Publisher: {result.book_details.publisher}
+                                        </p>
+                                    )}
+                                    {result.book_details.page_count > 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Pages: {result.book_details.page_count}
+                                        </p>
+                                    )}
+                                    {result.book_details.published_date && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Published: {result.book_details.published_date}
+                                        </p>
+                                    )}
+                                    {result.genres && result.genres.length > 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Genres: {result.genres.join(', ')}
+                                        </p>
+                                    )}
+                                </div>
+                                <Button
+                                    onClick={() => handleAdd(result)}
+                                    className="w-full"
+                                >
+                                    Add to Queue
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

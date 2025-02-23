@@ -39,22 +39,19 @@ const getProgressData = (items, groupBy = 'category') => {
         if (!acc[key]) {
             acc[key] = {
                 name: key.charAt(0).toUpperCase() + key.slice(1),
-                totalDuration: 0,
-                completedDuration: 0
+                totalTime: 0
             };
         }
 
         if (item.user_media_progress) {
             switch (item.media_type) {
                 case 'book':
-                    acc[key].totalDuration += item.books?.page_count || 0;
-                    acc[key].completedDuration += item.user_media_progress.pages_completed || 0;
+                    acc[key].totalTime += item.books?.page_count || 0;
                     break;
                 case 'tv':
                 case 'movie':
                 case 'game':
-                    acc[key].totalDuration += item.user_media_progress.duration || 0;
-                    acc[key].completedDuration += item.user_media_progress.completed_duration || 0;
+                    acc[key].totalTime += item.user_media_progress.duration || 0;
                     break;
             }
         }
@@ -62,24 +59,18 @@ const getProgressData = (items, groupBy = 'category') => {
         return acc;
     }, {});
 
-    return Object.values(groups).map(group => ({
-        ...group,
-        progressPercentage: group.totalDuration > 0
-            ? (group.completedDuration / group.totalDuration) * 100
-            : 0
-    }));
+    return Object.values(groups);
 };
 
-const ProgressChart = ({ mediaItems }) => {
+const TimeCostChart = ({ mediaItems }) => {
     const [localSortOption, setLocalSortOption] = useState("category");
     const [showBarChart, setShowBarChart] = useState(false);
     const data = getProgressData(mediaItems, localSortOption);
 
+    const totalTime = data.reduce((sum, item) => sum + item.totalTime, 0);
     const pieData = data.map(item => ({
         name: item.name,
-        value: item.progressPercentage,
-        rawProgress: item.completedDuration,
-        rawTotal: item.totalDuration
+        value: item.totalTime
     }));
 
     const COLORS = [
@@ -94,7 +85,10 @@ const ProgressChart = ({ mediaItems }) => {
         <Card className="p-4">
             <div className="flex flex-col space-y-4">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-semibold">Progress Overview</h2>
+                    <h2 className="text-lg font-semibold">Your Media Time Cost</h2>
+                    <p className="text-sm text-muted-foreground">
+                        Total Time: {formatDuration(totalTime)}
+                    </p>
                 </div>
 
                 <div className="flex justify-between items-center gap-4">
@@ -112,9 +106,9 @@ const ProgressChart = ({ mediaItems }) => {
                     </Select>
 
                     <div className="flex items-center space-x-2">
-                        <Label htmlFor="progress-chart-type">Show as Bar Chart</Label>
+                        <Label htmlFor="chart-type">Bar Chart</Label>
                         <Switch
-                            id="progress-chart-type"
+                            id="chart-type"
                             checked={showBarChart}
                             onCheckedChange={setShowBarChart}
                         />
@@ -155,10 +149,7 @@ const ProgressChart = ({ mediaItems }) => {
                                             ))}
                                         </Pie>
                                         <Tooltip
-                                            formatter={(value, name, props) => [
-                                                `${Math.round(value)}% (${formatDuration(props.payload.rawProgress)} / ${formatDuration(props.payload.rawTotal)})`,
-                                                name
-                                            ]}
+                                            formatter={(value, name) => [formatDuration(value), name]}
                                         />
                                         <Legend
                                             verticalAlign="middle"
@@ -180,16 +171,16 @@ const ProgressChart = ({ mediaItems }) => {
                                         <YAxis
                                             tickLine={false}
                                             axisLine={false}
-                                            tickFormatter={(value) => `${Math.round(value)}%`}
+                                            tickFormatter={formatDuration}
                                         />
                                         <Tooltip
-                                            formatter={(value, name) => [`${Math.round(value)}%`, 'Progress']}
+                                            formatter={(value) => [formatDuration(value), 'Total Time']}
                                         />
                                         <Bar
-                                            dataKey="progressPercentage"
+                                            dataKey="totalTime"
                                             fill="hsl(var(--primary))"
                                             radius={[4, 4, 0, 0]}
-                                            name="Progress"
+                                            name="Time Cost"
                                         />
                                     </BarChart>
                                 )}
@@ -202,4 +193,4 @@ const ProgressChart = ({ mediaItems }) => {
     );
 };
 
-export default ProgressChart; 
+export default TimeCostChart; 

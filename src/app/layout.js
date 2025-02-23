@@ -65,7 +65,7 @@ export default function RootLayout({ children }) {
                 transform: 'translateY(-30%)',
               },
             }}
-            closeButton
+
           />
         </div>
       </body>

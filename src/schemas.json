@@ -1,0 +1,67 @@
+[
+  {
+    "chat_istructions": "These are the tables in the database. You can use them to answer the user's questions. "
+  },
+  {
+    "chat_istructions": "You can use the table_definition to answer the user's question."
+  },
+  {
+    "chat_istructions": "You can use the table_name to answer the user's question."
+  },
+  {
+    "table_name": "books",
+    "table_definition": "(authors text, average_rating bigint, categories text, created_at timestamp with time zone, estimated_reading_time bigint, google_books_id text, id uuid REFERENCES books(id), id uuid REFERENCES books(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES books(id), isbn text, language text, page_count bigint, preview_link text, published_date text, publisher text, ratings_count integer, reading_speed smallint, user_id uuid REFERENCES books(user_id) ON DELETE CASCADE ON UPDATE CASCADE)"
+  },
+  {
+    "table_name": "comment_replies",
+    "table_definition": "(comment_id uuid REFERENCES comment_replies(comment_id) ON DELETE CASCADE ON UPDATE CASCADE, content text, created_at timestamp with time zone, id uuid REFERENCES comment_replies(id), id uuid REFERENCES comment_replies(id), user_id uuid REFERENCES comment_replies(user_id) ON DELETE CASCADE)"
+  },
+  {
+    "table_name": "comments",
+    "table_definition": "(content text, created_at timestamp with time zone, id uuid REFERENCES comments(id), id uuid REFERENCES comments(id), media_item_id uuid REFERENCES comments(media_item_id) ON DELETE CASCADE ON UPDATE CASCADE, user_id uuid REFERENCES comments(user_id) ON DELETE CASCADE)"
+  },
+  {
+    "table_name": "completed_locks",
+    "table_definition": "(completed_at timestamp with time zone, completed_time integer, created_at timestamp with time zone, episodes_completed integer, goal_episodes integer, goal_pages integer, goal_time integer, id uuid REFERENCES completed_locks(id), key_parent_id uuid REFERENCES completed_locks(key_parent_id), key_parent_text text, lock_type text, media_item_id uuid REFERENCES completed_locks(media_item_id), original_lock_id uuid, pages_completed integer, user_id uuid REFERENCES completed_locks(user_id))"
+  },
+  {
+    "table_name": "friend_requests",
+    "table_definition": "(created_at timestamp with time zone, receiver_id uuid REFERENCES friend_requests(receiver_id), receiver_id uuid REFERENCES friend_requests(receiver_id), receiver_id uuid REFERENCES friend_requests(receiver_id) ON DELETE CASCADE ON UPDATE CASCADE, sender_id uuid REFERENCES friend_requests(sender_id) ON DELETE CASCADE ON UPDATE CASCADE, sender_id uuid REFERENCES friend_requests(sender_id), sender_id uuid REFERENCES friend_requests(sender_id), status text)"
+  },
+  {
+    "table_name": "friends",
+    "table_definition": "(created_at timestamp with time zone, friend_id uuid REFERENCES friends(friend_id) ON DELETE CASCADE ON UPDATE CASCADE, friend_id uuid REFERENCES friends(friend_id), friend_user_name text REFERENCES friends(friend_user_name) ON DELETE CASCADE ON UPDATE CASCADE, user_id uuid REFERENCES friends(user_id), user_id uuid REFERENCES friends(user_id) ON DELETE CASCADE ON UPDATE CASCADE)"
+  },
+  {
+    "table_name": "games",
+    "table_definition": "(achievements_count bigint, average_playtime bigint, created_at timestamp with time zone, esrb_rating text, genres text, id uuid REFERENCES games(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES games(id), id uuid REFERENCES games(id), metacritic integer, platforms text, publishers text, rating double precision, rating_count bigint, rawg_id bigint, release_date text, user_id uuid REFERENCES games(user_id) ON DELETE CASCADE ON UPDATE CASCADE, website text)"
+  },
+  {
+    "table_name": "locked_items",
+    "table_definition": "(completed boolean, completed_time bigint, created_at timestamp with time zone, episodes_completed bigint, goal_episodes bigint, goal_pages bigint, goal_time bigint, id uuid REFERENCES locked_items(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES locked_items(id), id uuid REFERENCES locked_items(id), key_parent_id uuid REFERENCES locked_items(key_parent_id) ON DELETE CASCADE ON UPDATE CASCADE, key_parent_text text, lock_completed_timestampz timestamp with time zone, lock_type text, pages_completed bigint, user_id uuid REFERENCES locked_items(user_id) ON DELETE CASCADE ON UPDATE CASCADE)"
+  },
+  {
+    "table_name": "media_items",
+    "table_definition": "(backdrop_path text, category text, created_at timestamp with time zone, description text, genres text, id uuid REFERENCES media_items(id), id uuid REFERENCES media_items(id), media_type text, poster_path text, title text, user_email text, user_id uuid REFERENCES media_items(user_id) ON DELETE CASCADE ON UPDATE CASCADE)"
+  },
+  {
+    "table_name": "movies",
+    "table_definition": "(created_at timestamp with time zone, director text, id uuid REFERENCES movies(id), id uuid REFERENCES movies(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES movies(id), original_language text, release_date text, runtime bigint, tmdb_id bigint, user_id uuid REFERENCES movies(user_id) ON DELETE CASCADE ON UPDATE CASCADE, vote_average double precision)"
+  },
+  {
+    "table_name": "notifications",
+    "table_definition": "(comment_id uuid REFERENCES notifications(comment_id), created_at timestamp with time zone, id uuid REFERENCES notifications(id), is_read boolean, media_item_id uuid REFERENCES notifications(media_item_id) ON DELETE CASCADE ON UPDATE CASCADE, message text, receiver_id uuid REFERENCES notifications(receiver_id) ON DELETE CASCADE, reply_id uuid REFERENCES notifications(reply_id), sender_id uuid REFERENCES notifications(sender_id) ON DELETE CASCADE, type character varying)"
+  },
+  {
+    "table_name": "tv_shows",
+    "table_definition": "(average_runtime bigint, created_at timestamp with time zone, episode_run_times bigint, id uuid REFERENCES tv_shows(id), id uuid REFERENCES tv_shows(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES tv_shows(id), original_language text, release_date text, seasons bigint, tmdb_id bigint, total_episodes bigint, user_id uuid REFERENCES tv_shows(user_id) ON DELETE CASCADE ON UPDATE CASCADE, vote_average integer)"
+  },
+  {
+    "table_name": "user_media_progress",
+    "table_definition": "(completed boolean, completed_duration bigint, completed_timestampz timestamp with time zone, created_at timestamp with time zone, duration real, episodes_completed bigint, id uuid REFERENCES user_media_progress(id), id uuid REFERENCES user_media_progress(id) ON DELETE CASCADE ON UPDATE CASCADE, id uuid REFERENCES user_media_progress(id), pages_completed bigint, queue_number bigint, user_id uuid REFERENCES user_media_progress(user_id) ON DELETE CASCADE ON UPDATE CASCADE)"
+  },
+  {
+    "table_name": "users",
+    "table_definition": "(avatar_url text, created_at timestamp with time zone, email text REFERENCES users(email), first_name character varying, google_id text, id uuid REFERENCES users(id), id uuid REFERENCES users(id), id uuid REFERENCES users(id), is_verified boolean, last_name character varying, password text, reading_speed real, username text REFERENCES users(username), verification_token text, verified_at timestamp without time zone)"
+  }
+]
