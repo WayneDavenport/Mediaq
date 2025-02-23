@@ -368,32 +368,7 @@ export default function Dashboard() {
                                                     layoutId={`image-${item.id}-${id}`}
                                                     className={styles.posterWrapper}
                                                 >
-                                                    {sortOption === "category" && (
-                                                        <motion.div
-                                                            className={styles.categoryLabel}
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            exit={{ opacity: 0 }}
-                                                        >
-                                                            {item.category}
-                                                        </motion.div>
-                                                    )}
-                                                    {sortOption === "title" && (
-                                                        <motion.div
-                                                            className={styles.categoryLabel}
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            exit={{ opacity: 0 }}
-                                                        >
-                                                            <Badge
-                                                                variant="secondary"
-                                                                className="max-w-[120px] truncate"
-                                                                title={item.title}
-                                                            >
-                                                                {item.title}
-                                                            </Badge>
-                                                        </motion.div>
-                                                    )}
+                                                    {/* Queue number badge - visible on all screen sizes */}
                                                     {sortOption === "queue" && (
                                                         <motion.div
                                                             className={styles.categoryLabel}
@@ -406,19 +381,42 @@ export default function Dashboard() {
                                                             </Badge>
                                                         </motion.div>
                                                     )}
-                                                    {sortOption === "media-type" && (
+
+                                                    {/* Category, title, and media-type badges - desktop only */}
+                                                    {sortOption === "category" && (
                                                         <motion.div
-                                                            className={styles.categoryLabel}
+                                                            className="absolute top-1 right-1 bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded text-xs z-10 hidden sm:block"
                                                             initial={{ opacity: 0 }}
                                                             animate={{ opacity: 1 }}
                                                             exit={{ opacity: 0 }}
                                                         >
-                                                            <MediaTypeIcon
-                                                                type={item.media_type}
-                                                                className="h-4 w-4"
-                                                            />
+                                                            {item.category}
                                                         </motion.div>
                                                     )}
+                                                    {sortOption === "title" && (
+                                                        <motion.div
+                                                            className="absolute top-1 right-1 bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded text-xs z-10 hidden sm:block"
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                        >
+                                                            <Badge variant="secondary" className="max-w-[120px] truncate" title={item.title}>
+                                                                {item.title}
+                                                            </Badge>
+                                                        </motion.div>
+                                                    )}
+                                                    {sortOption === "media-type" && (
+                                                        <motion.div
+                                                            className="absolute top-1 right-1 bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded text-xs z-10 hidden sm:block"
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                        >
+                                                            <MediaTypeIcon type={item.media_type} className="h-4 w-4" />
+                                                        </motion.div>
+                                                    )}
+
+                                                    {/* Rest of the content */}
                                                     <Image
                                                         src={(() => {
                                                             switch (item.media_type) {
