@@ -12,13 +12,17 @@ import { Badge } from "@/components/ui/badge";
 import UpdateProgressModal from "@/components/progress/UpdateProgressModal";
 import { Button } from "@/components/ui/button";
 import ProgressSection from "@/components/progress/ProgressSection";
-import { Trash2, X } from 'lucide-react';
+import { Trash2, X, Loader2, Plus } from 'lucide-react';
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import MediaTypeIcon from "@/components/ui/media-type-icon";
+import TimeCostChart from "@/components/progress/TImeCostChart";
 import ProgressChart from "@/components/progress/ProgressChart";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import SkeletonCard from '@/components/ui/skeleton-card';
+import { MarqueeBadge } from "@/components/ui/marquee-badge";
+import { cn } from "@/lib/utils";
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 
@@ -33,6 +37,8 @@ export default function Dashboard() {
     const [selectedItem, setSelectedItem] = useState(null);
     const id = useId();
     const [sortOption, setSortOption] = useState("queue");
+    const [lockedItems, setLockedItems] = useState([]);
+    const [activeChart, setActiveChart] = useState("progress");
 
     useOutsideClick(ref, (event) => {
         // Check if the click is within a Select/dropdown component
@@ -194,8 +200,62 @@ export default function Dashboard() {
         }
     };
 
+    // Get all locked items across all media items
+    const getAllLockedItems = () => {
+        return mediaItems.reduce((acc, item) => {
+            if (item.locked_items && item.locked_items.length > 0) {
+                return [...acc, ...item.locked_items];
+            }
+            return acc;
+        }, []);
+    };
+
+    const getItemGlow = (item) => {
+        const allLocks = getAllLockedItems();
+
+        // Debug logs
+        console.log('Checking glow for item:', item.id);
+        console.log('Lock types:', allLocks.map(lock => ({
+            id: lock.id,
+            type: lock.lock_type,
+            key_parent_id: lock.key_parent_id,
+            media_item_id: lock.media_item_id
+        })));
+
+        // Check if this item is locked (if it has locked_items)
+        if (item.locked_items && item.locked_items.length > 0) {
+            return "shadow-[0_0_20px_-1px_rgba(255,0,0,0.6)] hover:shadow-[0_0_25px_0px_rgba(255,0,0,0.8)]";
+        }
+
+        // Check if this item is specifically required to unlock something
+        const isSpecificRequirement = allLocks.some(lock =>
+            lock.lock_type === 'specific' &&
+            lock.key_parent_id === item.id  // Changed from media_item_id to key_parent_id
+        );
+        if (isSpecificRequirement) {
+            return "shadow-[0_0_20px_-1px_rgba(163,71,255,0.6)] hover:shadow-[0_0_25px_0px_rgba(163,71,255,0.8)]";
+        }
+
+        // Check if this item can contribute to any category/type locks
+        const canContribute = allLocks.some(lock =>
+            lock.lock_type === 'media_type' &&
+            lock.key_parent_text === item.media_type
+        );
+        if (canContribute) {
+            return "shadow-[0_0_20px_-1px_rgba(0,149,255,0.6)] hover:shadow-[0_0_25px_0px_rgba(0,149,255,0.8)]";
+        }
+
+        return "";
+    };
+
     if (status === "loading" || loading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="container mx-auto p-4 space-y-6">
+                <div className="flex items-center justify-center min-h-[60vh]">
+                    <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                </div>
+            </div>
+        );
     }
 
     if (status === "unauthenticated") {
@@ -284,91 +344,210 @@ export default function Dashboard() {
                     </div>
 
                     <div className={styles.mediaGrid}>
-                        {getSortedMediaItems().map((item) => (
-                            <motion.div
-                                key={item.id}
-                                layoutId={`card-${item.id}-${id}`}
-                                onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                                className={styles.mediaCard}
-                            >
-                                <Card className="overflow-hidden group relative">
-                                    <div className={styles.mediaContent}>
-                                        <motion.div
-                                            layoutId={`image-${item.id}-${id}`}
-                                            className={styles.posterWrapper}
-                                        >
-                                            {sortOption === "category" && (
+                        {loading ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {[...Array(6)].map((_, index) => (
+                                    <SkeletonCard key={index} />
+                                ))}
+                            </div>
+                        ) : (
+                            <>
+                                {getSortedMediaItems().map((item) => (
+                                    <motion.div
+                                        key={item.id}
+                                        layoutId={`card-${item.id}-${id}`}
+                                        onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                                        className={cn(
+                                            styles.mediaCard,
+                                            getItemGlow(item)
+                                        )}
+                                    >
+                                        <Card className="overflow-hidden group relative">
+                                            <div className={styles.mediaContent}>
                                                 <motion.div
-                                                    className={styles.categoryLabel}
-                                                    initial={{ opacity: 0 }}
-                                                    animate={{ opacity: 1 }}
-                                                    exit={{ opacity: 0 }}
+                                                    layoutId={`image-${item.id}-${id}`}
+                                                    className={styles.posterWrapper}
                                                 >
-                                                    {item.category}
-                                                </motion.div>
-                                            )}
-                                            <Image
-                                                src={(() => {
-                                                    switch (item.media_type) {
-                                                        case 'movie':
-                                                        case 'tv':
-                                                            return item.poster_path
-                                                                ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                                                                : '/images/placeholder.jpg';
-                                                        case 'book':
-                                                            return item.poster_path || '/images/placeholder.jpg';
-                                                        case 'game':
-                                                            return item.poster_path || '/images/placeholder.jpg';
-                                                        default:
-                                                            return '/images/placeholder.jpg';
-                                                    }
-                                                })()}
-                                                alt={item.title}
-                                                width={160}
-                                                height={160}
-                                                className="object-cover rounded w-20 h-20"
-                                            />
-                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 sm:block hidden">
-                                                <div className="relative h-full flex flex-col">
-                                                    <div className="flex-1 flex items-center justify-center p-2">
-                                                        <h2 className="text-white text-sm text-center font-medium line-clamp-2">
-                                                            {item.title}
-                                                        </h2>
+                                                    {sortOption === "category" && (
+                                                        <motion.div
+                                                            className={styles.categoryLabel}
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                        >
+                                                            {item.category}
+                                                        </motion.div>
+                                                    )}
+                                                    {sortOption === "title" && (
+                                                        <motion.div
+                                                            className={styles.categoryLabel}
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                        >
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className="max-w-[120px] truncate"
+                                                                title={item.title}
+                                                            >
+                                                                {item.title}
+                                                            </Badge>
+                                                        </motion.div>
+                                                    )}
+                                                    {sortOption === "queue" && (
+                                                        <motion.div
+                                                            className={styles.categoryLabel}
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                        >
+                                                            <Badge variant="secondary">
+                                                                #{item.user_media_progress?.queue_number || '?'}
+                                                            </Badge>
+                                                        </motion.div>
+                                                    )}
+                                                    {sortOption === "media-type" && (
+                                                        <motion.div
+                                                            className={styles.categoryLabel}
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                        >
+                                                            <MediaTypeIcon
+                                                                type={item.media_type}
+                                                                className="h-4 w-4"
+                                                            />
+                                                        </motion.div>
+                                                    )}
+                                                    <Image
+                                                        src={(() => {
+                                                            switch (item.media_type) {
+                                                                case 'movie':
+                                                                case 'tv':
+                                                                    return item.poster_path
+                                                                        ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                                                                        : '/images/placeholder.jpg';
+                                                                case 'book':
+                                                                    return item.poster_path || '/images/placeholder.jpg';
+                                                                case 'game':
+                                                                    return item.poster_path || '/images/placeholder.jpg';
+                                                                default:
+                                                                    return '/images/placeholder.jpg';
+                                                            }
+                                                        })()}
+                                                        alt={item.title}
+                                                        width={160}
+                                                        height={160}
+                                                        className="object-cover rounded w-20 h-20"
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 sm:block hidden">
+                                                        <div className="relative h-full flex flex-col">
+                                                            <div className="flex-1 flex items-center justify-center p-2">
+                                                                <h2 className="text-white text-sm text-center font-medium line-clamp-2">
+                                                                    {sortOption === "title" ? item.category : item.title}
+                                                                </h2>
+                                                            </div>
+                                                            <div className="absolute bottom-1 right-1">
+                                                                {sortOption === "media-type" ? (
+                                                                    <Badge
+                                                                        variant="secondary"
+                                                                        className="h-4 w-4 flex items-center justify-center"
+                                                                    >
+                                                                        #{item.user_media_progress?.queue_number || '?'}
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <MediaTypeIcon
+                                                                        type={item.media_type}
+                                                                        className="text-white drop-shadow-md h-4 w-4 opacity-100"
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="absolute bottom-1 right-1">
-                                                        <MediaTypeIcon
-                                                            type={item.media_type}
-                                                            className="text-white drop-shadow-md h-4 w-4 opacity-100"
-                                                        />
+                                                </motion.div>
+                                                {/* Add mobile-only title and icon */}
+                                                <div className="sm:hidden flex flex-1 justify-between items-center">
+                                                    <motion.h2
+                                                        layoutId={`title-${item.id}-${id}`}
+                                                        className="text-sm font-medium line-clamp-2"
+                                                    >
+                                                        {item.title}
+                                                    </motion.h2>
+                                                    <MediaTypeIcon
+                                                        type={item.media_type}
+                                                        className="h-4 w-4 opacity-100"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    </motion.div>
+                                ))}
+                                <Link href="/user-pages/search" className={styles.mediaCard}>
+                                    <Card className="overflow-hidden group relative">
+                                        <div className={styles.mediaContent}>
+                                            <div className={styles.posterWrapper}>
+                                                <div className="w-20 h-20 grid place-items-center bg-muted rounded">
+                                                    <Plus className="h-8 w-8 text-muted-foreground" />
+                                                </div>
+                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 sm:block hidden">
+                                                    <div className="relative h-full flex items-center justify-center">
+                                                        <h2 className="text-white text-sm text-center font-medium">
+                                                            Add New Media
+                                                        </h2>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </motion.div>
-                                        {/* Add mobile-only title and icon */}
-                                        <div className="sm:hidden flex flex-1 justify-between items-center">
-                                            <motion.h2
-                                                layoutId={`title-${item.id}-${id}`}
-                                                className="text-sm font-medium line-clamp-2"
-                                            >
-                                                {item.title}
-                                            </motion.h2>
-                                            <MediaTypeIcon
-                                                type={item.media_type}
-                                                className="h-4 w-4 opacity-100"
-                                            />
+                                            {/* Add mobile-only title */}
+                                            <div className="sm:hidden flex flex-1 justify-between items-center">
+                                                <h2 className="text-sm font-medium">
+                                                    Add New Media
+                                                </h2>
+                                            </div>
                                         </div>
-                                    </div>
-                                </Card>
-                            </motion.div>
-                        ))}
+                                    </Card>
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
 
                 <div className={styles.chartContainer}>
-                    <ProgressChart
-                        mediaItems={mediaItems}
-                        sortOption={sortOption}
-                    />
+                    <div className="flex justify-end mb-4">
+                        <Select
+                            defaultValue="progress"
+                            onValueChange={(value) => setActiveChart(value)}
+                        >
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select chart type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="progress">Progress Overview</SelectItem>
+                                <SelectItem value="time">Time Investment</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeChart}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            {activeChart === "progress" ? (
+                                <ProgressChart
+                                    mediaItems={mediaItems}
+                                    sortOption={sortOption}
+                                />
+                            ) : (
+                                <TimeCostChart
+                                    mediaItems={mediaItems}
+                                    sortOption={sortOption}
+                                />
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </motion.div>
 
@@ -532,11 +711,6 @@ export default function Dashboard() {
                     </div>
                 )}
             </AnimatePresence>
-            <Link href="/user-pages/search">
-                <Button>
-                    Add Media
-                </Button>
-            </Link>
             {selectedItem && (
                 <UpdateProgressModal
                     isOpen={updateModalOpen}

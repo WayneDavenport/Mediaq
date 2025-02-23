@@ -10,21 +10,25 @@ export async function GET(request) {
     }
 
     try {
-        // Get the highest queue number for this user
+        // Get the highest queue number for this specific user
         const { data, error } = await supabase
             .from('user_media_progress')
             .select('queue_number')
+            .eq('user_id', session.user.id)  // Filter by user_id
             .order('queue_number', { ascending: false })
             .limit(1);
 
         if (error) throw error;
 
-        // If no items in queue, start at 1, otherwise increment highest number
+        // If no items in queue for this user, start at 1, otherwise increment highest number
         const nextQueueNumber = data && data.length > 0 && data[0].queue_number
             ? data[0].queue_number + 1
             : 1;
 
-        console.log('Generated next queue number:', nextQueueNumber);
+        console.log('Generated next queue number for user:', {
+            userId: session.user.id,
+            nextQueueNumber
+        });
 
         return NextResponse.json({ nextQueueNumber });
     } catch (error) {

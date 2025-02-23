@@ -10,10 +10,12 @@ export async function DELETE(request, { params }) {
     }
 
     try {
+        const { id } = await params;
+
         const { error } = await supabase
             .from('media_items')
             .delete()
-            .eq('id', params.id)
+            .eq('id', id)
             .eq('user_email', session.user.email);  // Ensure user can only delete their own items
 
         if (error) throw error;

@@ -82,11 +82,9 @@ const TvSearch = () => {
             seasons: item.tv_details.seasons,
             tmdb_id: item.tv_details.tmdb_id,
             total_episodes: item.tv_details.total_episodes,
-            vote_average: item.tv_details.vote_average,
 
-            // Progress data
-            duration: item.tv_details.total_episodes || 1, // Use total episodes as duration
-            queue_number: null,
+            // Calculate total duration in minutes
+            duration: item.tv_details.average_runtime * item.tv_details.total_episodes,
             completed_duration: 0,
             completed: false,
             pages_completed: null,
@@ -125,65 +123,71 @@ const TvSearch = () => {
                 </Alert>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {results.map((result) => (
-                    <Card key={`tv-${result.tv_details.tmdb_id}`}>
-                        <CardContent className="p-4">
-                            {result.poster_path && (
-                                <img
-                                    src={`https://image.tmdb.org/t/p/w500${result.poster_path}`}
-                                    alt={result.title}
-                                    className="w-full h-auto rounded-lg mb-4"
-                                />
-                            )}
-                            <h3 className="text-lg font-semibold mb-2">
-                                {result.title}
-                            </h3>
-                            <p className="text-sm text-muted-foreground mb-4">
-                                {result.description?.substring(0, 150)}...
-                            </p>
-                            <div className="space-y-1 mb-4">
-                                {result.tv_details.release_date && (
-                                    <p className="text-sm text-muted-foreground">
-                                        First Air Date: {result.tv_details.release_date}
-                                    </p>
+            {isLoading ? (
+                <div className="flex items-center justify-center min-h-[200px]">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {results.map((result) => (
+                        <Card key={`tv-${result.tv_details.tmdb_id}`}>
+                            <CardContent className="p-4">
+                                {result.poster_path && (
+                                    <img
+                                        src={`https://image.tmdb.org/t/p/w500${result.poster_path}`}
+                                        alt={result.title}
+                                        className="w-full h-auto rounded-lg mb-4"
+                                    />
                                 )}
-                                {result.tv_details.seasons > 0 && (
-                                    <p className="text-sm text-muted-foreground">
-                                        Seasons: {result.tv_details.seasons}
-                                    </p>
-                                )}
-                                {result.tv_details.total_episodes > 0 && (
-                                    <p className="text-sm text-muted-foreground">
-                                        Episodes: {result.tv_details.total_episodes}
-                                    </p>
-                                )}
-                                {result.tv_details.average_runtime > 0 && (
-                                    <p className="text-sm text-muted-foreground">
-                                        Average Episode Runtime: {result.tv_details.average_runtime} min
-                                    </p>
-                                )}
-                                {result.tv_details.vote_average > 0 && (
-                                    <p className="text-sm text-muted-foreground">
-                                        Rating: {result.tv_details.vote_average}/10
-                                    </p>
-                                )}
-                                {result.genres && result.genres.length > 0 && (
-                                    <p className="text-sm text-muted-foreground">
-                                        Genres: {result.genres.join(', ')}
-                                    </p>
-                                )}
-                            </div>
-                            <Button
-                                onClick={() => handleAdd(result)}
-                                className="w-full"
-                            >
-                                Add to Queue
-                            </Button>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+                                <h3 className="text-lg font-semibold mb-2">
+                                    {result.title}
+                                </h3>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    {result.description?.substring(0, 150)}...
+                                </p>
+                                <div className="space-y-1 mb-4">
+                                    {result.tv_details.release_date && (
+                                        <p className="text-sm text-muted-foreground">
+                                            First Air Date: {result.tv_details.release_date}
+                                        </p>
+                                    )}
+                                    {result.tv_details.seasons > 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Seasons: {result.tv_details.seasons}
+                                        </p>
+                                    )}
+                                    {result.tv_details.total_episodes > 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Episodes: {result.tv_details.total_episodes}
+                                        </p>
+                                    )}
+                                    {result.tv_details.average_runtime > 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Average Episode Runtime: {result.tv_details.average_runtime} min
+                                        </p>
+                                    )}
+                                    {result.tv_details.vote_average > 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Rating: {result.tv_details.vote_average}/10
+                                        </p>
+                                    )}
+                                    {result.genres && result.genres.length > 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Genres: {result.genres.join(', ')}
+                                        </p>
+                                    )}
+                                </div>
+                                <Button
+                                    onClick={() => handleAdd(result)}
+                                    className="w-full"
+                                >
+                                    Add to Queue
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
 
             {results.length > 0 && totalPages > 1 && (
                 <Pagination>

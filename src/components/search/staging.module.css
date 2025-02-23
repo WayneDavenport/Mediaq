@@ -1,0 +1,145 @@
+.stagingCard {
+    @apply w-full max-w-3xl mx-auto;
+    animation: slideUp 0.3s ease-out;
+}
+
+.stagingHeader {
+    @apply space-y-1.5 p-6;
+}
+
+.stagingTitle {
+    @apply text-2xl font-semibold tracking-tight;
+}
+
+.stagingDescription {
+    @apply text-sm text-muted-foreground;
+}
+
+.stagingContent {
+    @apply p-6;
+}
+
+.formGrid {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-6;
+}
+
+.fullWidth {
+    @apply col-span-1 md:col-span-2;
+}
+
+/* Form Fields */
+.formField {
+    @apply space-y-2;
+}
+
+.formLabel {
+    @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
+}
+
+/* Description Field */
+.descriptionWrapper {
+    composes: fullWidth;
+}
+
+.descriptionField {
+    @apply min-h-[120px] md:min-h-[150px] resize-y;
+}
+
+/* Category Select */
+.categoryWrapper {
+    @apply relative;
+}
+
+.categorySelect {
+    @apply w-full;
+}
+
+.customCategoryInput {
+    @apply p-2 rounded-md border border-input bg-transparent;
+}
+
+.customCategoryInput:focus {
+    @apply outline-none ring-2 ring-ring ring-offset-2;
+}
+
+/* Loading States */
+.loadingOverlay {
+    @apply absolute inset-0 bg-background/80 flex items-center justify-center;
+    backdrop-filter: blur(2px);
+}
+
+.loadingSpinner {
+    @apply animate-spin text-primary;
+}
+
+/* Validation Feedback */
+.errorMessage {
+    @apply text-sm font-medium text-destructive mt-1;
+}
+
+.successMessage {
+    @apply text-sm font-medium text-green-600 mt-1;
+}
+
+/* Genre Tags */
+.genreList {
+    composes: fullWidth;
+    @apply flex flex-wrap gap-2;
+}
+
+.genreTag {
+    @apply px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground;
+}
+
+/* Form Actions */
+.formActions {
+    composes: fullWidth;
+    @apply flex justify-between items-center pt-6;
+}
+
+/* Animations */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+    .stagingCard {
+        @apply mx-4 my-4;
+    }
+
+    .stagingContent {
+        @apply p-4;
+    }
+
+    .formGrid {
+        @apply gap-4;
+    }
+
+    .descriptionField {
+        @apply min-h-[200px];
+    }
+}
+
+/* Loading Skeleton */
+.skeleton {
+    @apply animate-pulse bg-muted rounded;
+}
+
+.skeletonText {
+    composes: skeleton;
+    @apply h-4 w-3/4;
+}
+
+.skeletonInput {
+    composes: skeleton;
+    @apply h-10 w-full;
+}

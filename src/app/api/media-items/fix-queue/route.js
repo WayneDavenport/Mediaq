@@ -5,49 +5,72 @@ import supabase from '@/lib/supabaseClient';
 
 export async function POST(request) {
     const session = await getServerSession(authOptions);
-    if (!session) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Log session data to see what we're getting
+    console.log('Session data:', {
+        user: session?.user,
+        email: session?.user?.email,
+    });
+
+    // Check if user is authenticated and has the admin email
+    if (!session?.user?.email) {
+        return NextResponse.json({ error: 'No user email found' }, { status: 401 });
+    }
+
+    // Add your Google email as admin
+    const ADMIN_EMAILS = [
+        'wayne86davenport@gmail.com'  // Your Google email
+    ];
+
+    if (!ADMIN_EMAILS.includes(session.user.email)) {
+        return NextResponse.json({
+            error: 'Unauthorized',
+            userEmail: session.user.email
+        }, { status: 401 });
     }
 
     try {
-        // First, get all items with null queue_number, ordered by created_at
-        const { data: nullQueueItems, error: fetchError } = await supabase
+        // Get all items, ordered by user_id, queue_number, and created_at
+        const { data: allItems, error: fetchError } = await supabase
             .from('user_media_progress')
-            .select('id, created_at')
-            .is('queue_number', null)
+            .select('id, queue_number, created_at, user_id')
+            .order('user_id', { ascending: true })
+            .order('queue_number', { ascending: true, nullsLast: true })
             .order('created_at', { ascending: true });
 
         if (fetchError) throw fetchError;
 
-        // Get the highest existing queue number
-        const { data: maxQueueData, error: maxQueueError } = await supabase
-            .from('user_media_progress')
-            .select('queue_number')
-            .not('queue_number', 'is', null)
-            .order('queue_number', { ascending: false })
-            .limit(1);
+        let updatedCount = 0;
+        let currentNumber = 1;
+        let currentUserId = null;
 
-        if (maxQueueError) throw maxQueueError;
+        // Update each item with sequential numbers, resetting for each user
+        for (const item of allItems) {
+            // Reset counter when switching to a new user
+            if (currentUserId !== item.user_id) {
+                currentNumber = 1;
+                currentUserId = item.user_id;
+            }
 
-        // Start numbering after the highest existing number, or at 1 if no existing numbers
-        let nextNumber = maxQueueData && maxQueueData.length > 0
-            ? maxQueueData[0].queue_number + 1
-            : 1;
+            if (item.queue_number !== currentNumber) {
+                const { error: updateError } = await supabase
+                    .from('user_media_progress')
+                    .update({ queue_number: currentNumber })
+                    .eq('id', item.id);
 
-        // Update each item with a new queue number
-        for (const item of nullQueueItems) {
-            const { error: updateError } = await supabase
-                .from('user_media_progress')
-                .update({ queue_number: nextNumber })
-                .eq('id', item.id);
-
-            if (updateError) throw updateError;
-            nextNumber++;
+                if (updateError) throw updateError;
+                updatedCount++;
+            }
+            currentNumber++;
         }
+
+        const uniqueUsers = new Set(allItems.map(item => item.user_id)).size;
 
         return NextResponse.json({
             success: true,
-            updatedCount: nullQueueItems.length
+            updatedCount,
+            totalItems: allItems.length,
+            usersFixed: uniqueUsers
         });
 
     } catch (error) {

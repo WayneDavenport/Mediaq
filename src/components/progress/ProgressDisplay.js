@@ -40,16 +40,18 @@ export default function ProgressDisplay({ item, onUpdateClick, mediaItems = [] }
             }
 
             return (
-                <div className="space-y-2">
+                <div className="space-y-2 shadow-[0_0_20px_-1px_rgba(255,0,0,0.6)]  rounded-lg p-4">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
                             <h3 className="text-lg font-semibold">Lock Progress</h3>
-                            <Badge variant="secondary">Locked</Badge>
+                            <Badge variant="destructive">Locked</Badge>
                         </div>
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={() => onUpdateClick(item)}
+                            disabled={true}
+                            className="opacity-50 cursor-not-allowed shadow-[0_0_10px_-1px_rgba(255,0,0,0.4)]"
                         >
                             Update Progress
                         </Button>
@@ -91,7 +93,7 @@ export default function ProgressDisplay({ item, onUpdateClick, mediaItems = [] }
     const getRegularProgressDisplay = () => {
         // Regular progress display for unlocked items
         return (
-            <div className="space-y-2">
+            <div className="space-y-2 p-4">
                 <div className="flex justify-between items-center">
                     <h3 className="text-lg font-semibold">Progress</h3>
                     <Button

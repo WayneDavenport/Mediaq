@@ -13,6 +13,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import MediaModal from '@/components/gallery/MediaModal';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 function GalleryContent() {
     const { data: session, status } = useSession();
@@ -26,6 +27,7 @@ function GalleryContent() {
     const [isFriendItem, setIsFriendItem] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedCommentId, setSelectedCommentId] = useState(null);
+    const [recommendations, setRecommendations] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -45,6 +47,11 @@ function GalleryContent() {
                     if (friendsData.queues) {
                         setFriendsQueues(friendsData.queues);
                     }
+
+                    // Fetch recommendations
+                    const recsResponse = await fetch('/api/recommendations');
+                    const recsData = await recsResponse.json();
+                    setRecommendations(recsData.recommendations);
                 } catch (error) {
                     console.error('Error fetching data:', error);
                 } finally {
@@ -162,8 +169,24 @@ function GalleryContent() {
         setSelectedItem(item);
         setIsFriendItem(isFromFriend);
     };
+    const handleApproveRecommendation = async (recommendationId) => {
+        try {
+            const response = await fetch(`/api/recommendations/${recommendationId}/approve`, {
+                method: 'POST'
+            });
 
-    const MediaRow = ({ title, items, isFriendQueue = false }) => (
+            if (!response.ok) throw new Error('Failed to approve recommendation');
+
+            // Refresh data
+            fetchData();
+            toast.success('Added to your collection!');
+        } catch (error) {
+            toast.error('Failed to add item');
+            console.error(error);
+        }
+    };
+
+    const MediaRow = ({ title, items, isFriendQueue = false, isRecommendation = false }) => (
         <div className="py-4">
             <h2 className="text-2xl font-semibold mb-4">{title}</h2>
             <Carousel className="w-full max-w-screen-xl mx-auto">
@@ -262,21 +285,35 @@ function GalleryContent() {
                         items={items}
                     />
                 ))}
+
+                {/* Friend Zone Section */}
+                {friendsQueues.length > 0 && (
+                    <div className="mt-8">
+                        <h2 className="text-3xl font-bold mb-6">Friend Zone</h2>
+                        {friendsQueues.map((friendQueue) => (
+                            <MediaRow
+                                key={friendQueue.friend_id}
+                                title={`${friendQueue.friend_user_name}'s Queue`}
+                                items={friendQueue.items}
+                                isFriendQueue={true}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                {/* Recommendations */}
+                {recommendations.length > 0 && (
+                    <MediaRow
+                        title="Recommended by Friends"
+                        items={recommendations.map(rec => ({
+                            ...rec.media_item_data,
+                            recommendedBy: rec.sender_name,
+                            recommendationId: rec.id
+                        }))}
+                        isRecommendation={true}
+                    />
+                )}
             </div>
-            {/* Friend Zone Section */}
-            {friendsQueues.length > 0 && (
-                <div className="mt-8">
-                    <h2 className="text-3xl font-bold mb-6">Friend Zone</h2>
-                    {friendsQueues.map((friendQueue) => (
-                        <MediaRow
-                            key={friendQueue.friend_id}
-                            title={`${friendQueue.friend_user_name}'s Queue`}
-                            items={friendQueue.items}
-                            isFriendQueue={true}
-                        />
-                    ))}
-                </div>
-            )}
 
             <MediaModal
                 item={selectedItem}

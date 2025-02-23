@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import FriendSearch from '@/components/social/FriendSearch';
 import FriendRequests from '@/components/social/FriendRequests';
 import { useState, useEffect } from 'react';
+import FixQueueButton from '@/components/admin/FixQueueButton';
 
 export default function SocialPage() {
     const { data: session, status } = useSession();
@@ -69,6 +70,7 @@ export default function SocialPage() {
                     </div>
                 )}
             </div>
+
         </div>
     );
 }

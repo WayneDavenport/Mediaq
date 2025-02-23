@@ -45,8 +45,11 @@ export default function UpdateProgressModal({
 
     useEffect(() => {
         if (item.media_type === 'book') {
-            // For books, use actual pages_completed
             setProgress(item.user_media_progress?.pages_completed || 0);
+        } else if (item.media_type === 'tv') {
+            // For TV shows, convert minutes to episodes
+            const episodeCount = Math.floor((item.user_media_progress?.completed_duration || 0) / (item.tv_shows?.average_runtime || 30));
+            setProgress(episodeCount);
         } else {
             // For other media types, show minutes completed
             setProgress(item.user_media_progress?.completed_duration || 0);
@@ -57,10 +60,11 @@ export default function UpdateProgressModal({
         switch (item.media_type) {
             case 'book':
                 return item.books?.page_count || 0;
+            case 'tv':
+                // Max episodes based on total duration divided by average episode length
+                return Math.ceil((item.user_media_progress?.duration || 0) / (item.tv_shows?.average_runtime || 30));
             case 'movie':
                 return item.user_media_progress?.duration || item.movies?.runtime || 0;
-            case 'tv':
-                return item.user_media_progress?.duration || 0;
             case 'game':
                 return item.user_media_progress?.duration || 0;
             default:
@@ -116,11 +120,16 @@ export default function UpdateProgressModal({
             };
 
             if (item.media_type === 'book') {
-                updateData.pages_completed = progress;  // Current page count
-                updateData.completed_duration = Math.round(progress / userReadingSpeed);  // Convert pages to minutes
+                updateData.pages_completed = progress;
+                updateData.completed_duration = Math.round(progress / userReadingSpeed);
                 updateData.completed = markAsComplete || progress >= (item.books?.page_count || 0);
+            } else if (item.media_type === 'tv') {
+                // Convert episodes to minutes
+                const episodeLength = item.tv_shows?.average_runtime || 30;
+                updateData.completed_duration = progress * episodeLength;
+                updateData.completed = markAsComplete || progress >= getMaxValue();
             } else {
-                updateData.completed_duration = progress;  // Raw minutes
+                updateData.completed_duration = progress;
                 updateData.completed = markAsComplete || progress >= (item.user_media_progress?.duration || 0);
             }
 
@@ -139,9 +148,13 @@ export default function UpdateProgressModal({
 
             const result = await response.json();
 
+            toast.success('Progress updated successfully', {
+                description: getDisplayValue()
+            });
+
             if (result.easterEggMessage) {
                 toast.info(result.easterEggMessage, {
-                    duration: 6000,  // Give them time to read it
+                    duration: 6000,
                     style: {
                         background: '#f0f0f0',
                         border: '2px dashed #666',
@@ -211,25 +224,30 @@ export default function UpdateProgressModal({
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <Label>
-                                    {item.media_type === 'book'
-                                        ? 'Pages Read'
-                                        : 'Time Completed (minutes)'}
+                                    {item.media_type === 'book' ? 'Pages Read' :
+                                        item.media_type === 'tv' ? 'Episodes Watched' :
+                                            'Time Completed (minutes)'}
                                 </Label>
                                 <div className="flex items-center space-x-2">
                                     <Slider
                                         value={[progress]}
                                         onValueChange={([value]) => setProgress(value)}
-                                        max={item.media_type === 'book'
-                                            ? item.books?.page_count
-                                            : item.user_media_progress?.duration}
-                                        step={1}
+                                        max={getMaxValue()}
+                                        step={item.media_type === 'tv' ? 1 : 1}
                                     />
                                     <div className="w-20 text-right">
                                         {item.media_type === 'book'
                                             ? `${progress}/${item.books?.page_count} pages`
-                                            : `${progress}/${item.user_media_progress?.duration} min`}
+                                            : item.media_type === 'tv'
+                                                ? `${progress}/${getMaxValue()} eps`
+                                                : `${progress}/${item.user_media_progress?.duration} min`}
                                     </div>
                                 </div>
+                                {item.media_type === 'tv' && (
+                                    <div className="text-sm text-muted-foreground">
+                                        Total time: {progress * (item.tv_shows?.average_runtime || 30)} minutes
+                                    </div>
+                                )}
                                 {item.media_type === 'book' && (
                                     <div className="text-sm text-muted-foreground">
                                         Estimated time: {Math.round(progress / userReadingSpeed)} minutes

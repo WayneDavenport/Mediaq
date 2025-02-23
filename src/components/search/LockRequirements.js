@@ -21,6 +21,16 @@ import {
 } from "@/components/ui/select";
 import { Controller } from "react-hook-form";
 
+const formatGameTime = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return {
+        hours,
+        minutes: remainingMinutes,
+        display: `${hours}h ${remainingMinutes}m`
+    };
+};
+
 const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadingTime, userId }) => {
     console.log('LockRequirements received incompleteItems:', incompleteItems);
 
@@ -35,7 +45,7 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
             // If a specific media item is selected
             form.setValue('key_parent_id', value); // Use the UUID directly
             form.setValue('key_parent_text', null);
-            form.setValue('lock_type', 'specific_item');
+            form.setValue('lock_type', 'specific');
         } else {
             // If a category or media type is selected
             form.setValue('key_parent_id', null);
@@ -205,25 +215,18 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
 
                                 if (!selectedItem) {
                                     switch (keyParent) {
-                                        case 'Book':
-                                            return 'goal_pages';
-                                        case 'Game':
-                                            return 'goal_time';
-                                        case 'Show':
-                                            return 'goal_time';
+                                        case 'Book': return 'goal_pages';
+                                        case 'Game': return 'goal_time';
+                                        case 'Show': return 'goal_time';
                                         case 'Movie':
-                                        default:
-                                            return 'goal_time';
+                                        default: return 'goal_time';
                                     }
                                 }
 
                                 switch (selectedItem.media_type) {
-                                    case 'book':
-                                        return 'goal_pages';
-                                    case 'tv':
-                                        return 'goal_episodes';
-                                    default:
-                                        return 'goal_time';
+                                    case 'book': return 'goal_pages';
+                                    case 'tv': return 'goal_episodes';
+                                    default: return 'goal_time';
                                 }
                             })()}
                             render={({ field }) => {
@@ -234,12 +237,16 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
                                 let max = 240;
                                 let label = 'Time to Complete (minutes)';
                                 let valueText = `${field.value} minutes`;
+                                let step = 1;
 
                                 if (!selectedItem) {
                                     if (keyParent === 'Book') {
                                         max = 1000;
                                         label = 'Pages to Complete';
                                         valueText = `${field.value} pages (${calculateReadingTime(field.value)} minutes)`;
+                                    } else if (keyParent === 'Game') {
+                                        max = 6000; // 100 hours for generic games
+                                        step = 15;  // 15-minute increments
                                     }
                                 } else {
                                     switch (selectedItem.media_type) {
@@ -256,35 +263,28 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
                                             const episodeDuration = tvData?.average_runtime || selectedItem.duration || 30;
                                             valueText = `${field.value} episodes (${field.value * episodeDuration} minutes)`;
                                             break;
+                                        case 'game':
+                                            const gameProgress = selectedItem.user_media_progress || {};
+                                            const gameDuration = gameProgress.duration || selectedItem.games?.average_playtime || 100;
+                                            max = gameDuration;  // Keep max in minutes
+                                            label = 'Time to Complete';
+                                            const gameTime = formatGameTime(field.value);
+                                            valueText = gameTime.display;
+                                            step = 15; // 15-minute increments for games
+                                            break;
                                         case 'movie':
-                                            console.log('Movie progress:', selectedItem.user_media_progress);
-                                            // Add null checks and fallbacks
                                             const movieProgress = selectedItem.user_media_progress || {};
                                             const movieDuration = movieProgress.duration || selectedItem.movies?.runtime || 240;
                                             max = movieDuration;
                                             label = 'Time to Complete (minutes)';
                                             valueText = `${field.value} minutes`;
                                             break;
-                                        case 'game':
-                                            // Add null checks for games too
-                                            const gameProgress = selectedItem.user_media_progress || {};
-                                            const gameDuration = gameProgress.duration || selectedItem.games?.average_playtime || 100;
-                                            max = gameDuration * 60;
-                                            label = 'Time to Complete (hours)';
-                                            const hours = (field.value / 60).toFixed(1);
-                                            valueText = `${hours} hours (${field.value} minutes)`;
-                                            break;
                                         default:
-                                            // Safe fallback for any other types
                                             const defaultProgress = selectedItem.user_media_progress || {};
                                             max = defaultProgress.duration || 240;
-                                            label = 'Time to Complete (minutes)';
                                             valueText = `${field.value} minutes`;
                                     }
                                 }
-
-                                console.log('Calculated max:', max);
-                                console.log('Selected media type:', selectedItem?.media_type);
 
                                 return (
                                     <FormItem>
@@ -295,7 +295,7 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
                                                     value={[field.value]}
                                                     onValueChange={([value]) => field.onChange(value)}
                                                     max={max}
-                                                    step={1}
+                                                    step={step}
                                                 />
                                                 <div className="text-sm text-muted-foreground">
                                                     {valueText}

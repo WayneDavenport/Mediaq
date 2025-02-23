@@ -39,6 +39,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import LockRequirements from './LockRequirements';
 import { toast } from 'sonner';
+import styles from './staging.module.css';
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 const READING_SPEED = 200; // Average reading speed in words per minute
@@ -144,6 +145,7 @@ const Staging = () => {
     const [customCategory, setCustomCategory] = useState('');
     const [allCategories, setAllCategories] = useState(PRESET_CATEGORIES);
     const [nextQueueNumber, setNextQueueNumber] = useState(null);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
     const form = useForm({
         resolver: zodResolver(formSchema),
@@ -181,6 +183,8 @@ const Staging = () => {
                 }
             } catch (error) {
                 console.error('Error fetching categories:', error);
+            } finally {
+                setIsLoadingCategories(false);
             }
         };
 
@@ -324,14 +328,16 @@ const Staging = () => {
     if (!stagingItem) return null;
 
     return (
-        <Card className="w-full">
-            <CardHeader>
-                <CardTitle>Review and Customize</CardTitle>
-                <CardDescription>
+        <Card className={styles.stagingCard}>
+            <CardHeader className={styles.stagingHeader}>
+                <CardTitle className={styles.stagingTitle}>
+                    Review and Customize
+                </CardTitle>
+                <CardDescription className={styles.stagingDescription}>
                     Customize your media item and set any locks or requirements
                 </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className={styles.stagingContent}>
                 <Form {...form}>
                     <form
                         onSubmit={(e) => {
@@ -340,32 +346,35 @@ const Staging = () => {
                             console.log('Form errors:', form.formState.errors);
                             form.handleSubmit(onSubmit)(e);
                         }}
-                        className="space-y-6"
+                        className={styles.formGrid}
                     >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="title"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Title</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                        <FormField
+                            control={form.control}
+                            name="title"
+                            render={({ field }) => (
+                                <FormItem className={styles.formField}>
+                                    <FormLabel className={styles.formLabel}>Title</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage className={styles.errorMessage} />
+                                </FormItem>
+                            )}
+                        />
 
-                            <FormField
-                                control={form.control}
-                                name="category"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Category</FormLabel>
+                        <FormField
+                            control={form.control}
+                            name="category"
+                            render={({ field }) => (
+                                <FormItem className={styles.categoryWrapper}>
+                                    <FormLabel className={styles.formLabel}>Category</FormLabel>
+                                    {isLoadingCategories ? (
+                                        <div className={styles.skeletonInput} />
+                                    ) : (
                                         <Select
                                             onValueChange={field.onChange}
                                             value={field.value}
+                                            className={styles.categorySelect}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select or enter a category" />
@@ -396,44 +405,49 @@ const Staging = () => {
                                                 </div>
                                             </SelectContent>
                                         </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="description"
-                                render={({ field }) => (
-                                    <FormItem className="col-span-2">
-                                        <FormLabel>Description</FormLabel>
-                                        <FormControl>
-                                            <Textarea {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            {stagingItem.genres && stagingItem.genres.length > 0 && (
-                                <div className="col-span-2">
-                                    <FormLabel>Genres</FormLabel>
-                                    <p className="text-sm text-muted-foreground">
-                                        {stagingItem.genres.join(', ')}
-                                    </p>
-                                </div>
+                                    )}
+                                    <FormMessage className={styles.errorMessage} />
+                                </FormItem>
                             )}
+                        />
 
-                            <LockRequirements
-                                form={form}
-                                incompleteItems={incompleteItems}
-                                calculateReadingTime={calculateReadingTime}
-                                allCategories={allCategories}
-                                userId={session?.user?.id}
-                            />
-                        </div>
+                        <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                                <FormItem className={styles.descriptionWrapper}>
+                                    <FormLabel className={styles.formLabel}>Description</FormLabel>
+                                    <FormControl>
+                                        <Textarea
+                                            {...field}
+                                            className={styles.descriptionField}
+                                        />
+                                    </FormControl>
+                                    <FormMessage className={styles.errorMessage} />
+                                </FormItem>
+                            )}
+                        />
 
-                        <div className="flex justify-between pt-4">
+                        {stagingItem.genres && stagingItem.genres.length > 0 && (
+                            <div className={styles.genreList}>
+                                {stagingItem.genres.map((genre) => (
+                                    <span key={genre} className={styles.genreTag}>
+                                        {genre}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+
+                        <LockRequirements
+                            form={form}
+                            incompleteItems={incompleteItems}
+                            calculateReadingTime={calculateReadingTime}
+                            allCategories={allCategories}
+                            userId={session?.user?.id}
+                            className={styles.fullWidth}
+                        />
+
+                        <div className={styles.formActions}>
                             <Button
                                 type="button"
                                 variant="outline"
@@ -444,7 +458,6 @@ const Staging = () => {
                             <Button
                                 type="submit"
                                 disabled={isLoading}
-                                onClick={() => console.log('Submit button clicked')}
                             >
                                 {isLoading ? (
                                     <>

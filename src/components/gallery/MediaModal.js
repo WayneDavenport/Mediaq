@@ -9,13 +9,22 @@ import Comments from './Comments';
 import { useSession } from "next-auth/react";
 import { toast } from 'sonner';
 import CategorySelectDialog from './CategorySelectDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
-const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false }) => {
+const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false, isRecommendation = false }) => {
     const [isPending, startTransition] = useTransition();
     const { data: session } = useSession();
     const [isAdding, setIsAdding] = useState(false);
     const [nextQueueNumber, setNextQueueNumber] = useState(null);
     const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+    const [selectedFriend, setSelectedFriend] = useState(null);
+    const [recommendationMessage, setRecommendationMessage] = useState('');
+    const [showRecommendDialog, setShowRecommendDialog] = useState(false);
+    const [friends, setFriends] = useState([]);
+    const [recommendationStatus, setRecommendationStatus] = useState(item?.status || 'pending');
 
     useEffect(() => {
         if (isFriendItem && isOpen) {
@@ -29,6 +38,17 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false 
             setShowCategoryDialog(false);
         }
     }, [isOpen, isFriendItem]);
+
+    useEffect(() => {
+        const fetchFriends = async () => {
+            const response = await fetch('/api/friends');
+            const data = await response.json();
+            if (data.friends) {
+                setFriends(data.friends);
+            }
+        };
+        fetchFriends();
+    }, []);
 
     const fetchNextQueueNumber = async () => {
         try {
@@ -122,22 +142,30 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false 
                     break;
 
                 case 'game':
+                    console.log('Processing game data in modal:', item);
+
                     formattedData = {
                         ...formattedData,
-                        achievements_count: item.games?.achievements_count,
-                        average_playtime: item.games?.playtime,
+                        media_type: 'game',
+                        // Keep game data flat at root level
+                        achievements_count: parseInt(item.games?.achievements_count),
+                        average_playtime: parseInt(item.games?.average_playtime),
                         esrb_rating: item.games?.esrb_rating,
-                        genres: item.games?.genres,
-                        metacritic: item.games?.metacritic,
+                        genres: typeof item.genres === 'string' ?
+                            item.genres :
+                            JSON.stringify(item.genres || []),
+                        metacritic: parseInt(item.games?.metacritic),
                         platforms: item.games?.platforms,
                         publishers: item.games?.publishers,
-                        rating: item.games?.rating,
-                        rating_count: item.games?.rating_count,
-                        rawg_id: item.games?.id,
+                        rating: parseFloat(item.games?.rating),
+                        rating_count: parseInt(item.games?.rating_count),
+                        rawg_id: parseInt(item.games?.rawg_id),
                         release_date: item.games?.release_date,
                         website: item.games?.website,
-                        duration: (item.games?.playtime || 4) * 60 // Convert hours to minutes
+                        duration: (parseInt(item.games?.average_playtime) || 4) * 60
                     };
+
+                    console.log('Formatted game data:', formattedData);
                     break;
             }
 
@@ -165,6 +193,181 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false 
     const handleAddClick = useCallback(() => {
         setShowCategoryDialog(true);
     }, []);
+
+    const handleRecommend = async (friendId, message) => {
+        try {
+            console.log('Sending recommendation:', { friendId, message, mediaItemData: item }); // Debug log
+            const response = await fetch('/api/recommendations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    friendId,
+                    mediaItemData: item,
+                    message
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to send recommendation');
+            }
+
+            toast.success('Recommendation sent!');
+            setShowRecommendDialog(false);
+        } catch (error) {
+            toast.error(error.message);
+            console.error('Recommendation error:', error);
+        }
+    };
+
+    const handleRejectRecommendation = async (recommendationId) => {
+        try {
+            const response = await fetch(`/api/recommendations/${recommendationId}/reject`, {
+                method: 'POST',
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to reject recommendation');
+            }
+
+            setRecommendationStatus('rejected');
+            toast.success('Recommendation rejected');
+            onClose();
+        } catch (error) {
+            toast.error('Failed to reject recommendation');
+            console.error('Error rejecting recommendation:', error);
+        }
+    };
+
+    const handleApproveRecommendation = async (recommendationId) => {
+        try {
+            const response = await fetch(`/api/recommendations/${recommendationId}/approve`, {
+                method: 'POST',
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to approve recommendation');
+            }
+
+            setRecommendationStatus('accepted');
+            toast.success('Recommendation accepted and added to your queue!', {
+                duration: 3000,
+                position: 'bottom-right',
+            });
+            onClose();
+        } catch (error) {
+            toast.error('Failed to approve recommendation');
+            console.error('Error approving recommendation:', error);
+        }
+    };
+
+    const RecommendDialog = () => {
+        const [localSelectedFriend, setLocalSelectedFriend] = useState('');
+        const [localMessage, setLocalMessage] = useState('');
+
+        const handleSubmit = () => {
+            if (!localSelectedFriend) {
+                toast.error('Please select a friend');
+                return;
+            }
+            handleRecommend(localSelectedFriend, localMessage);
+            setLocalSelectedFriend('');
+            setLocalMessage('');
+        };
+
+        return (
+            <Dialog
+                open={showRecommendDialog}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setShowRecommendDialog(false);
+                        setLocalSelectedFriend('');
+                        setLocalMessage('');
+                    }
+                }}
+            >
+                <DialogContent
+                    className="sm:max-w-[425px]"
+                    aria-describedby="recommend-dialog-description"
+                >
+                    <DialogHeader>
+                        <DialogTitle>Recommend to Friend</DialogTitle>
+                        <p
+                            id="recommend-dialog-description"
+                            className="text-sm text-muted-foreground"
+                        >
+                            Share "{item.title}" with a friend
+                        </p>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="friend-select">Select Friend</Label>
+                            <Select
+                                value={localSelectedFriend}
+                                onValueChange={setLocalSelectedFriend}
+                                aria-required="true"
+                            >
+                                <SelectTrigger
+                                    id="friend-select"
+                                    aria-label="Select a friend to recommend to"
+                                >
+                                    <SelectValue placeholder="Choose a friend" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {friends.map(friend => (
+                                        <SelectItem
+                                            key={friend.friend_id}
+                                            value={friend.friend_id}
+                                        >
+                                            {friend.friend_user_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="recommendation-message">Message (optional)</Label>
+                            <Textarea
+                                id="recommendation-message"
+                                value={localMessage}
+                                onChange={(e) => setLocalMessage(e.target.value)}
+                                placeholder="Add a personal message..."
+                                rows={3}
+                                aria-label="Add a personal message to your recommendation"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            onClick={handleSubmit}
+                            disabled={!localSelectedFriend}
+                            aria-label={!localSelectedFriend ?
+                                "Send recommendation - Select a friend first" :
+                                "Send recommendation"
+                            }
+                        >
+                            Send Recommendation
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        );
+    };
+
+    useEffect(() => {
+        if (isRecommendation && recommendationStatus !== 'pending') {
+            onClose();
+        }
+    }, [recommendationStatus, isRecommendation, onClose]);
+
+    const showToast = (message, type = 'success') => {
+        toast[type](message, {
+            duration: 3000,
+            position: 'bottom-right',
+        });
+    };
 
     if (!item) return null;
 
@@ -243,6 +446,47 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false 
         }
     };
 
+    const renderActionButtons = () => (
+        <div className="absolute right-4 top-4 z-10 flex gap-2">
+            {!isFriendItem && !isRecommendation && (
+                <Button
+                    variant="outline"
+                    onClick={() => setShowRecommendDialog(true)}
+                >
+                    Recommend
+                </Button>
+            )}
+            {isFriendItem && (
+                <Button
+                    variant="default"
+                    onClick={handleAddClick}
+                    disabled={isAdding}
+                >
+                    {isAdding ? 'Adding...' : 'Add to My Queue'}
+                </Button>
+            )}
+            {isRecommendation && recommendationStatus === 'pending' && (
+                <div className="flex gap-2">
+                    <Button
+                        variant="default"
+                        onClick={() => handleApproveRecommendation(item.recommendationId)}
+                    >
+                        Accept
+                    </Button>
+                    <Button
+                        variant="destructive"
+                        onClick={() => handleRejectRecommendation(item.recommendationId)}
+                    >
+                        Reject
+                    </Button>
+                </div>
+            )}
+            <Button variant="ghost" onClick={onClose}>
+                <X className="h-4 w-4" />
+            </Button>
+        </div>
+    );
+
     return (
         <>
             <AnimatePresence mode="wait">
@@ -273,25 +517,7 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false 
                             style={{ maxHeight: '90vh' }}
                             onClick={e => e.stopPropagation()}
                         >
-                            <Button
-                                variant="ghost"
-                                className="absolute right-4 top-4 z-10"
-                                onClick={onClose}
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
-
-                            {/* Add the Add to Queue button if it's a friend's item */}
-                            {isFriendItem && session && (
-                                <Button
-                                    variant="default"
-                                    className="absolute left-4 top-4 z-10"
-                                    onClick={handleAddClick}
-                                    disabled={isAdding}
-                                >
-                                    {isAdding ? 'Adding...' : 'Add to My Queue'}
-                                </Button>
-                            )}
+                            {renderActionButtons()}
 
                             <div className="relative h-[200px] sm:h-[250px] flex-shrink-0">
                                 <div
@@ -394,11 +620,9 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false 
             <CategorySelectDialog
                 isOpen={showCategoryDialog}
                 onClose={() => setShowCategoryDialog(false)}
-                onConfirm={(category) => {
-                    setShowCategoryDialog(false);
-                    handleAddToQueue(category);
-                }}
+                onConfirm={handleAddToQueue}
             />
+            <RecommendDialog />
         </>
     );
 };
