@@ -368,7 +368,7 @@ export default function Dashboard() {
                                                     layoutId={`image-${item.id}-${id}`}
                                                     className={styles.posterWrapper}
                                                 >
-                                                    {/* Queue number badge - visible on all screen sizes */}
+                                                    {/* Queue number and category badges - visible on all screen sizes */}
                                                     {sortOption === "queue" && (
                                                         <motion.div
                                                             className={styles.categoryLabel}
@@ -382,10 +382,9 @@ export default function Dashboard() {
                                                         </motion.div>
                                                     )}
 
-                                                    {/* Category, title, and media-type badges - desktop only */}
                                                     {sortOption === "category" && (
                                                         <motion.div
-                                                            className="absolute top-1 right-1 bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded text-xs z-10 hidden sm:block"
+                                                            className={styles.categoryLabel}
                                                             initial={{ opacity: 0 }}
                                                             animate={{ opacity: 1 }}
                                                             exit={{ opacity: 0 }}
@@ -393,6 +392,8 @@ export default function Dashboard() {
                                                             {item.category}
                                                         </motion.div>
                                                     )}
+
+                                                    {/* Title and media-type badges - desktop only */}
                                                     {sortOption === "title" && (
                                                         <motion.div
                                                             className="absolute top-1 right-1 bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded text-xs z-10 hidden sm:block"
