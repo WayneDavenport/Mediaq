@@ -14,6 +14,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import MediaModal from '@/components/gallery/MediaModal';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { LoadingScreen } from "@/components/loading/loading-screen";
+import { ToasterProvider } from "@/components/providers/toaster-provider"
 
 function GalleryContent() {
     const { data: session, status } = useSession();
@@ -99,8 +101,8 @@ function GalleryContent() {
         return null;
     }
 
-    if (loading) {
-        return <div>Loading...</div>;
+    if (status === "loading" || loading) {
+        return <LoadingScreen />;
     }
 
     // Add this check for empty state
@@ -109,6 +111,7 @@ function GalleryContent() {
             <div className="container max-w-2xl mx-auto p-4 text-center space-y-4">
                 <h1 className="text-3xl font-bold">Media Gallery</h1>
                 <p className="text-muted-foreground">
+                    Welcome to the Media Gallery! Discover, organize, and share your love of Movies, Video Games, TV Shows, and Books.  Effortlessly manage your personal collection, explore what your friends are enjoying, and connect with like-minded individuals in groups.  Recommend items to friends, add their favorites to your own collection, and engage in discussions about all things media.  The comment feature facilitates interaction and allows you to share your opinions.
                     Your gallery is empty. Discover and add media items to start building your collection.
                 </p>
                 <Link
@@ -189,7 +192,18 @@ function GalleryContent() {
     const MediaRow = ({ title, items, isFriendQueue = false, isRecommendation = false }) => (
         <div className="py-4">
             <h2 className="text-2xl font-semibold mb-4">{title}</h2>
-            <Carousel className="w-full max-w-screen-xl mx-auto">
+            <Carousel
+                className="w-full max-w-screen-xl mx-auto"
+                opts={{
+                    align: 'start',
+                    dragFree: false,
+                    containScroll: 'trimSnaps',
+                    inViewThreshold: 0.6,
+                    skipSnaps: true,
+                    speed: 12,
+                    loop: false
+                }}
+            >
                 <CarouselContent className="-ml-4">
                     {items.map((item) => {
                         // Get the appropriate image URL based on media type
@@ -248,6 +262,7 @@ function GalleryContent() {
 
     return (
         <>
+            <ToasterProvider />
             <div className="container mx-auto px-4 py-8">
                 <h1 className="text-3xl font-bold mb-8">My Media Gallery</h1>
 
