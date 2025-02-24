@@ -53,6 +53,10 @@ import {
 } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { LoadingScreen } from "@/components/loading/loading-screen";
+import { COMMON_GENRES, MEDIA_SPECIFIC_GENRES, GAME_GENRE_DURATIONS } from '../lib/genres';
+import { MultipleSelector } from '@/components/ui/multiple-selector';
+import React from 'react';
+import { validateCategory, PROTECTED_CATEGORIES } from "@/lib/utils";
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 const READING_SPEED = 200; // Average reading speed in words per minute
@@ -284,9 +288,20 @@ const Staging = () => {
     }, [stagingItem, form]);
 
     const handleCustomCategoryAdd = (newCategory) => {
-        if (newCategory && !allCategories.includes(newCategory)) {
-            setAllCategories(prevCategories => [...prevCategories, newCategory]);
-            form.setValue('category', newCategory);
+        const trimmedCategory = newCategory.trim();
+        if (!trimmedCategory) return;
+
+        if (!validateCategory(trimmedCategory)) {
+            toast.error(
+                "Cannot use media type as category", {
+                description: "Warning: Naming categories after media types causes unintended paradox. Not recommended unless facing Gozer the Gozerian (Maybe try a variation)"
+            });
+            return;
+        }
+
+        if (!allCategories.includes(trimmedCategory)) {
+            setAllCategories(prev => [...prev, trimmedCategory]);
+            form.setValue('category', trimmedCategory);
             setCustomCategory('');
         }
     };
@@ -502,9 +517,9 @@ const Staging = () => {
                                 <Input
                                     type="number"
                                     placeholder={`Custom ${mediaType === 'tv' ? 'minutes per episode' :
-                                            mediaType === 'book' ? 'pages' :
-                                                mediaType === 'game' ? 'hours' :
-                                                    'minutes'
+                                        mediaType === 'book' ? 'pages' :
+                                            mediaType === 'game' ? 'hours' :
+                                                'minutes'
                                         }`}
                                     value={customDuration}
                                     onChange={(e) => {
@@ -575,6 +590,42 @@ const Staging = () => {
         );
     };
 
+
+    const GenreSelector = () => {
+        const mediaType = form.getValues('media_type');
+
+        // Combine common genres with media-specific genres
+        const allGenres = React.useMemo(() => [
+            ...COMMON_GENRES,
+            ...(MEDIA_SPECIFIC_GENRES[mediaType] || [])
+        ], [mediaType]);
+        console.log('Available genres:', allGenres);
+
+        return (
+            <FormField
+                control={form.control}
+                name="genres"
+                render={({ field }) => (
+                    <FormItem className="w-full">
+                        <FormLabel>Genres</FormLabel>
+                        <MultipleSelector
+                            options={allGenres}  // Make sure we're passing the options
+                            placeholder="Select genres..."
+                            selected={field.value ? field.value.map(genre => ({
+                                label: genre,
+                                value: genre.toLowerCase()
+                            })) : []}
+                            onChange={(selected) => {
+                                field.onChange(selected.map(s => s.value));
+                            }}
+                        />
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+        );
+    };
+
     if (isInitializing || !stagingItem) {
         return (
             <Card className={styles.stagingCard}>
@@ -622,18 +673,15 @@ const Staging = () => {
                             control={form.control}
                             name="category"
                             render={({ field }) => (
-                                <FormItem className={styles.categoryWrapper}>
-                                    <FormLabel className={styles.formLabel}>Category</FormLabel>
-                                    {isLoadingCategories ? (
-                                        <div className={styles.skeletonInput} />
-                                    ) : (
+                                <FormItem className="space-y-2">
+                                    <FormLabel>Category</FormLabel>
+                                    <div className="flex flex-col gap-2">
                                         <Select
-                                            onValueChange={field.onChange}
                                             value={field.value}
-                                            className={styles.categorySelect}
+                                            onValueChange={field.onChange}
                                         >
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select or enter a category" />
+                                                <SelectValue placeholder="Select a category" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectGroup>
@@ -643,26 +691,33 @@ const Staging = () => {
                                                         </SelectItem>
                                                     ))}
                                                 </SelectGroup>
-
-                                                <SelectSeparator />
-
-                                                <div className="p-2">
-                                                    <Input
-                                                        placeholder="Enter custom category..."
-                                                        value={customCategory}
-                                                        onChange={(e) => setCustomCategory(e.target.value)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                e.preventDefault();
-                                                                handleCustomCategoryAdd(customCategory.trim());
-                                                            }
-                                                        }}
-                                                    />
-                                                </div>
                                             </SelectContent>
                                         </Select>
-                                    )}
-                                    <FormMessage className={styles.errorMessage} />
+
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="Add new category..."
+                                                value={customCategory}
+                                                onChange={(e) => setCustomCategory(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleCustomCategoryAdd(customCategory);
+                                                    }
+                                                }}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                onClick={() => handleCustomCategoryAdd(customCategory)}
+                                                disabled={!customCategory.trim()}
+                                                className="shrink-0"
+                                            >
+                                                Add
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
@@ -684,15 +739,7 @@ const Staging = () => {
                             )}
                         />
 
-                        {stagingItem.genres && stagingItem.genres.length > 0 && (
-                            <div className={styles.genreList}>
-                                {stagingItem.genres.map((genre) => (
-                                    <span key={genre} className={styles.genreTag}>
-                                        {genre}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
+                        <GenreSelector />
 
                         <LockRequirements
                             form={form}
