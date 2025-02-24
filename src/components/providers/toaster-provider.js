@@ -8,7 +8,7 @@ export function ToasterProvider() {
             richColors
             closeButton={false}
             position="top-center"
-            swipeDirection="up"
+            swipeDirection="right"
             dismissible
         />
     )
