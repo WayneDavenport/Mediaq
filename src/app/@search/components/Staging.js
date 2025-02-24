@@ -40,6 +40,19 @@ import * as z from "zod";
 import LockRequirements from './LockRequirements';
 import { toast } from 'sonner';
 import styles from './staging.module.css';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import {
+    RadioGroup,
+    RadioGroupItem,
+} from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { LoadingScreen } from "@/components/loading/loading-screen";
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 const READING_SPEED = 200; // Average reading speed in words per minute
@@ -146,6 +159,10 @@ const Staging = () => {
     const [allCategories, setAllCategories] = useState(PRESET_CATEGORIES);
     const [nextQueueNumber, setNextQueueNumber] = useState(null);
     const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+    const [showDurationDialog, setShowDurationDialog] = useState(false);
+    const [customDuration, setCustomDuration] = useState('');
+    const [dialogMessage, setDialogMessage] = useState('');
+    const [isInitializing, setIsInitializing] = useState(true);
 
     const form = useForm({
         resolver: zodResolver(formSchema),
@@ -192,15 +209,37 @@ const Staging = () => {
             try {
                 const response = await fetch('/api/media-items/incomplete');
                 const data = await response.json();
-                console.log('Fetched incomplete items:', data.items);
                 setIncompleteItems(data.items);
             } catch (error) {
                 console.error('Failed to fetch incomplete items:', error);
             }
         };
 
-        fetchCategories();
-        fetchIncompleteItems();
+        const fetchNextQueueNumber = async () => {
+            try {
+                const response = await fetch('/api/media-items/queue-number');
+                const data = await response.json();
+                setNextQueueNumber(data.nextQueueNumber);
+            } catch (error) {
+                console.error('Error fetching next queue number:', error);
+            }
+        };
+
+        const initialize = async () => {
+            try {
+                await Promise.all([
+                    fetchCategories(),
+                    fetchIncompleteItems(),
+                    fetchNextQueueNumber()
+                ]);
+            } catch (error) {
+                console.error('Error initializing:', error);
+            } finally {
+                setIsInitializing(false);
+            }
+        };
+
+        initialize();
     }, []);
 
     useEffect(() => {
@@ -233,24 +272,16 @@ const Staging = () => {
                 // Media-specific fields (spread all fields from stagingItem)
                 ...stagingItem
             };
+
+            const missingData = checkRequiredData(formData);
+            if (missingData.required) {
+                setShowDurationDialog(true);
+            }
+
             console.log('Setting form data:', formData);
             form.reset(formData);
         }
     }, [stagingItem, form]);
-
-    useEffect(() => {
-        const fetchNextQueueNumber = async () => {
-            try {
-                const response = await fetch('/api/media-items/queue-number');
-                const data = await response.json();
-                setNextQueueNumber(data.nextQueueNumber);
-            } catch (error) {
-                console.error('Error fetching next queue number:', error);
-            }
-        };
-
-        fetchNextQueueNumber();
-    }, []);
 
     const handleCustomCategoryAdd = (newCategory) => {
         if (newCategory && !allCategories.includes(newCategory)) {
@@ -325,7 +356,232 @@ const Staging = () => {
         }
     };
 
-    if (!stagingItem) return null;
+    const checkRequiredData = (data) => {
+        switch (data.media_type) {
+            case 'tv':
+                return {
+                    required: !data.average_runtime || !data.total_episodes,
+                    type: 'episode_length',
+                    defaults: [20, 30, 45, 60],
+                    current: data.average_runtime || 30
+                };
+            case 'book':
+                return {
+                    required: !data.page_count,
+                    type: 'page_count',
+                    defaults: [200],
+                    current: data.page_count || 200
+                };
+            case 'movie':
+                return {
+                    required: !data.duration,
+                    type: 'duration',
+                    defaults: [120],
+                    current: data.duration || 120
+                };
+            case 'game':
+                return {
+                    required: !data.duration,
+                    type: 'duration',
+                    defaults: [2400], // 40 hours in minutes
+                    current: data.duration || 2400
+                };
+            default:
+                return { required: false };
+        }
+    };
+
+    const DurationDialog = () => {
+        const mediaType = form.getValues('media_type');
+        const missingData = checkRequiredData(form.getValues());
+        const title = form.getValues('title');
+        const [selectedValue, setSelectedValue] = useState(
+            (missingData?.current || missingData?.defaults[0])?.toString()
+        );
+
+        const handleDurationSelect = () => {
+            if (!selectedValue) return;
+
+            switch (mediaType) {
+                case 'tv':
+                    form.setValue('average_runtime', parseInt(selectedValue));
+                    form.setValue('duration', parseInt(selectedValue) * form.getValues('total_episodes'));
+                    toast.success('Episode length set', {
+                        description: `Set to ${selectedValue} minutes per episode`
+                    });
+                    break;
+                case 'book':
+                    form.setValue('page_count', parseInt(selectedValue));
+                    form.setValue('duration', calculateReadingTime(parseInt(selectedValue)));
+                    toast.success('Page count set', {
+                        description: `Set to ${selectedValue} pages`
+                    });
+                    break;
+                case 'movie':
+                    form.setValue('duration', parseInt(selectedValue));
+                    toast.success('Duration set', {
+                        description: `Set to ${selectedValue} minutes`
+                    });
+                    break;
+                case 'game':
+                    form.setValue('duration', parseInt(selectedValue));
+                    toast.success('Playtime set', {
+                        description: `Set to ${selectedValue / 60} hours`
+                    });
+                    break;
+            }
+            setShowDurationDialog(false);
+            setDialogMessage('');
+        };
+
+        useEffect(() => {
+            if (mediaType && missingData?.required) {
+                switch (mediaType) {
+                    case 'tv':
+                        setDialogMessage(`No episode length found for "${title}". Please specify the average episode duration.`);
+                        break;
+                    case 'book':
+                        setDialogMessage(`No page count found for "${title}". Please specify the number of pages.`);
+                        break;
+                    case 'movie':
+                        setDialogMessage(`No duration found for "${title}". Please specify the movie length.`);
+                        break;
+                    case 'game':
+                        setDialogMessage(`No playtime found for "${title}". Please specify the estimated completion time.`);
+                        break;
+                }
+            }
+        }, [mediaType, title]);
+
+        if (!missingData?.required || !mediaType) {
+            return null;
+        }
+
+        return (
+            <Dialog
+                open={showDurationDialog}
+                onOpenChange={(open) => {
+                    if (!open && form.getValues('duration')) {
+                        setShowDurationDialog(false);
+                        setDialogMessage('');
+                    }
+                }}
+            >
+                <DialogContent onPointerDownOutside={(e) => e.preventDefault()}>
+                    <DialogHeader>
+                        <DialogTitle>
+                            {mediaType === 'tv' ? 'Episode Length' :
+                                mediaType === 'book' ? 'Page Count' :
+                                    'Duration'}
+                        </DialogTitle>
+                        {dialogMessage && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                                {dialogMessage}
+                            </p>
+                        )}
+                    </DialogHeader>
+
+                    <div className="py-4">
+                        <RadioGroup
+                            value={selectedValue}
+                            onValueChange={setSelectedValue}
+                        >
+                            {missingData.defaults.map(value => (
+                                <div key={value} className="flex items-center space-x-2">
+                                    <RadioGroupItem value={value.toString()} id={`duration-${value}`} />
+                                    <Label htmlFor={`duration-${value}`}>
+                                        {mediaType === 'tv' ? `${value} minutes per episode` :
+                                            mediaType === 'book' ? `${value} pages` :
+                                                mediaType === 'game' ? `${value / 60} hours to complete` :
+                                                    `${value} minutes`}
+                                    </Label>
+                                </div>
+                            ))}
+                            <div className="flex items-center space-x-2 mt-2">
+                                <RadioGroupItem value="custom" id="duration-custom" />
+                                <Input
+                                    type="number"
+                                    placeholder={`Custom ${mediaType === 'tv' ? 'minutes per episode' :
+                                            mediaType === 'book' ? 'pages' :
+                                                mediaType === 'game' ? 'hours' :
+                                                    'minutes'
+                                        }`}
+                                    value={customDuration}
+                                    onChange={(e) => {
+                                        setCustomDuration(e.target.value);
+                                        setSelectedValue(e.target.value);
+                                    }}
+                                />
+                            </div>
+                        </RadioGroup>
+                    </div>
+
+                    <DialogFooter>
+                        <Button onClick={handleDurationSelect}>
+                            Confirm
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        );
+    };
+
+    const renderDurationInfo = () => {
+        const mediaType = form.getValues('media_type');
+        const duration = form.getValues('duration');
+        const pageCount = form.getValues('page_count');
+        const episodeLength = form.getValues('average_runtime');
+        const totalEpisodes = form.getValues('total_episodes');
+
+        if (!mediaType) return null;
+
+        return (
+            <div className="space-y-2 mt-4 p-4 bg-muted/50 rounded-lg">
+                <h3 className="font-semibold">Duration Details</h3>
+                {mediaType === 'tv' && (
+                    <>
+                        <p className="text-sm text-muted-foreground">
+                            Episode Length: {episodeLength} minutes
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            Total Episodes: {totalEpisodes}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            Total Time: {duration} minutes ({Math.round(duration / 60)} hours)
+                        </p>
+                    </>
+                )}
+                {mediaType === 'book' && (
+                    <>
+                        <p className="text-sm text-muted-foreground">
+                            Pages: {pageCount}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            Estimated Reading Time: {duration} minutes ({Math.round(duration / 60)} hours)
+                        </p>
+                    </>
+                )}
+                {mediaType === 'movie' && (
+                    <p className="text-sm text-muted-foreground">
+                        Runtime: {duration} minutes ({Math.round(duration / 60)} hours)
+                    </p>
+                )}
+                {mediaType === 'game' && (
+                    <p className="text-sm text-muted-foreground">
+                        Estimated Completion Time: {duration} minutes ({Math.round(duration / 60)} hours)
+                    </p>
+                )}
+            </div>
+        );
+    };
+
+    if (isInitializing || !stagingItem) {
+        return (
+            <Card className={styles.stagingCard}>
+                <LoadingScreen />
+            </Card>
+        );
+    }
 
     return (
         <Card className={styles.stagingCard}>
@@ -447,6 +703,8 @@ const Staging = () => {
                             className={styles.fullWidth}
                         />
 
+                        {renderDurationInfo()}
+
                         <div className={styles.formActions}>
                             <Button
                                 type="button"
@@ -471,6 +729,7 @@ const Staging = () => {
                         </div>
                     </form>
                 </Form>
+                <DurationDialog />
             </CardContent>
         </Card>
     );
