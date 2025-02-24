@@ -50,11 +50,12 @@ export default function RootLayout({ children }) {
             {children}
           </AuthProvider>
         </ThemeProvider>
-        {/* Desktop Toaster */}
+        {/* 
+        
         <div className="hidden sm:block">
           <Toaster />
         </div>
-        {/* Mobile Toaster */}
+        
         <div className="block sm:hidden">
           <Toaster
             position="top-center"
@@ -67,8 +68,10 @@ export default function RootLayout({ children }) {
             }}
 
           />
-        </div>
+            
+      </div>
+      */}
       </body>
-    </html>
+    </html >
   );
 }
