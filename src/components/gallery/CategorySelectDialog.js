@@ -15,10 +15,12 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-    SelectSeparator,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { validateCategory, PROTECTED_CATEGORIES } from "@/lib/utils";
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 
@@ -26,6 +28,7 @@ export default function CategorySelectDialog({ isOpen, onClose, onConfirm }) {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [customCategory, setCustomCategory] = useState('');
     const [allCategories, setAllCategories] = useState(PRESET_CATEGORIES);
+    const [isCustom, setIsCustom] = useState(false);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -44,17 +47,33 @@ export default function CategorySelectDialog({ isOpen, onClose, onConfirm }) {
         fetchCategories();
     }, []);
 
-    const handleCustomCategoryAdd = (newCategory) => {
-        if (newCategory && !allCategories.includes(newCategory)) {
-            setAllCategories(prevCategories => [...prevCategories, newCategory]);
-            setSelectedCategory(newCategory);
+    const handleCustomCategoryAdd = () => {
+        const trimmedCategory = customCategory.trim();
+        if (!trimmedCategory) return;
+
+        if (!validateCategory(trimmedCategory)) {
+            toast.error(
+                "Cannot use media type as category", {
+                description: "Warning: Naming categories after media types causes unintended paradox. Not recommended unless facing Gozer the Gozerian (Maybe try a variation)"
+            });
+            return;
+        }
+
+        if (!allCategories.includes(trimmedCategory)) {
+            setAllCategories(prev => [...prev, trimmedCategory]);
+            setSelectedCategory(trimmedCategory);
             setCustomCategory('');
+            setIsCustom(false);
         }
     };
 
     const handleConfirm = () => {
-        if (!selectedCategory) return;
-        onConfirm(selectedCategory);
+        if (isCustom && customCategory.trim()) {
+            handleCustomCategoryAdd();
+            onConfirm(customCategory.trim());
+        } else if (selectedCategory) {
+            onConfirm(selectedCategory);
+        }
     };
 
     return (
@@ -63,40 +82,58 @@ export default function CategorySelectDialog({ isOpen, onClose, onConfirm }) {
                 <DialogHeader>
                     <DialogTitle>Select a Category</DialogTitle>
                 </DialogHeader>
-                <div className="py-6">
-                    <Select
-                        value={selectedCategory}
-                        onValueChange={setSelectedCategory}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select or enter a category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                {allCategories.map((category) => (
-                                    <SelectItem key={category} value={category}>
-                                        {category}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
+                <div className="py-6 space-y-4">
+                    <div className="space-y-2">
+                        <Label>Choose existing category</Label>
+                        <Select
+                            value={selectedCategory}
+                            onValueChange={(value) => {
+                                setSelectedCategory(value);
+                                setIsCustom(false);
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {allCategories.map((category) => (
+                                        <SelectItem key={category} value={category}>
+                                            {category}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                            <SelectSeparator />
-
-                            <div className="p-2">
-                                <Input
-                                    placeholder="Enter custom category..."
-                                    value={customCategory}
-                                    onChange={(e) => setCustomCategory(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            handleCustomCategoryAdd(customCategory.trim());
-                                        }
-                                    }}
-                                />
-                            </div>
-                        </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                        <Label>Or create a new category</Label>
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="Enter custom category..."
+                                value={customCategory}
+                                onChange={(e) => {
+                                    setCustomCategory(e.target.value);
+                                    setIsCustom(true);
+                                    setSelectedCategory('');
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleConfirm();
+                                    }
+                                }}
+                            />
+                            <Button
+                                variant="secondary"
+                                onClick={handleCustomCategoryAdd}
+                                disabled={!customCategory.trim()}
+                            >
+                                Add
+                            </Button>
+                        </div>
+                    </div>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose}>
@@ -104,7 +141,7 @@ export default function CategorySelectDialog({ isOpen, onClose, onConfirm }) {
                     </Button>
                     <Button
                         onClick={handleConfirm}
-                        disabled={!selectedCategory}
+                        disabled={!selectedCategory && !customCategory.trim()}
                     >
                         Add to Queue
                     </Button>
