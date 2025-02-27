@@ -72,9 +72,26 @@ function GalleryContent() {
         if (mediaId) {
             // First check user's media items
             let item = mediaItems.find(item => item.id === mediaId);
+            let isPendingRecommendation = false;
 
-            // If not found in user's items, check friend queues
+            // If not found in user's items, check recommendations
             if (!item) {
+                const recommendation = recommendations.find(rec => rec.media_item_data.id === mediaId);
+                if (recommendation) {
+                    // Don't automatically open modal for pending recommendations
+                    if (recommendation.status === 'pending') {
+                        isPendingRecommendation = true;
+                    } else {
+                        item = recommendation.media_item_data;
+                        item.recommendationId = recommendation.id;
+                        item.status = recommendation.status;
+                        setIsFriendItem(false);
+                    }
+                }
+            }
+
+            // If not found in recommendations, check friend queues
+            if (!item && !isPendingRecommendation) {
                 for (const friendQueue of friendsQueues) {
                     item = friendQueue.items.find(i => i.id === mediaId);
                     if (item) {
@@ -84,7 +101,7 @@ function GalleryContent() {
                 }
             }
 
-            if (item) {
+            if (item && !isPendingRecommendation) {
                 setSelectedItem(item);
                 setModalOpen(true);
 
@@ -94,7 +111,7 @@ function GalleryContent() {
                 }
             }
         }
-    }, [searchParams, mediaItems, friendsQueues]);
+    }, [searchParams, mediaItems, friendsQueues, recommendations]);
 
     if (status === 'unauthenticated') {
         router.push('/');
@@ -164,7 +181,7 @@ function GalleryContent() {
         return acc;
     }, {});
 
-    const handleCardClick = (item, event, isFromFriend = false) => {
+    const handleCardClick = (item, event, isFromFriend = false, isRecommendation = false) => {
         const rect = event.currentTarget.getBoundingClientRect();
         const centerX = window.innerWidth / 2 - (rect.left + rect.width / 2);
         const centerY = window.innerHeight / 2 - (rect.top + rect.height / 2);
@@ -172,6 +189,7 @@ function GalleryContent() {
         setSelectedItem(item);
         setIsFriendItem(isFromFriend);
     };
+
     const handleApproveRecommendation = async (recommendationId) => {
         try {
             const response = await fetch(`/api/recommendations/${recommendationId}/approve`, {
@@ -180,11 +198,41 @@ function GalleryContent() {
 
             if (!response.ok) throw new Error('Failed to approve recommendation');
 
-            // Refresh data
-            fetchData();
+            // Update recommendations list after approval
+            const recsResponse = await fetch('/api/recommendations');
+            const recsData = await recsResponse.json();
+            setRecommendations(recsData.recommendations);
+
+            // Refresh media items
+            const mediaResponse = await fetch('/api/media-items');
+            const mediaData = await mediaResponse.json();
+            if (mediaData.items) {
+                setMediaItems(mediaData.items);
+            }
+
             toast.success('Added to your collection!');
         } catch (error) {
             toast.error('Failed to add item');
+            console.error(error);
+        }
+    };
+
+    const handleRejectRecommendation = async (recommendationId) => {
+        try {
+            const response = await fetch(`/api/recommendations/${recommendationId}/reject`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) throw new Error('Failed to reject recommendation');
+
+            // Update recommendations list after rejection
+            const recsResponse = await fetch('/api/recommendations');
+            const recsData = await recsResponse.json();
+            setRecommendations(recsData.recommendations);
+
+            toast.success('Recommendation rejected');
+        } catch (error) {
+            toast.error('Failed to reject recommendation');
             console.error(error);
         }
     };
@@ -219,11 +267,20 @@ function GalleryContent() {
                                 null;
                         }
 
+                        // For recommendations, we should show Accept/Reject buttons directly in the card
+                        // if the status is pending
+                        const isPendingRecommendation = isRecommendation &&
+                            (item.status === 'pending' || !item.status);
+
                         return (
                             <CarouselItem key={item.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
                                 <Card
-                                    className="cursor-pointer"
-                                    onClick={(e) => handleCardClick(item, e, isFriendQueue)}
+                                    className={isPendingRecommendation ? "cursor-default" : "cursor-pointer"}
+                                    onClick={(e) => {
+                                        if (!isPendingRecommendation) {
+                                            handleCardClick(item, e, isFriendQueue, isRecommendation);
+                                        }
+                                    }}
                                 >
                                     <CardContent
                                         className="flex aspect-[2/3] items-center justify-center p-6 relative"
@@ -235,8 +292,8 @@ function GalleryContent() {
                                             backgroundPosition: 'center'
                                         }}
                                     >
-                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                            <div className="text-white text-center">
+                                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
+                                            <div className="text-white text-center mb-4">
                                                 <h3 className="font-semibold">{item.title}</h3>
                                                 <p className="text-sm text-gray-300">
                                                     {item.media_type?.charAt(0).toUpperCase() + item.media_type?.slice(1)}
@@ -246,7 +303,36 @@ function GalleryContent() {
                                                         Queue: {item.user_media_progress.queue_number}
                                                     </p>
                                                 )}
+                                                {item.recommendedBy && (
+                                                    <p className="text-sm text-gray-300 mt-1">
+                                                        From: {item.recommendedBy}
+                                                    </p>
+                                                )}
                                             </div>
+
+                                            {/* Inline action buttons for pending recommendations */}
+                                            {isPendingRecommendation && (
+                                                <div className="flex gap-2 mt-2">
+                                                    <button
+                                                        className="bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-md text-sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleApproveRecommendation(item.recommendationId);
+                                                        }}
+                                                    >
+                                                        Accept
+                                                    </button>
+                                                    <button
+                                                        className="bg-destructive hover:bg-destructive/90 text-white px-3 py-1 rounded-md text-sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRejectRecommendation(item.recommendationId);
+                                                        }}
+                                                    >
+                                                        No Thanks
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -322,8 +408,9 @@ function GalleryContent() {
                         title="Recommended by Friends"
                         items={recommendations.map(rec => ({
                             ...rec.media_item_data,
-                            recommendedBy: rec.sender_name,
-                            recommendationId: rec.id
+                            recommendedBy: rec.sender.username,
+                            recommendationId: rec.id,
+                            status: rec.status  // Include the status
                         }))}
                         isRecommendation={true}
                     />
