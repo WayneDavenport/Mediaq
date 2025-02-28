@@ -1,0 +1,9 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow crawling of authentication pages
+Disallow: /auth-pages/
+
+# Sitemap location
+Sitemap: https://www.mediaq.io/sitemap.xml 
