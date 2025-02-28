@@ -27,6 +27,7 @@ function SignInContent() {
         password: ''
     });
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         // Check for verification success message
@@ -71,47 +72,26 @@ function SignInContent() {
                 password: formData.password
             });
 
-            if (result.error) {
-                // Handle specific error messages
-                switch (result.error) {
-                    case 'Please verify your email before signing in':
-                        toast.error("Please check your email for verification link", {
-                            description: "You need to verify your email before signing in",
-                            action: {
-                                label: "Resend",
-                                onClick: () => handleResendVerification(),
-                            },
-                        });
-                        break;
-                    case 'No user found with this email':
-                        toast.error("Account not found", {
-                            description: "No account exists with this email",
-                            action: {
-                                label: "Sign Up",
-                                onClick: () => router.push('/auth-pages/signup'),
-                            },
-                        });
-                        break;
-                    case 'Invalid password':
-                        toast.error("Invalid password");
-                        break;
-                    default:
-                        toast.error("Failed to sign in", {
-                            description: result.error
-                        });
+            if (result?.error) {
+                // Check for verification error
+                if (result.error.includes('Please verify your email')) {
+                    // Redirect to verification pending page
+                    router.push(`/auth-pages/verification-pending?email=${encodeURIComponent(formData.email)}`);
+                    return;
                 }
-                return;
-            }
 
-            // Successful login
-            toast.success("Signed in successfully");
-            const callbackUrl = searchParams.get('callbackUrl') || '/user-pages/dashboard';
-            router.push(callbackUrl);
+                // Handle other errors
+                setError(result.error === 'CredentialsSignin'
+                    ? 'Invalid email or password'
+                    : result.error);
+                setLoading(false);
+            } else {
+                // Successful signin - redirect handled by NextAuth
+                router.push('/user-pages/dashboard');
+            }
         } catch (error) {
-            toast.error("An error occurred", {
-                description: "Please try again later"
-            });
-        } finally {
+            console.error('Sign in error:', error);
+            setError('An unexpected error occurred');
             setLoading(false);
         }
     };

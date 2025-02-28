@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
-import { sendVerificationEmail } from '@/lib/nodemailer';
+import { sendVerificationEmail } from '@/lib/sendGrid';
 import supabase from '@/lib/supabaseClient';
 
 export async function POST(request) {
@@ -40,7 +40,27 @@ export async function POST(request) {
         if (updateError) throw updateError;
 
         // Send new verification email
-        await sendVerificationEmail(email, verificationToken);
+        try {
+            await sendVerificationEmail(email, verificationToken);
+        } catch (emailError) {
+            console.error('Error sending verification email:', emailError);
+
+            // Detailed logging for SendGrid errors
+            if (emailError.response) {
+                console.error('SendGrid response error:', {
+                    statusCode: emailError.code,
+                    body: emailError.response.body
+                });
+            }
+
+            // Delete the user if email sending fails
+            await supabase
+                .from('users')
+                .delete()
+                .eq('email', email);
+
+            throw new Error('Failed to send verification email. Please try again later.');
+        }
 
         return NextResponse.json({
             message: 'Verification email sent successfully'

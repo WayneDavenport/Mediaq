@@ -1,49 +1,61 @@
 // src/app/api/auth/signup/route.js
 import { NextResponse } from 'next/server';
-import { nanoid } from 'nanoid';
-import { hashPassword } from '@/lib/auth';
-import { sendVerificationEmail } from '@/lib/nodemailer';
-import supabase from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { sendVerificationEmail } from '@/lib/sendGrid';
+
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export async function POST(request) {
     try {
-        const { email, password, username, reading_speed } = await request.json();
+        const { email, password, firstName, lastName, username } = await request.json();
 
         // Check if user already exists
         const { data: existingUser } = await supabase
             .from('users')
-            .select('id')
-            .eq('email', email)
+            .select('*')
+            .or(`email.eq.${email},username.eq.${username}`)
             .single();
 
         if (existingUser) {
-            return NextResponse.json(
-                { error: 'User already exists' },
-                { status: 400 }
-            );
+            if (existingUser.email === email) {
+                return NextResponse.json({ message: "Email already in use" }, { status: 400 });
+            }
+            if (existingUser.username === username) {
+                return NextResponse.json({ message: "Username already taken" }, { status: 400 });
+            }
         }
 
-        // Generate verification token and hash password
-        const verificationToken = nanoid();
-        const hashedPassword = await hashPassword(password);
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create user
-        const { error: createError } = await supabase
+        // Generate verification token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+
+        // Insert new user
+        const { data: newUser, error: insertError } = await supabase
             .from('users')
             .insert([
                 {
                     email,
                     password: hashedPassword,
+                    first_name: firstName,
+                    last_name: lastName,
                     username,
-                    reading_speed,
+                    is_verified: false,
                     verification_token: verificationToken,
-                    is_verified: false
                 }
-            ]);
+            ])
+            .select()
+            .single();
 
-        if (createError) {
-            console.error('Error creating user:', createError);
-            throw createError;
+        if (insertError) {
+            console.error("Error inserting user:", insertError);
+            return NextResponse.json({ message: "Error creating user" }, { status: 500 });
         }
 
         // Send verification email
@@ -51,24 +63,27 @@ export async function POST(request) {
             await sendVerificationEmail(email, verificationToken);
         } catch (emailError) {
             console.error('Error sending verification email:', emailError);
+
             // Delete the user if email sending fails
             await supabase
                 .from('users')
                 .delete()
                 .eq('email', email);
 
-            throw new Error('Failed to send verification email');
+            return NextResponse.json(
+                { message: "Failed to send verification email. Please try again." },
+                { status: 500 }
+            );
         }
 
+        // Return success with redirect URL to verification pending page
         return NextResponse.json({
-            message: 'User created successfully. Please check your email to verify your account.'
+            message: "User registered successfully. Please check your email to verify your account.",
+            redirectUrl: `/auth-pages/verification-pending?email=${encodeURIComponent(email)}`
         });
 
     } catch (error) {
-        console.error('Signup error:', error);
-        return NextResponse.json(
-            { error: error.message || 'Failed to create user' },
-            { status: 500 }
-        );
+        console.error("Signup error:", error);
+        return NextResponse.json({ message: "An unexpected error occurred" }, { status: 500 });
     }
 }
