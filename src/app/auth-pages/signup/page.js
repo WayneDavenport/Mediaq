@@ -94,7 +94,14 @@ export default function SignUp() {
             toast.success("Account created successfully!", {
                 description: "Please check your email for verification link"
             });
-            router.push('/auth-pages/signin');
+
+            // Redirect to verification pending page instead of signin
+            if (data.redirectUrl) {
+                router.push(data.redirectUrl);
+            } else {
+                // Fallback to verification pending with email
+                router.push(`/auth-pages/verification-pending?email=${encodeURIComponent(formData.email)}`);
+            }
         } catch (error) {
             toast.error(error.message);
         } finally {
