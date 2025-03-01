@@ -133,15 +133,20 @@ export const authOptions = {
                 token.username = user.name;
                 token.reading_speed = user.reading_speed;
             }
+
             if (account?.provider === "google") {
+                // Check if this is a new Google user by querying the database
                 const { data: userData } = await supabase
                     .from('users')
-                    .select('reading_speed')
+                    .select('reading_speed, google_id')
                     .eq('email', token.email)
                     .single();
 
+                // Set isNewUser flag if the user doesn't have a reading_speed
                 token.isNewUser = !userData?.reading_speed;
+                token.google_id = userData?.google_id;
             }
+
             return token;
         },
         async session({ session, token }) {
