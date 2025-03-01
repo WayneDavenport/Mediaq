@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
+import useNotificationStore from '@/store/notificationStore';
 
 export default function FriendRequests({ currentUserId, onRequestAccepted }) {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { removeFriendRequest } = useNotificationStore();
 
     useEffect(() => {
         if (currentUserId) {
@@ -16,11 +18,12 @@ export default function FriendRequests({ currentUserId, onRequestAccepted }) {
 
     const fetchRequests = async () => {
         try {
+            setLoading(true);
             const response = await fetch('/api/friend-requests');
             const data = await response.json();
             setRequests(data.requests || []);
         } catch (error) {
-            console.error('Error fetching requests:', error);
+            console.error('Error fetching friend requests:', error);
             toast.error('Failed to load friend requests');
         } finally {
             setLoading(false);
@@ -30,53 +33,81 @@ export default function FriendRequests({ currentUserId, onRequestAccepted }) {
     const handleAccept = async (senderId) => {
         try {
             const response = await fetch(`/api/friend-requests/${senderId}`, {
-                method: 'POST'
+                method: 'POST',
             });
 
-            if (!response.ok) throw new Error('Failed to accept request');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to accept request');
+            }
 
-            setRequests(prev => prev.filter(req => req.sender_id !== senderId));
+            // Remove from local state
+            setRequests(requests.filter(request => request.sender_id !== senderId));
+            removeFriendRequest(senderId);
+
             toast.success('Friend request accepted');
-            if (onRequestAccepted) onRequestAccepted();
+
+            // Notify parent component
+            if (onRequestAccepted) {
+                onRequestAccepted();
+            }
         } catch (error) {
-            console.error('Error accepting request:', error);
-            toast.error('Failed to accept friend request');
+            console.error('Error accepting friend request:', error);
+            toast.error(error.message || 'Failed to accept friend request');
         }
     };
 
     const handleDecline = async (senderId) => {
         try {
             const response = await fetch(`/api/friend-requests/${senderId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
             });
 
-            if (!response.ok) throw new Error('Failed to decline request');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to decline request');
+            }
 
-            setRequests(prev => prev.filter(req => req.sender_id !== senderId));
+            // Remove from local state
+            setRequests(requests.filter(request => request.sender_id !== senderId));
+            removeFriendRequest(senderId);
+
             toast.success('Friend request declined');
         } catch (error) {
-            console.error('Error declining request:', error);
-            toast.error('Failed to decline friend request');
+            console.error('Error declining friend request:', error);
+            toast.error(error.message || 'Failed to decline friend request');
         }
     };
 
-    if (loading) return <div>Loading requests...</div>;
+    if (loading) {
+        return <div className="text-center p-4">Loading friend requests...</div>;
+    }
 
-    if (requests.length === 0) return null;
+    if (requests.length === 0) {
+        return (
+            <div className="rounded-lg border p-4">
+                <h3 className="text-lg font-semibold mb-2">Friend Requests</h3>
+                <p className="text-muted-foreground">No pending friend requests</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-4">
-            <h2 className="text-2xl font-semibold">Friend Requests</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="rounded-lg border p-4">
+            <h3 className="text-lg font-semibold mb-4">Friend Requests</h3>
+            <div className="space-y-4">
                 {requests.map((request) => (
                     <div
                         key={request.sender_id}
                         className="p-4 rounded-lg bg-card border"
                     >
-                        <div className="flex flex-col space-y-4">
+                        <div className="flex items-center justify-between">
                             <div>
-                                <p className="font-medium">{request.sender.username}</p>
-                                <p className="text-sm text-muted-foreground">{request.sender.email}</p>
+                                <p className="font-medium">{request.sender?.username || 'Unknown User'}</p>
+                                <p className="text-sm text-muted-foreground">{request.sender?.email || 'No email'}</p>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                    Sent: {request.created_at ? new Date(request.created_at).toLocaleDateString() : 'Unknown date'}
+                                </p>
                             </div>
                             <div className="flex space-x-2">
                                 <Button

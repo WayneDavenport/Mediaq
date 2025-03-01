@@ -3,11 +3,15 @@ import { create } from 'zustand';
 const useNotificationStore = create((set, get) => ({
     notifications: [],
     unreadCount: 0,
+    friendRequests: [],
     setNotifications: (notifications) => {
         set({
             notifications,
             unreadCount: notifications.filter(n => !n.is_read).length
         });
+    },
+    setFriendRequests: (requests) => {
+        set({ friendRequests: requests });
     },
     addNotification: (notification) => {
         set(state => ({
@@ -30,7 +34,14 @@ const useNotificationStore = create((set, get) => ({
             ),
             unreadCount: Math.max(0, state.unreadCount - notificationIds.length)
         }));
-    }
+    },
+    removeNotification: (id) => set((state) => ({
+        notifications: state.notifications.filter(notification => notification.id !== id),
+        unreadCount: state.notifications.filter(n => !n.is_read && n.id !== id).length
+    })),
+    removeFriendRequest: (senderId) => set((state) => ({
+        friendRequests: state.friendRequests.filter(req => req.sender_id !== senderId)
+    }))
 }));
 
 export default useNotificationStore; 

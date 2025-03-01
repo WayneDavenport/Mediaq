@@ -2,16 +2,18 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import FriendSearch from '@/components/social/FriendSearch';
 import FriendRequests from '@/components/social/FriendRequests';
-import { useState, useEffect } from 'react';
-import FixQueueButton from '@/components/admin/FixQueueButton';
-import EmailTestButton from '@/components/EmailTestButton';
+import OutgoingFriendRequests from '@/components/social/OutgoingFriendRequests';
+import { LoadingScreen } from '@/components/loading/loading-screen';
 
 export default function SocialPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [friends, setFriends] = useState([]);
+    const [refreshOutgoing, setRefreshOutgoing] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (session?.user?.id) {
@@ -31,6 +33,11 @@ export default function SocialPage() {
         }
     };
 
+    // Simple function to trigger refresh of outgoing requests
+    const handleRequestSent = () => {
+        setRefreshOutgoing(prev => prev + 1);
+    };
+
     if (status === 'unauthenticated') {
         router.push('/');
         return null;
@@ -39,16 +46,23 @@ export default function SocialPage() {
     return (
         <div className="container mx-auto px-4 py-8">
             <h1 className="text-3xl font-bold mb-8">Social</h1>
-            <EmailTestButton />
+
             <div className="space-y-8">
                 <FriendRequests
                     currentUserId={session?.user?.id}
                     onRequestAccepted={fetchFriends}
                 />
+
+                <OutgoingFriendRequests
+                    currentUserId={session?.user?.id}
+                    refreshTrigger={refreshOutgoing}
+                />
+
                 <FriendSearch
                     currentUserId={session?.user?.id}
                     currentFriends={friends}
                     onFriendAdded={fetchFriends}
+                    onRequestSent={handleRequestSent}
                 />
 
                 {/* Display current friends */}
@@ -72,7 +86,6 @@ export default function SocialPage() {
                     </div>
                 )}
             </div>
-
         </div>
     );
 }

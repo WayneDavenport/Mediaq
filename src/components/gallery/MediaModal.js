@@ -243,6 +243,7 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false,
 
     const handleApproveRecommendation = async (recommendationId) => {
         try {
+            setIsAdding(true);
             const response = await fetch(`/api/recommendations/${recommendationId}/approve`, {
                 method: 'POST',
             });
@@ -256,10 +257,12 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false,
                 duration: 3000,
                 position: 'bottom-right',
             });
-            onClose();
+            onClose(); // Close the modal after successful approval
         } catch (error) {
             toast.error('Failed to approve recommendation');
             console.error('Error approving recommendation:', error);
+        } finally {
+            setIsAdding(false);
         }
     };
 
@@ -361,6 +364,13 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false,
             onClose();
         }
     }, [recommendationStatus, isRecommendation, onClose]);
+
+    useEffect(() => {
+        // Reset recommendation status when a new item is selected
+        if (item) {
+            setRecommendationStatus(item.status || 'pending');
+        }
+    }, [item]);
 
     const showToast = (message, type = 'success') => {
         toast[type](message, {

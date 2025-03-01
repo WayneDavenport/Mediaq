@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
 
-export default function FriendSearch({ currentUserId, currentFriends, onFriendAdded }) {
+export default function FriendSearch({ currentUserId, currentFriends, onFriendAdded, onRequestSent }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSearch = async () => {
         if (!searchTerm.trim()) return;
@@ -33,26 +34,41 @@ export default function FriendSearch({ currentUserId, currentFriends, onFriendAd
         }
     };
 
-    const sendFriendRequest = async (receiverId) => {
+    const handleSendRequest = async (userId) => {
         try {
+            setIsLoading(true);
+
+            console.log('Sending friend request with userId:', userId);
+
+            // API call to send friend request
             const response = await fetch('/api/friend-requests', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ receiver_id: receiverId }),
+                body: JSON.stringify({
+                    receiverId: userId.toString()
+                })
             });
 
-            const data = await response.json();
+            const responseData = await response.json();
+            console.log('Friend request response:', responseData);
 
-            if (!response.ok) throw new Error(data.error);
+            if (!response.ok) {
+                throw new Error(responseData.error || 'Failed to send request');
+            }
 
-            toast.success('Friend request sent!');
-            // Remove the user from search results
-            setSearchResults(prev => prev.filter(user => user.id !== receiverId));
+            toast.success('Friend request sent');
+
+            // Call the callback function if it exists
+            if (onRequestSent) {
+                onRequestSent();
+            }
         } catch (error) {
             console.error('Error sending friend request:', error);
             toast.error(error.message || 'Failed to send friend request');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -86,9 +102,10 @@ export default function FriendSearch({ currentUserId, currentFriends, onFriendAd
                                 </div>
                                 <Button
                                     size="sm"
-                                    onClick={() => sendFriendRequest(user.id)}
+                                    onClick={() => handleSendRequest(user.id)}
+                                    disabled={isLoading}
                                 >
-                                    Add Friend
+                                    {isLoading ? 'Sending...' : 'Add Friend'}
                                 </Button>
                             </div>
                         </div>

@@ -3,8 +3,21 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Mail, UserPlus, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
+import {
+    Bell,
+    Check,
+    Clock,
+    Mail,
+    MessageSquare,
+    ThumbsUp,
+    Trash2,
+    User,
+    UserPlus,
+    Users,
+    X
+} from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,21 +26,10 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { formatDistanceToNow } from 'date-fns';
-import supabaseRealtime from '@/lib/supabaseRealtimeClient';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import useNotificationStore from '@/store/notificationStore';
-import { Badge } from "@/components/ui/badge";
-
-// Create a styled light bulb icon component
-const LightBulbIcon = ({ className }) => (
-    <svg
-        viewBox="0 0 72.26 122.88"
-        className={className}
-        style={{ fill: 'currentColor' }}
-    >
-        <path d="M20.05,11.8A6.05,6.05,0,0,1,23.84.3L50.39,9.07a6.05,6.05,0,0,1-.54,11.65L9,31.67A6,6,0,1,1,5.84,20l21.52-5.76L20.05,11.8ZM53.84,95.5v10.26a17.07,17.07,0,0,1-5,12.09l-.23.21a17,17,0,0,1-11.86,4.82H28.91a17.09,17.09,0,0,1-12.09-5l-.21-.23a17.06,17.06,0,0,1-4.81-11.86V95.5a5.65,5.65,0,0,1,1-11.21h3.09L1.78,69.91A6.14,6.14,0,0,1,.24,67.17,6,6,0,0,1,4.6,59.83L64.73,44.34a6,6,0,1,1,3,11.69l-50,12.88L31.59,83a5.84,5.84,0,0,1,1,1.29h6.5a5.41,5.41,0,0,1,.65-1L50.78,69.84a6,6,0,0,1,9.33,7.67l-5.76,7a5.66,5.66,0,0,1-.51,11Zm-34.73.1v10.16a9.78,9.78,0,0,0,2.71,6.77l.17.15a9.78,9.78,0,0,0,6.92,2.89h7.81a9.78,9.78,0,0,0,6.76-2.72l.16-.17a9.75,9.75,0,0,0,2.88-6.92V95.6ZM62.63,24.74a6.05,6.05,0,1,1,2.94,11.74l-58,14.67A6.05,6.05,0,1,1,4.58,39.41L62.63,24.74Z" />
-    </svg>
-);
+import supabaseRealtime from '@/lib/supabaseRealtimeClient';
 
 export default function NotificationsDropdown() {
     const router = useRouter();
@@ -38,10 +40,12 @@ export default function NotificationsDropdown() {
         setNotifications,
         addNotification,
         markAsRead,
-        markMultipleAsRead
+        markMultipleAsRead,
+        removeNotification
     } = useNotificationStore();
     const [friendRequests, setFriendRequests] = useState([]);
-    const [showFriendRequests, setShowFriendRequests] = useState(false);
+    const [isDismissing, setIsDismissing] = useState(false);
+    const [allNotifications, setAllNotifications] = useState([]);
 
     useEffect(() => {
         if (session?.user?.id) {
@@ -55,6 +59,30 @@ export default function NotificationsDropdown() {
             };
         }
     }, [session?.user?.id]);
+
+    // Combine regular notifications and friend requests into a single sorted list
+    useEffect(() => {
+        const combined = [
+            ...notifications.map(n => ({
+                ...n,
+                notificationType: 'regular',
+                sortDate: new Date(n.created_at)
+            })),
+            ...friendRequests.map(req => ({
+                id: `fr-${req.sender_id}`,
+                created_at: req.created_at,
+                sender: req.sender,
+                sender_id: req.sender_id,
+                notificationType: 'friendRequest',
+                is_read: false,
+                sortDate: new Date(req.created_at)
+            }))
+        ];
+
+        // Sort by date, newest first
+        combined.sort((a, b) => b.sortDate - a.sortDate);
+        setAllNotifications(combined);
+    }, [notifications, friendRequests]);
 
     const setupRealtimeSubscription = () => {
         return supabaseRealtime
@@ -111,7 +139,18 @@ export default function NotificationsDropdown() {
         }
     };
 
-    const handleNotificationClick = async (notification) => {
+    const handleNotificationClick = async (notification, e) => {
+        // Prevent click if we're clicking the dismiss button
+        if (e.target.closest('.dismiss-button')) {
+            return;
+        }
+
+        if (notification.notificationType === 'friendRequest') {
+            // Navigate to social page for friend requests
+            router.push('/user-pages/social');
+            return;
+        }
+
         if (!notification.is_read) {
             try {
                 await fetch('/api/notifications', {
@@ -125,8 +164,136 @@ export default function NotificationsDropdown() {
             }
         }
 
-        // Navigate to gallery with query params
-        router.push(`/user-pages/gallery?mediaId=${notification.media_item_id}&commentId=${notification.comment_id || ''}`);
+        // Handle different notification types
+        if (notification.type === 'friend_request_accepted') {
+            // Navigate to social page for accepted friend requests
+            router.push('/user-pages/social');
+        } else if (notification.media_item_id) {
+            // Navigate to gallery with query params for comments
+            router.push(`/user-pages/gallery?mediaId=${notification.media_item_id}&commentId=${notification.comment_id || ''}`);
+        }
+    };
+
+    // Function to handle friend request actions directly from notification
+    const handleFriendRequestAction = async (senderId, action, e) => {
+        e.stopPropagation();
+
+        try {
+            const endpoint = `/api/friend-requests/${senderId}`;
+            const method = action === 'accept' ? 'POST' : 'DELETE';
+
+            const response = await fetch(endpoint, { method });
+
+            if (!response.ok) {
+                throw new Error(`Failed to ${action} friend request`);
+            }
+
+            // Remove this request from the list
+            setFriendRequests(prev => prev.filter(req => req.sender_id !== senderId));
+
+            toast.success(`Friend request ${action === 'accept' ? 'accepted' : 'declined'}`);
+        } catch (error) {
+            console.error(`Error ${action}ing friend request:`, error);
+            toast.error(`Failed to ${action} friend request`);
+        }
+    };
+
+    // New function to dismiss a notification
+    const handleDismissNotification = async (notificationId, e) => {
+        e.stopPropagation(); // Prevent triggering the parent click
+
+        if (isDismissing) return;
+        setIsDismissing(true);
+
+        // Check if it's a friend request notification (has fr- prefix)
+        if (typeof notificationId === 'string' && notificationId.startsWith('fr-')) {
+            const senderId = notificationId.replace('fr-', '');
+            try {
+                const response = await fetch(`/api/friend-requests/${senderId}`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to decline friend request');
+                }
+
+                // Remove from local state
+                setFriendRequests(prev => prev.filter(req => req.sender_id !== senderId));
+                toast.success('Friend request declined');
+            } catch (error) {
+                console.error('Error declining friend request:', error);
+                toast.error('Failed to decline friend request');
+            } finally {
+                setIsDismissing(false);
+            }
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/notifications/${notificationId}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to dismiss notification');
+            }
+
+            // Remove from local state
+            removeNotification(notificationId);
+            toast.success('Notification dismissed');
+        } catch (error) {
+            console.error('Error dismissing notification:', error);
+            toast.error('Failed to dismiss notification');
+        } finally {
+            setIsDismissing(false);
+        }
+    };
+
+    // Function to clear all notifications
+    const handleClearAllNotifications = async () => {
+        if (notifications.length === 0 || isDismissing) return;
+        setIsDismissing(true);
+
+        try {
+            const response = await fetch('/api/notifications/clear-all', {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to clear notifications');
+            }
+
+            // Clear notifications in store
+            setNotifications([]);
+            toast.success('All notifications cleared');
+        } catch (error) {
+            console.error('Error clearing notifications:', error);
+            toast.error('Failed to clear notifications');
+        } finally {
+            setIsDismissing(false);
+        }
+    };
+
+    // Helper function to get icon for notification type
+    const getNotificationIcon = (notification) => {
+        if (notification.notificationType === 'friendRequest') {
+            return <UserPlus className="h-4 w-4 text-blue-500" />;
+        }
+
+        switch (notification.type) {
+            case 'friend_request_accepted':
+                return <Users className="h-4 w-4 text-green-500" />;
+            case 'comment':
+                return <MessageSquare className="h-4 w-4 text-purple-500" />;
+            case 'reply':
+                return <MessageSquare className="h-4 w-4 text-indigo-500" />;
+            case 'like':
+                return <ThumbsUp className="h-4 w-4 text-pink-500" />;
+            case 'recommendation':
+                return <Mail className="h-4 w-4 text-amber-500" />;
+            default:
+                return <Bell className="h-4 w-4 text-gray-500" />;
+        }
     };
 
     return (
@@ -137,117 +304,118 @@ export default function NotificationsDropdown() {
                     size="icon"
                     className="relative"
                 >
-                    <LightBulbIcon
-                        className={`h-5 w-5 transition-all ${(unreadCount + friendRequests.length) > 0
+                    <Bell
+                        className={`h-5 w-5 transition-all ${allNotifications.length > 0
                             ? 'text-primary [filter:drop-shadow(0_0_8px_hsl(var(--primary)))] animate-pulse'
                             : ''
                             }`}
                     />
-                    {(unreadCount + friendRequests.length) > 0 && (
+                    {allNotifications.length > 0 && (
                         <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-medium text-white flex items-center justify-center">
-                            {unreadCount + friendRequests.length}
+                            {allNotifications.length}
                         </span>
                     )}
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-80" align="end">
                 <DropdownMenuLabel className="flex justify-between items-center">
-                    <div className="flex gap-4">
-                        <span
-                            className={`cursor-pointer flex items-center gap-2 ${!showFriendRequests ? 'text-primary' : 'text-muted-foreground'}`}
-                            onClick={() => setShowFriendRequests(false)}
+                    <span>Notifications</span>
+                    {notifications.length > 0 && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleClearAllNotifications}
+                            disabled={isDismissing}
+                            className="text-xs flex items-center gap-1 text-muted-foreground hover:text-foreground"
                         >
-                            <Mail className="h-4 w-4" />
-                            Notifications
-                            {unreadCount > 0 && (
-                                <Badge variant="secondary" className="ml-2">
-                                    {unreadCount}
-                                </Badge>
-                            )}
-                        </span>
-                        <span
-                            className={`cursor-pointer flex items-center gap-2 ${showFriendRequests ? 'text-primary' : 'text-muted-foreground'}`}
-                            onClick={() => setShowFriendRequests(true)}
-                        >
-                            <Users className="h-4 w-4" />
-                            Friend Requests
-                            {friendRequests.length > 0 && (
-                                <Badge variant="secondary" className="ml-2">
-                                    {friendRequests.length}
-                                </Badge>
-                            )}
-                        </span>
-                    </div>
+                            <Trash2 className="h-3 w-3" />
+                            Clear all
+                        </Button>
+                    )}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                {showFriendRequests ? (
-                    // Friend Requests Section
-                    <>
-                        {friendRequests.length === 0 ? (
-                            <DropdownMenuItem disabled>No friend requests</DropdownMenuItem>
-                        ) : (
-                            <>
-                                {friendRequests.map(request => (
-                                    <DropdownMenuItem
-                                        key={`friend-request-${request.sender_id}`}
-                                        className="cursor-pointer"
-                                    >
-                                        <div className="flex flex-col gap-1 w-full">
+                {allNotifications.length === 0 ? (
+                    <DropdownMenuItem disabled>No notifications</DropdownMenuItem>
+                ) : (
+                    allNotifications.map(notification => (
+                        <DropdownMenuItem
+                            key={notification.id}
+                            className={`cursor-pointer ${!notification.is_read ? 'bg-muted/50' : ''
+                                } relative pr-8`}
+                            onClick={(e) => handleNotificationClick(notification, e)}
+                        >
+                            <div className="flex gap-3 w-full">
+                                <div className="flex-shrink-0 mt-1">
+                                    {getNotificationIcon(notification)}
+                                </div>
+                                <div className="flex flex-col gap-1 flex-grow">
+                                    {notification.notificationType === 'friendRequest' ? (
+                                        <>
                                             <div className="flex justify-between items-center">
-                                                <p className="text-sm">{request.sender.username}</p>
+                                                <p className="text-sm">
+                                                    <span className="font-medium">{notification.sender?.username || 'Unknown User'}</span>
+                                                    {' sent you a friend request'}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2 mt-1">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-7 px-2 text-xs"
+                                                    onClick={(e) => handleFriendRequestAction(notification.sender_id, 'accept', e)}
+                                                >
+                                                    <Check className="h-3 w-3 mr-1" />
+                                                    Accept
+                                                </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        router.push('/user-pages/social');
-                                                    }}
+                                                    className="h-7 px-2 text-xs"
+                                                    onClick={(e) => handleFriendRequestAction(notification.sender_id, 'decline', e)}
                                                 >
-                                                    View
+                                                    <X className="h-3 w-3 mr-1" />
+                                                    Decline
                                                 </Button>
                                             </div>
-                                            <p className="text-xs text-muted-foreground">
-                                                {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-                                            </p>
-                                        </div>
-                                    </DropdownMenuItem>
-                                ))}
-                                <DropdownMenuItem
-                                    className="cursor-pointer justify-center text-sm text-muted-foreground"
-                                    onClick={() => router.push('/user-pages/social')}
-                                >
-                                    Manage all friend requests
-                                </DropdownMenuItem>
-                            </>
-                        )}
-                    </>
-                ) : (
-                    // Regular Notifications Section
-                    <>
-                        {notifications.length === 0 ? (
-                            <DropdownMenuItem disabled>No notifications</DropdownMenuItem>
-                        ) : (
-                            notifications.map(notification => (
-                                <DropdownMenuItem
-                                    key={`notification-${notification.id}-${notification.created_at}`}
-                                    className={`cursor-pointer ${!notification.is_read ? 'bg-muted/50' : ''}`}
-                                    onClick={() => handleNotificationClick(notification)}
-                                >
-                                    <div className="flex flex-col gap-1">
+                                        </>
+                                    ) : (
                                         <p className="text-sm">
                                             <span className="font-medium">{notification.user?.username || 'Unknown User'}</span>
                                             {' '}
                                             {notification.message}
                                         </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                                        </p>
-                                    </div>
-                                </DropdownMenuItem>
-                            ))
-                        )}
-                    </>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">
+                                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Don't show dismiss button for friend requests that have accept/decline buttons */}
+                            {notification.notificationType !== 'friendRequest' && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="dismiss-button absolute right-1 top-1 h-6 w-6 rounded-full opacity-70 hover:opacity-100 hover:bg-muted"
+                                    onClick={(e) => handleDismissNotification(notification.id, e)}
+                                    disabled={isDismissing}
+                                >
+                                    <X className="h-3 w-3" />
+                                    <span className="sr-only">Dismiss</span>
+                                </Button>
+                            )}
+                        </DropdownMenuItem>
+                    ))
+                )}
+
+                {allNotifications.length > 0 && friendRequests.length > 0 && (
+                    <DropdownMenuItem
+                        className="cursor-pointer justify-center text-sm text-muted-foreground"
+                        onClick={() => router.push('/user-pages/social')}
+                    >
+                        Manage all friend requests
+                    </DropdownMenuItem>
                 )}
             </DropdownMenuContent>
         </DropdownMenu>
