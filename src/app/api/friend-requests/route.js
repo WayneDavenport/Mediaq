@@ -5,62 +5,70 @@ import supabase from '@/lib/supabaseClient';
 
 export async function POST(request) {
     try {
-        const body = await request.json();
-        const { receiver_id } = body;
-
-        if (!receiver_id) {
-            return NextResponse.json(
-                { error: 'Receiver ID is required' },
-                { status: 400 }
-            );
-        }
-
         const session = await getServerSession(authOptions);
+
         if (!session) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Check if request already exists
-        const { data: existingRequests, error: checkError } = await supabase
+        // Parse request body
+        const body = await request.json();
+        console.log('Friend request body:', body); // Debug log
+
+        // Check if receiverId exists in the request body
+        if (!body.receiverId) {
+            console.error('Missing receiverId in request body:', body);
+            return NextResponse.json({ error: 'Receiver ID is required' }, { status: 400 });
+        }
+
+        const receiverId = body.receiverId;
+
+        // Check if friend request already exists
+        const { data: existingRequest, error: checkError } = await supabase
             .from('friend_requests')
             .select('*')
-            .eq('sender_id', session.user.id)
-            .eq('receiver_id', receiver_id)
-            .eq('status', 'pending');
+            .or(`and(sender_id.eq.${session.user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${session.user.id})`)
+            .not('status', 'eq', 'declined');
 
         if (checkError) throw checkError;
 
-        if (existingRequests?.length > 0) {
-            return NextResponse.json(
-                { error: 'Friend request already sent' },
-                { status: 400 }
-            );
+        if (existingRequest && existingRequest.length > 0) {
+            return NextResponse.json({ error: 'Friend request already exists' }, { status: 400 });
         }
 
-        // Create new friend request
-        const { data, error: insertError } = await supabase
+        // Create friend request
+        const { error: insertError } = await supabase
             .from('friend_requests')
-            .upsert({
+            .insert({
                 sender_id: session.user.id,
-                receiver_id: receiver_id,
+                receiver_id: receiverId,
                 status: 'pending'
-            })
-            .select();
+            });
 
         if (insertError) throw insertError;
 
-        return NextResponse.json({
-            message: 'Friend request sent successfully',
-            request: data[0]
-        });
+        // Create notification for the receiver
+        const { error: notificationError } = await supabase
+            .from('notifications')
+            .insert({
+                type: 'friend_request',
+                sender_id: session.user.id,
+                receiver_id: receiverId,
+                message: 'sent you a friend request',
+                is_read: false
+            });
+
+        if (notificationError) {
+            console.error('Error creating notification:', notificationError);
+            // Continue even if notification creation fails
+        }
+
+        return NextResponse.json({ success: true });
 
     } catch (error) {
-        console.error('Friend request error:', error);
+        console.error('Error sending friend request:', error);
         return NextResponse.json(
-            { error: 'Failed to send friend request' },
+            { error: 'Failed to send friend request', details: error.message },
             { status: 500 }
         );
     }
