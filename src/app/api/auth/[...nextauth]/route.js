@@ -79,7 +79,25 @@ export const authOptions = {
         signOut: '/auth/signout'
     },
     callbacks: {
-        async signIn({ user, account }) {
+        async signIn({ user, account, profile }) {
+            // For email/password login, check if the user is verified
+            if (account.provider === 'credentials') {
+                const { data: userData, error } = await supabase
+                    .from('users')
+                    .select('is_verified')
+                    .eq('email', user.email)
+                    .single();
+
+                if (error) {
+                    console.error('Error checking user verification status:', error);
+                    return false;
+                }
+
+                if (!userData.is_verified) {
+                    throw new Error('Please verify your email before signing in');
+                }
+            }
+
             console.log("SignIn callback triggered with provider:", account?.provider);
             console.log("User data:", user);
 
