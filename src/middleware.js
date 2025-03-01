@@ -2,14 +2,36 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 
 export async function middleware(request) {
+    // Skip middleware for API routes and static assets
+    if (
+        request.nextUrl.pathname.startsWith('/api') ||
+        request.nextUrl.pathname.startsWith('/_next')
+    ) {
+        return NextResponse.next();
+    }
+
     const token = await getToken({
         req: request,
         secret: process.env.NEXTAUTH_SECRET
     });
 
-    const isNewGoogleUser = token?.google_id && !token?.reading_speed;
+    // If no token (not logged in), allow the request to proceed
+    if (!token) {
+        return NextResponse.next();
+    }
 
-    if (isNewGoogleUser && !request.nextUrl.pathname.startsWith('/auth-pages/complete-profile')) {
+    // Check if this is a new user that needs to complete their profile
+    const isNewUser = token?.isNewUser === true;
+
+    // Only redirect to complete-profile if:
+    // 1. User is new (isNewUser is true)
+    // 2. User is not already on the complete-profile page
+    // 3. User is not accessing an API route
+    if (
+        isNewUser &&
+        !request.nextUrl.pathname.startsWith('/auth-pages/complete-profile') &&
+        !request.nextUrl.pathname.startsWith('/api')
+    ) {
         return NextResponse.redirect(new URL("/auth-pages/complete-profile", request.url));
     }
 
@@ -17,5 +39,8 @@ export async function middleware(request) {
 }
 
 export const config = {
-    matcher: ['/user-pages/:path*']
+    matcher: [
+        '/((?!api|_next/static|_next/image|favicon.ico).*)',
+        '/user-pages/:path*'
+    ]
 }; 
