@@ -1,6 +1,6 @@
 // Route handler for sending emails with SendGrid
 import { NextResponse } from 'next/server';
-const sgMail = require('@sendgrid/mail');
+import sgMail from '@sendgrid/mail';
 
 export async function POST() {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
