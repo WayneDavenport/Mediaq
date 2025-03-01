@@ -70,9 +70,4 @@ export async function sendWelcomeEmail(to, username) {
   };
 
   return sgMail.send(msg);
-}
-
-module.exports = {
-  sendVerificationEmail,
-  sendWelcomeEmail,
-}; 
+} 
