@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
 import {
@@ -44,20 +44,24 @@ export default function CompleteProfile() {
         setLoading(true);
 
         try {
-            const response = await fetch('/api/user/complete-profile', {
+            const response = await fetch('/api/user/update-profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(userData),
+                body: JSON.stringify({ reading_speed: userData.reading_speed }),
             });
 
-            if (!response.ok) {
+            if (response.ok) {
+                await signIn('credentials', {
+                    redirect: false,
+                    email: session.user.email,
+                    callbackUrl: '/user-pages/dashboard'
+                });
+                toast.success("Profile setup complete!");
+                router.push('/user-pages/dashboard');
+            } else {
                 const error = await response.json();
                 throw new Error(error.message || 'Failed to update profile');
             }
-
-            await update(); // Update the session with new data
-            toast.success("Profile setup complete!");
-            router.push('/user-pages/dashboard');
         } catch (error) {
             toast.error(error.message || "Failed to complete profile setup");
         } finally {
