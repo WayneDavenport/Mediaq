@@ -44,26 +44,34 @@ export default function CompleteProfile() {
         setLoading(true);
 
         try {
-            const response = await fetch('/api/user/update-profile', {
+            const response = await fetch('/api/user/complete-profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reading_speed: userData.reading_speed }),
+                body: JSON.stringify({
+                    username: session.user.name || session.user.email.split('@')[0],
+                    reading_speed: userData.reading_speed
+                }),
             });
 
+            const data = await response.json();
+
             if (response.ok) {
-                await signIn('credentials', {
-                    redirect: false,
-                    email: session.user.email,
-                    callbackUrl: '/user-pages/dashboard'
+                await update({
+                    ...session,
+                    user: {
+                        ...session.user,
+                        reading_speed: userData.reading_speed,
+                        isNewUser: false
+                    }
                 });
-                toast.success("Profile setup complete!");
+                toast.success("Profile updated successfully!");
                 router.push('/user-pages/dashboard');
             } else {
-                const error = await response.json();
-                throw new Error(error.message || 'Failed to update profile');
+                throw new Error(data.error || "Failed to update profile");
             }
         } catch (error) {
-            toast.error(error.message || "Failed to complete profile setup");
+            console.error('Error updating profile:', error);
+            toast.error(error.message || "An error occurred while updating your profile");
         } finally {
             setLoading(false);
         }
