@@ -2,7 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/SessionProvider";
 import NavBar from '@/components/navigation/NavBar'
-import { ToasterProvider } from '@/components/providers/toaster-provider';
+/* import { ToasterProvider } from '@/components/providers/toaster-provider'; */
 import { ThemeProvider } from "@/components/theme-provider"
 import PointerEventsHandler from "@/components/PointerEventsHandler";
 
@@ -88,7 +88,7 @@ export default function RootLayout({ children }) {
             <PointerEventsHandler />
             <NavBar />
             {children}
-            <ToasterProvider />
+            {/* <ToasterProvider /> */}
           </AuthProvider>
         </ThemeProvider>
       </body>
