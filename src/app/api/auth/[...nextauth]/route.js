@@ -5,6 +5,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { verifyPassword } from "@/lib/auth";
 import supabase from "@/lib/supabaseClient";
 
+
 // Define auth options
 export const authOptions = {
     secret: process.env.NEXTAUTH_SECRET,
@@ -163,6 +164,6 @@ export const authOptions = {
     secret: process.env.NEXTAUTH_SECRET,
 };
 
-// Export the NextAuth handler
-export const GET = NextAuth(authOptions);
-export const POST = NextAuth(authOptions);
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };

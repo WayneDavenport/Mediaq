@@ -2,16 +2,13 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 
 export async function middleware(request) {
-    // Handle www vs non-www redirects (canonical domain)
-    const url = request.nextUrl.clone();
-    const hostname = request.headers.get('host') || '';
-    const isProd = process.env.NODE_ENV === 'production';
+    // Log the current path to help debug
+    console.log("Middleware processing path:", request.nextUrl.pathname);
 
-    // Force www in production (assuming www.mediaq.io is your preferred domain)
-    if (isProd && hostname === 'mediaq.io') {
-        url.protocol = 'https';
-        url.host = 'www.mediaq.io';
-        return NextResponse.redirect(url);
+    // Make sure we're not interfering with the auth callback
+    if (request.nextUrl.pathname.startsWith('/api/auth')) {
+        console.log("Auth API route - passing through");
+        return NextResponse.next();
     }
 
     // Auth check for user pages
@@ -20,11 +17,10 @@ export async function middleware(request) {
         secret: process.env.NEXTAUTH_SECRET
     });
 
-    // Check if this is a new user that needs to complete their profile
-    // We're checking for isNewUser flag that's set in the JWT callback
-    const isNewUser = token?.isNewUser === true;
+    // Check if this is a new Google user that needs to complete their profile
+    const isNewGoogleUser = token?.google_id && !token?.reading_speed;
 
-    if (isNewUser && !request.nextUrl.pathname.startsWith('/auth-pages/complete-profile')) {
+    if (isNewGoogleUser && !request.nextUrl.pathname.startsWith('/auth-pages/complete-profile')) {
         return NextResponse.redirect(new URL("/auth-pages/complete-profile", request.url));
     }
 
@@ -33,7 +29,8 @@ export async function middleware(request) {
 
 export const config = {
     matcher: [
-        '/((?!api|_next/static|_next/image|favicon.ico).*)',
+        // Make sure we're excluding auth API routes from middleware processing
+        '/((?!api/auth|_next/static|_next/image|favicon.ico).*)',
         '/user-pages/:path*'
     ]
 }; 
