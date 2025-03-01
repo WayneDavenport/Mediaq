@@ -32,6 +32,14 @@ export async function middleware(request) {
         return NextResponse.redirect(new URL("/auth-pages/complete-profile", request.url));
     }
 
+    // Make sure your middleware doesn't redirect users who are trying to verify their email
+    if (
+        request.nextUrl.pathname.startsWith('/api/auth/verify') ||
+        request.nextUrl.pathname.startsWith('/auth-pages/verification-pending')
+    ) {
+        return NextResponse.next();
+    }
+
     return NextResponse.next();
 }
 

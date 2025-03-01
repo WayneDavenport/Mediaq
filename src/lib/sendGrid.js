@@ -1,4 +1,4 @@
-const sgMail = require('@sendgrid/mail');
+import sgMail from '@sendgrid/mail';
 
 // Initialize SendGrid with your API key
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -9,7 +9,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
  * @param {string} token - Verification token
  * @returns {Promise} - SendGrid response
  */
-async function sendVerificationEmail(to, token) {
+export async function sendVerificationEmail(to, token) {
   const verificationLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/verify/${token}`;
 
   const msg = {
@@ -44,7 +44,7 @@ async function sendVerificationEmail(to, token) {
  * @param {string} username - User's name or username
  * @returns {Promise} - SendGrid response
  */
-async function sendWelcomeEmail(to, username) {
+export async function sendWelcomeEmail(to, username) {
   const signinUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth-pages/signin`;
 
   const msg = {
