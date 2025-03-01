@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
 import {
@@ -10,6 +10,7 @@ import {
     CardTitle,
     CardDescription,
     CardContent,
+    CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,13 +25,6 @@ export default function CompleteProfile() {
         reading_speed: 0.667, // Default to 0.667 pages per minute
         username: session?.user?.name || '',
     });
-
-    // Redirect if user is not a new Google user
-    useEffect(() => {
-        if (session && !session.user?.isNewUser) {
-            router.push('/user-pages/dashboard');
-        }
-    }, [session, router]);
 
     const getReadingSpeedLabel = (value) => {
         if (value <= 0.4) return "Slow";
@@ -48,7 +42,7 @@ export default function CompleteProfile() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    username: session.user.name || session.user.email.split('@')[0],
+                    username: userData.username,
                     reading_speed: userData.reading_speed
                 }),
             });
@@ -56,16 +50,13 @@ export default function CompleteProfile() {
             const data = await response.json();
 
             if (response.ok) {
-                await update({
-                    ...session,
-                    user: {
-                        ...session.user,
-                        reading_speed: userData.reading_speed,
-                        isNewUser: false
-                    }
-                });
                 toast.success("Profile updated successfully!");
-                router.push('/user-pages/dashboard');
+
+                // Sign out to clear any cached session data
+                await signOut({ redirect: false });
+
+                // Redirect to sign in page
+                router.push('/auth-pages/signin?callbackUrl=/user-pages/dashboard');
             } else {
                 throw new Error(data.error || "Failed to update profile");
             }
@@ -76,10 +67,6 @@ export default function CompleteProfile() {
             setLoading(false);
         }
     };
-
-    if (!session?.user?.isNewUser) {
-        return null; // Don't render anything while redirecting
-    }
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-background p-4">
