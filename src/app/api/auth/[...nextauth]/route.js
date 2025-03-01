@@ -80,29 +80,43 @@ export const authOptions = {
     },
     callbacks: {
         async signIn({ user, account }) {
-            if (account.provider === "google") {
+            console.log("SignIn callback triggered with provider:", account?.provider);
+            console.log("User data:", user);
+
+            if (account?.provider === "google") {
                 try {
+                    console.log("Google auth flow - checking if user exists");
                     // Check if user already exists
-                    const { data: existingUser } = await supabase
+                    const { data: existingUser, error: queryError } = await supabase
                         .from('users')
                         .select('*')
                         .eq('email', user.email)
                         .single();
 
+                    if (queryError && queryError.code !== 'PGRST116') {
+                        // PGRST116 is "no rows returned" which is expected for new users
+                        console.error("Error querying existing user:", queryError);
+                        return '/auth-pages/error?error=DatabaseError';
+                    }
+
+                    console.log("Existing user check result:", existingUser);
+
                     if (!existingUser) {
+                        console.log("Creating new user with Google data");
                         // Create new user with Google data
                         const { data: newUser, error: createError } = await supabase
                             .from('users')
                             .insert([
                                 {
                                     email: user.email,
-                                    username: user.name,
-                                    first_name: user.given_name,
-                                    last_name: user.family_name,
+                                    username: user.name || `user_${Date.now().toString(36)}`, // Ensure unique username
+                                    first_name: user.given_name || '',
+                                    last_name: user.family_name || '',
                                     is_verified: true,
                                     reading_speed: null,
                                     google_id: user.id,
-                                    password: null  // Explicitly set to null for Google users
+                                    password: null,
+                                    avatar_url: user.image
                                 }
                             ])
                             .select()
@@ -110,11 +124,17 @@ export const authOptions = {
 
                         if (createError) {
                             console.error("Error creating user:", createError);
+                            // Check if it's a unique constraint violation (username might already exist)
+                            if (createError.code === '23505') {
+                                return '/auth-pages/error?error=UsernameExists';
+                            }
                             return false;
                         }
+                        console.log("New user created:", newUser);
                         // Set the user ID from the newly created user
                         user.id = newUser.id;
                     } else {
+                        console.log("Using existing user data");
                         // Set the user ID from the existing user
                         user.id = existingUser.id;
                         user.reading_speed = existingUser.reading_speed;
