@@ -10,6 +10,7 @@ export async function middleware(request) {
         return NextResponse.next();
     }
 
+    // Get the token
     const token = await getToken({
         req: request,
         secret: process.env.NEXTAUTH_SECRET
@@ -21,17 +22,13 @@ export async function middleware(request) {
     }
 
     // Check if this is a new user that needs to complete their profile
-    const isNewUser = token?.isNewUser === true;
-
-    // Only redirect to complete-profile if:
-    // 1. User is new (isNewUser is true)
-    // 2. User is not already on the complete-profile page
-    // 3. User is not accessing an API route
+    // Only redirect if isNewUser is explicitly true (not undefined or null)
     if (
-        isNewUser &&
-        !request.nextUrl.pathname.startsWith('/auth-pages/complete-profile') &&
-        !request.nextUrl.pathname.startsWith('/api')
+        token.isNewUser === true &&
+        request.nextUrl.pathname.startsWith('/user-pages') &&
+        !request.nextUrl.pathname.startsWith('/auth-pages/complete-profile')
     ) {
+        console.log("Redirecting new user to complete profile page");
         return NextResponse.redirect(new URL("/auth-pages/complete-profile", request.url));
     }
 
