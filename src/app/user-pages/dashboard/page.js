@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { LoadingScreen } from "@/components/loading/loading-screen";
 import JustWatchLink from '@/components/streaming/JustWatchLink';
 import BookResources from "@/components/books/BookResources";
-
 import {
     Popover,
     PopoverContent,
@@ -55,6 +54,8 @@ export default function Dashboard() {
     const [lockedItems, setLockedItems] = useState([]);
     const [activeChart, setActiveChart] = useState("time");
     const router = useRouter();
+    const [affiliateLink, setAffiliateLink] = useState(null);
+    const [isLoadingAffiliate, setIsLoadingAffiliate] = useState(false);
 
     useOutsideClick(ref, (event) => {
         // Check if the click is within a Select/dropdown component
@@ -124,6 +125,32 @@ export default function Dashboard() {
         window.addEventListener("keydown", onKeyDown);
         return () => window.removeEventListener("keydown", onKeyDown);
     }, [expandedId]);
+
+    useEffect(() => {
+        async function getAffiliateLink() {
+            if (expandedId) {
+                const currentItem = mediaItems.find(item => item.id === expandedId);
+                if (currentItem && currentItem.media_type === 'game') {
+                    setIsLoadingAffiliate(true);
+                    try {
+                        const response = await fetch(`/api/gmg/affiliate-link?title=${encodeURIComponent(currentItem.title)}`);
+                        const data = await response.json();
+                        setAffiliateLink(data.link);
+                    } catch (error) {
+                        console.error('Error fetching affiliate link:', error);
+                    } finally {
+                        setIsLoadingAffiliate(false);
+                    }
+                } else {
+                    setAffiliateLink(null);
+                }
+            } else {
+                setAffiliateLink(null);
+            }
+        }
+
+        getAffiliateLink();
+    }, [expandedId, mediaItems]);
 
     const handleProgressUpdate = (newProgress) => {
         setMediaItems(items =>
@@ -801,9 +828,39 @@ export default function Dashboard() {
                                     </div>
                                     <div className={styles.utilitySection}>
                                         {/* External Links Placeholder */}
-                                        <div className="flex gap-2 mb-4 p-2 border rounded-md">
-                                            <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                                            <span className="text-sm text-muted-foreground">External Links Coming Soon</span>
+                                        <div className="flex flex-col gap-2 mb-4 p-2 border rounded-md">
+                                            <h3 className="text-sm font-medium mb-1 flex items-center gap-1">
+                                                <ExternalLink className="h-4 w-4" /> External Links
+                                            </h3>
+
+                                            {item.media_type === 'game' && (
+                                                <>
+                                                    {isLoadingAffiliate ? (
+                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                                            Finding deals...
+                                                        </div>
+                                                    ) : affiliateLink ? (
+                                                        <a
+                                                            href={affiliateLink.affiliate_link}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-2 text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
+                                                        >
+                                                            <span>Buy on Green Man Gaming</span>
+                                                            <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
+                                                                ${affiliateLink.price}
+                                                            </span>
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-sm text-muted-foreground">No store links available</span>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            {item.media_type !== 'game' && (
+                                                <span className="text-sm text-muted-foreground">External links coming soon</span>
+                                            )}
                                         </div>
 
                                         {/* Action Buttons */}
