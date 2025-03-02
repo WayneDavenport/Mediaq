@@ -10,5 +10,11 @@ export const loadingQuotes = [
     "Talking about Fight Club…",
     "If you Queue it, They will come…",
     "Hearding the Nerfs…",
+    "Appy Wappy, Timey Wimey…",
+    "Appy Wappy, Timey Wimey…",
+    "Squeezing the Squirrels(Suggested by Claude)…",
+    "Squeezing the Juice from Mind Grapes…"
+
+
 
 ]; 
