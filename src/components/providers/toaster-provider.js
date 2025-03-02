@@ -6,10 +6,18 @@ export function ToasterProvider() {
     return (
         <Toaster
             richColors
-            closeButton={false}
+            closeButton={true}
             position="top-center"
-            swipeDirection="right"
-            dismissible
+            swipeDirection="up"
+            dismissible={true}
+            duration={4000}
+            toastOptions={{
+                style: {
+                    cursor: 'pointer'
+                },
+                className: 'toast-container'
+            }}
+            onClick={() => { }}
         />
     )
 } 

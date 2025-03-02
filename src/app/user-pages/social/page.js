@@ -8,6 +8,7 @@ import FriendRequests from '@/components/social/FriendRequests';
 import OutgoingFriendRequests from '@/components/social/OutgoingFriendRequests';
 import { LoadingScreen } from '@/components/loading/loading-screen';
 
+
 export default function SocialPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
@@ -44,48 +45,52 @@ export default function SocialPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-8">Social</h1>
+        <>
 
-            <div className="space-y-8">
-                <FriendRequests
-                    currentUserId={session?.user?.id}
-                    onRequestAccepted={fetchFriends}
-                />
+            <div className="container mx-auto px-4 py-8">
+                <h1 className="text-3xl font-bold mb-8">Social</h1>
 
-                <OutgoingFriendRequests
-                    currentUserId={session?.user?.id}
-                    refreshTrigger={refreshOutgoing}
-                />
+                <div className="space-y-8">
+                    <FriendRequests
+                        currentUserId={session?.user?.id}
+                        onRequestAccepted={fetchFriends}
+                    />
 
-                <FriendSearch
-                    currentUserId={session?.user?.id}
-                    currentFriends={friends}
-                    onFriendAdded={fetchFriends}
-                    onRequestSent={handleRequestSent}
-                />
+                    <OutgoingFriendRequests
+                        currentUserId={session?.user?.id}
+                        refreshTrigger={refreshOutgoing}
+                    />
 
-                {/* Display current friends */}
-                {friends.length > 0 && (
-                    <div className="mt-8">
-                        <h2 className="text-2xl font-semibold mb-4">My Friends</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {friends.map((friend) => (
-                                <div
-                                    key={friend.friend_id}
-                                    className="p-4 rounded-lg bg-card border"
-                                >
-                                    <div className="flex items-center space-x-4">
-                                        <div>
-                                            <p className="font-medium">{friend.friend_user_name}</p>
+                    <FriendSearch
+                        currentUserId={session?.user?.id}
+                        currentFriends={friends}
+                        onFriendAdded={fetchFriends}
+                        onRequestSent={handleRequestSent}
+                    />
+
+                    {/* Display current friends */}
+                    {friends.length > 0 && (
+                        <div className="mt-8">
+                            <h2 className="text-2xl font-semibold mb-4">My Friends</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {friends.map((friend) => (
+                                    <div
+                                        key={friend.friend_id}
+                                        className="p-4 rounded-lg bg-card border"
+                                    >
+                                        <div className="flex items-center space-x-4">
+                                            <div>
+                                                <p className="font-medium">{friend.friend_user_name}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
-        </div>
+        </>
+
     );
 }

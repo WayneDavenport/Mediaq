@@ -8,6 +8,8 @@ import VideoGameSearch from '@/app/@search/components/VideoGameSearch';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { ToasterProvider } from "@/components/providers/toaster-provider"
+
+
 import useSearchStore from '@/store/searchStore';
 import {
     Select,
@@ -36,6 +38,7 @@ export default function SearchPage() {
 
         <div className="min-h-screen w-full p-4 sm:p-6 lg:p-8 flex justify-center">
             <ToasterProvider />
+
             <div className="w-full max-w-7xl">
                 {/* Header with responsive spacing */}
                 <div className="flex items-center justify-between mb-6 px-2">

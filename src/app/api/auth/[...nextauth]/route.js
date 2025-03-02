@@ -64,7 +64,8 @@ export const authOptions = {
                         id: user.id,
                         email: user.email,
                         username: user.username,
-                        reading_speed: user.reading_speed // Note: using snake_case
+                        reading_speed: user.reading_speed, // Note: using snake_case
+                        is_admin: user.is_admin || false // Include admin status
                     };
                 } catch (error) {
                     console.error("Auth error:", error);
@@ -134,7 +135,8 @@ export const authOptions = {
                                     reading_speed: null,
                                     google_id: user.id,
                                     password: null,
-                                    avatar_url: user.image
+                                    avatar_url: user.image,
+                                    is_admin: false // New users are not admins by default
                                 }
                             ])
                             .select()
@@ -151,11 +153,13 @@ export const authOptions = {
                         console.log("New user created:", newUser);
                         // Set the user ID from the newly created user
                         user.id = newUser.id;
+                        user.is_admin = newUser.is_admin || false;
                     } else {
                         console.log("Using existing user data");
                         // Set the user ID from the existing user
                         user.id = existingUser.id;
                         user.reading_speed = existingUser.reading_speed;
+                        user.is_admin = existingUser.is_admin || false;
                     }
                     return true;
                 } catch (error) {
@@ -171,19 +175,21 @@ export const authOptions = {
                 token.email = user.email;
                 token.username = user.name;
                 token.reading_speed = user.reading_speed;
+                token.is_admin = user.is_admin || false; // Include admin status in token
             }
 
             if (account?.provider === "google") {
                 // Check if this is a new Google user by querying the database
                 const { data: userData } = await supabase
                     .from('users')
-                    .select('reading_speed, google_id')
+                    .select('reading_speed, google_id, is_admin')
                     .eq('email', token.email)
                     .single();
 
                 // Set isNewUser flag if the user doesn't have a reading_speed
                 token.isNewUser = !userData?.reading_speed;
                 token.google_id = userData?.google_id;
+                token.is_admin = userData?.is_admin || false;
             }
 
             return token;
@@ -195,6 +201,7 @@ export const authOptions = {
                 session.user.username = token.username;
                 session.user.isNewUser = token.isNewUser;
                 session.user.reading_speed = token.reading_speed;
+                session.user.isAdmin = token.is_admin || false; // Add admin status to session
             }
             return session;
         }

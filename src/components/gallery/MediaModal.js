@@ -14,6 +14,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
+
 const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false, isRecommendation = false }) => {
     const [isPending, startTransition] = useTransition();
     const { data: session } = useSession();
@@ -499,6 +500,7 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false,
 
     return (
         <>
+
             <AnimatePresence mode="wait">
                 {isOpen && (
                     <motion.div

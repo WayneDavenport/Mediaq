@@ -4,7 +4,7 @@ import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { Moon, Sun, Menu, X } from 'lucide-react'
+import { Moon, Sun, Menu, X, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import {
@@ -49,6 +49,7 @@ export default function NavBar() {
             .slice(0, 2)
     }
 
+    // Base navigation links
     const navLinks = [
         { href: '/', label: 'Home' },
         { href: '/user-pages/dashboard', label: 'Dashboard' },
@@ -56,6 +57,15 @@ export default function NavBar() {
         { href: '/user-pages/search', label: 'Search' },
         { href: '/user-pages/social', label: 'Social' },
     ]
+
+    // Add admin link if user is an admin
+    if (session.user.isAdmin) {
+        navLinks.push({
+            href: '/admin',
+            label: 'Admin',
+            icon: <ShieldAlert className="h-4 w-4 mr-2" />
+        });
+    }
 
     return (
         <nav className={styles.navbar}>
@@ -77,11 +87,13 @@ export default function NavBar() {
                                 <Link
                                     key={link.href}
                                     href={link.href}
-                                    className={`px-4 py-2 rounded-md transition-colors
+                                    className={`px-4 py-2 rounded-md transition-colors flex items-center
                                         ${pathname === link.href ? 'bg-primary/10 text-primary' : 'hover:bg-accent'}
+                                        ${link.label === 'Admin' ? 'text-amber-500 font-medium' : ''}
                                     `}
                                     onClick={() => setIsOpen(false)}
                                 >
+                                    {link.icon && link.icon}
                                     {link.label}
                                 </Link>
                             ))}
@@ -95,8 +107,10 @@ export default function NavBar() {
                         <Link
                             key={link.href}
                             href={link.href}
-                            className={pathname === link.href ? styles.active : ''}
+                            className={`flex items-center ${pathname === link.href ? styles.active : ''} 
+                                       ${link.label === 'Admin' ? 'text-amber-500 font-medium' : ''}`}
                         >
+                            {link.icon && link.icon}
                             {link.label}
                         </Link>
                     ))}
@@ -139,6 +153,14 @@ export default function NavBar() {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                            {session.user.isAdmin && (
+                                <DropdownMenuItem>
+                                    <Link href="/admin" className="w-full flex items-center">
+                                        <ShieldAlert className="h-4 w-4 mr-2" />
+                                        Admin Dashboard
+                                    </Link>
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem>
                                 <Link href="/user-pages/settings" className="w-full">Settings</Link>
                             </DropdownMenuItem>
