@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+/* import { NextResponse } from 'next/server';
 import supabase from '@/lib/supabaseClient';
 
 export async function GET() {
@@ -51,4 +51,4 @@ export async function GET() {
             { status: 500 }
         );
     }
-} 
+}  */
