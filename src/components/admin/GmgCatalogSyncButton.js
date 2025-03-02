@@ -52,7 +52,7 @@ export default function GmgCatalogSyncButton() {
                     Abducting Green Man Catalog...
                 </>
             ) : (
-                'Sync Green Man Catalog'
+                'Abduct Green Man Catalog'
             )}
         </Button>
     );
