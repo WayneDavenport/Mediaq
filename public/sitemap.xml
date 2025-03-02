@@ -7,16 +7,16 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.mediaq.io/auth-pages/signin</loc>
+    <loc>https://www.mediaq.io/user-pages/dashboard</loc>
     <lastmod>2023-06-15</lastmod>
-    <changefreq>monthly</changefreq>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.mediaq.io/auth-pages/signup</loc>
+    <loc>https://www.mediaq.io/user-pages/search</loc>
     <lastmod>2023-06-15</lastmod>
-    <changefreq>monthly</changefreq>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-  <!-- Add more pages here -->
+  <!-- Add more pages here as needed -->
 </urlset> 
