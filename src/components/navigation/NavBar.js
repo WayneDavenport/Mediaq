@@ -56,6 +56,7 @@ export default function NavBar() {
         { href: '/user-pages/gallery', label: 'Gallery' },
         { href: '/user-pages/search', label: 'Search' },
         { href: '/user-pages/social', label: 'Social' },
+        { href: '/contact', label: 'Contact' },
     ]
 
     // Add admin link if user is an admin
@@ -168,6 +169,9 @@ export default function NavBar() {
                             )}
                             <DropdownMenuItem>
                                 <Link href="/user-pages/settings" className="w-full">Settings</Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Link href="/legal/affiliate-disclosure" className="w-full">Legal Information</Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleSignOut}>
                                 Logout
