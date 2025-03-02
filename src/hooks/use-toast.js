@@ -1,6 +1,7 @@
 "use client";
 // Inspired by react-hot-toast library
 import * as React from "react"
+import { toast as sonnerToast } from 'sonner';
 
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
@@ -70,9 +71,9 @@ export const reducer = (state, action) => {
         toasts: state.toasts.map((t) =>
           t.id === toastId || toastId === undefined
             ? {
-                ...t,
-                open: false,
-              }
+              ...t,
+              open: false,
+            }
             : t),
       };
     }
@@ -145,11 +146,57 @@ function useToast() {
     };
   }, [state])
 
-  return {
-    ...state,
-    toast,
-    dismiss: (toastId) => dispatch({ type: "DISMISS_TOAST", toastId }),
+  const toast = {
+    // Success toast with default options
+    success: (message, options = {}) => {
+      return sonnerToast.success(message, {
+        duration: 4000,
+        ...options
+      });
+    },
+
+    // Error toast with default options
+    error: (message, options = {}) => {
+      return sonnerToast.error(message, {
+        duration: 5000, // Errors stay a bit longer
+        ...options
+      });
+    },
+
+    // Info toast with default options
+    info: (message, options = {}) => {
+      return sonnerToast.info(message, {
+        duration: 4000,
+        ...options
+      });
+    },
+
+    // Warning toast with default options
+    warning: (message, options = {}) => {
+      return sonnerToast.warning(message, {
+        duration: 4500,
+        ...options
+      });
+    },
+
+    // Custom toast with more control
+    custom: (options = {}) => {
+      return sonnerToast(options.title || '', {
+        description: options.description,
+        action: options.action,
+        duration: options.duration || 4000,
+        ...options
+      });
+    },
+
+    // Dismiss all toasts
+    dismiss: sonnerToast.dismiss,
+
+    // Dismiss a specific toast
+    dismissToast: (id) => sonnerToast.dismiss(id)
   };
+
+  return toast;
 }
 
 export { useToast, toast }

@@ -5,6 +5,8 @@ import NavBar from '@/components/navigation/NavBar'
 /* import { ToasterProvider } from '@/components/providers/toaster-provider'; */
 import { ThemeProvider } from "@/components/theme-provider"
 import PointerEventsHandler from "@/components/PointerEventsHandler";
+import { PageTracker } from 'react-page-tracker';
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -86,6 +88,7 @@ export default function RootLayout({ children }) {
         >
           <AuthProvider>
             <PointerEventsHandler />
+            <PageTracker />
             <NavBar />
             {children}
             {/* <ToasterProvider /> */}

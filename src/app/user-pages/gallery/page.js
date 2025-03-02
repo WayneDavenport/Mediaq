@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { LoadingScreen } from "@/components/loading/loading-screen";
 import { ToasterProvider } from "@/components/providers/toaster-provider"
 
+
 function GalleryContent() {
     const { data: session, status } = useSession();
     const router = useRouter();
@@ -349,6 +350,7 @@ function GalleryContent() {
     return (
         <>
             <ToasterProvider />
+
             <div className="container mx-auto px-4 py-8">
                 <h1 className="text-3xl font-bold mb-8">My Media Gallery</h1>
 

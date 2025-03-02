@@ -21,6 +21,9 @@ import ProgressChart from "@/components/progress/ProgressChart";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { cn } from "@/lib/utils";
 import { LoadingScreen } from "@/components/loading/loading-screen";
+import JustWatchLink from '@/components/streaming/JustWatchLink';
+import BookResources from "@/components/books/BookResources";
+
 import {
     Popover,
     PopoverContent,
@@ -50,7 +53,7 @@ export default function Dashboard() {
     const id = useId();
     const [sortOption, setSortOption] = useState("queue");
     const [lockedItems, setLockedItems] = useState([]);
-    const [activeChart, setActiveChart] = useState("progress");
+    const [activeChart, setActiveChart] = useState("time");
     const router = useRouter();
 
     useOutsideClick(ref, (event) => {
@@ -362,6 +365,7 @@ export default function Dashboard() {
     return (
         <>
             <ToasterProvider />
+
             <AnimatePresence>
                 {expandedId && (
                     <motion.div
@@ -594,7 +598,7 @@ export default function Dashboard() {
                 <div className={styles.chartContainer}>
                     <div className="flex justify-end mb-4">
                         <Select
-                            defaultValue="progress"
+                            defaultValue="time"
                             onValueChange={(value) => setActiveChart(value)}
                         >
                             <SelectTrigger className="w-[180px]">
@@ -764,6 +768,30 @@ export default function Dashboard() {
                                                     </>
                                                 )}
                                             </div>
+
+                                            {/* Add the streaming section after other details but before description */}
+                                            {(item.media_type === 'movie' || item.media_type === 'tv') && (
+                                                <div className="mt-4 mb-2">
+                                                    <JustWatchLink
+                                                        title={item.title}
+                                                        mediaType={item.media_type}
+                                                        year={item.media_type === 'movie'
+                                                            ? item.movies?.release_date?.substring(0, 4)
+                                                            : item.tv_shows?.first_air_date?.substring(0, 4)
+                                                        }
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {item.media_type === 'book' && (
+                                                <div className="mt-4 mb-2">
+                                                    <BookResources
+                                                        title={item.title}
+                                                        author={item.books?.authors}
+                                                        isbn={item.books?.isbn || item.books?.isbn13 || item.books?.isbn10}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className={styles.descriptionWrapper}>

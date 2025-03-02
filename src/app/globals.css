@@ -162,7 +162,25 @@ body {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Add this to your global CSS file */
+.toast-container {
+  transition: all 0.2s ease-out !important;
+}
+
+/* Faster exit animation */
+.toast-container[data-state="closed"] {
+  animation-duration: 200ms !important;
+}
+
+/* Make toasts more interactive */
+.toast-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
