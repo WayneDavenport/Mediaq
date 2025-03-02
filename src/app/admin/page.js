@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Copy, RefreshCw } from 'lucide-react';
 import UserManagement from '@/components/admin/UserManagement';
+import GmgCatalogSyncButton from '@/components/admin/GmgCatalogSyncButton';
 
 export default function AdminPage() {
     const { data: session, status } = useSession();
@@ -486,6 +487,7 @@ export default function AdminPage() {
                                             Reset and fix queue numbers for all users
                                         </p>
                                     </div>
+                                    <GmgCatalogSyncButton />
                                     <FixQueueButton />
                                 </div>
                             </CardContent>

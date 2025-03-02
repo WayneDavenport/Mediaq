@@ -1,3 +1,5 @@
+'use server';
+
 import { XMLParser } from 'fast-xml-parser';
 import fs from 'fs/promises';
 import path from 'path';
