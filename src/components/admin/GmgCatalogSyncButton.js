@@ -42,16 +42,17 @@ export default function GmgCatalogSyncButton() {
         <Button
             onClick={handleSync}
             disabled={isLoading}
+            className="bg-green-500 hover:bg-green-600"
             variant="default"
             size="sm"
         >
             {isLoading ? (
                 <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Syncing Catalog...
+                    Abducting Green Man Catalog...
                 </>
             ) : (
-                'Sync GMG Catalog'
+                'Sync Green Man Catalog'
             )}
         </Button>
     );
