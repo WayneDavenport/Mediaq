@@ -10,6 +10,7 @@ Disallow: /_next/static/media/*.woff2$
 Disallow: /_next/static/media/*.ttf$
 Disallow: /_next/static/media/*.woff$
 Disallow: /_next/static/media/*.eot$
+Disallow: /url*/
 
 # Sitemap location
 Sitemap: https://www.mediaq.io/sitemap.xml 
