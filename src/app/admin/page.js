@@ -242,10 +242,11 @@ export default function AdminPage() {
                 </div>
 
                 <Tabs defaultValue="users">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="users">Nintendo Test Users</TabsTrigger>
                         <TabsTrigger value="social">Social Data</TabsTrigger>
                         <TabsTrigger value="queue">Queue</TabsTrigger>
+                        <TabsTrigger value="Green Man Gaming">Green Man Gaming</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="users" className="space-y-4">
@@ -487,9 +488,21 @@ export default function AdminPage() {
                                             Reset and fix queue numbers for all users
                                         </p>
                                     </div>
-                                    <GmgCatalogSyncButton />
                                     <FixQueueButton />
                                 </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="Green Man Gaming">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Green Man Gaming Catalog</CardTitle>
+                                <CardDescription>
+                                    Sync and manage the Green Man Gaming catalog
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <GmgCatalogSyncButton />
                             </CardContent>
                         </Card>
                     </TabsContent>
