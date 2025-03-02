@@ -53,7 +53,7 @@ export default function Dashboard() {
     const id = useId();
     const [sortOption, setSortOption] = useState("queue");
     const [lockedItems, setLockedItems] = useState([]);
-    const [activeChart, setActiveChart] = useState("time");
+    const [activeChart, setActiveChart] = useState("progress");
     const router = useRouter();
 
     useOutsideClick(ref, (event) => {
@@ -598,7 +598,7 @@ export default function Dashboard() {
                 <div className={styles.chartContainer}>
                     <div className="flex justify-end mb-4">
                         <Select
-                            defaultValue="time"
+                            defaultValue="progress"
                             onValueChange={(value) => setActiveChart(value)}
                         >
                             <SelectTrigger className="w-[180px]">
