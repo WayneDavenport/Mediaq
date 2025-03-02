@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { findAffiliateLink } from '@/lib/supabase-gmg';
 import { Button } from '@/components/ui/button';
 
 export default function QueueGameItem({ gameData }) {
@@ -10,10 +9,19 @@ export default function QueueGameItem({ gameData }) {
     useEffect(() => {
         async function getAffiliateData() {
             if (gameData.title) {
-                const data = await findAffiliateLink(gameData.title);
-                setAffiliateInfo(data);
+                setLoading(true);
+                try {
+                    const response = await fetch(`/api/gmg/affiliate-link?title=${encodeURIComponent(gameData.title)}`);
+                    const data = await response.json();
+                    setAffiliateInfo(data.link);
+                } catch (error) {
+                    console.error('Error fetching affiliate link:', error);
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                setLoading(false);
             }
-            setLoading(false);
         }
 
         getAffiliateData();
