@@ -67,6 +67,11 @@ export default function NavBar() {
         });
     }
 
+    // Add a signOut handler function near your other functions
+    const handleSignOut = async () => {
+        await signOut({ redirect: true, callbackUrl: '/' })
+    }
+
     return (
         <nav className={styles.navbar}>
             <div className={styles.navContent}>
@@ -164,7 +169,7 @@ export default function NavBar() {
                             <DropdownMenuItem>
                                 <Link href="/user-pages/settings" className="w-full">Settings</Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => signOut()}>
+                            <DropdownMenuItem onClick={handleSignOut}>
                                 Logout
                             </DropdownMenuItem>
                         </DropdownMenuContent>
