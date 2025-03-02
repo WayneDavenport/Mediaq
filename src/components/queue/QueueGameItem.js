@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import AffiliateDisclosure from '@/components/legal/AffiliateDisclosure';
 
 export default function QueueGameItem({ gameData }) {
     const [affiliateInfo, setAffiliateInfo] = useState(null);
@@ -53,6 +54,7 @@ export default function QueueGameItem({ gameData }) {
                             </a>
                         </div>
                     </div>
+                    <AffiliateDisclosure minimal={true} />
                 </div>
             )}
         </div>

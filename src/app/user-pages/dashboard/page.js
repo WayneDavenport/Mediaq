@@ -37,6 +37,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { ToasterProvider } from "@/components/providers/toaster-provider"
+import AffiliateDisclosure from '@/components/legal/AffiliateDisclosure';
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 
@@ -841,17 +842,20 @@ export default function Dashboard() {
                                                             Finding deals...
                                                         </div>
                                                     ) : affiliateLink ? (
-                                                        <a
-                                                            href={affiliateLink.affiliate_link}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center gap-2 text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
-                                                        >
-                                                            <span>Buy on Green Man Gaming</span>
-                                                            <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
-                                                                ${affiliateLink.price}
-                                                            </span>
-                                                        </a>
+                                                        <>
+                                                            <a
+                                                                href={affiliateLink.affiliate_link}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex items-center gap-2 text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
+                                                            >
+                                                                <span>Buy on Green Man Gaming</span>
+                                                                <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
+                                                                    ${affiliateLink.price}
+                                                                </span>
+                                                            </a>
+                                                            <AffiliateDisclosure minimal={true} />
+                                                        </>
                                                     ) : (
                                                         <span className="text-sm text-muted-foreground">No store links available</span>
                                                     )}
