@@ -173,11 +173,13 @@ export default function NavBar() {
                     ))}
                 </div>
 
-                {/* Right Section - Only show avatar on mobile, full controls on desktop */}
+                {/* Right Section - Fixed to show notification bell on all screen sizes */}
                 <div className="flex items-center gap-2">
-                    {/* Only show on desktop */}
-                    <div className="hidden lg:flex items-center gap-2 sm:gap-4">
-                        <NotificationsDropdown />
+                    {/* Notification bell - visible on all screen sizes */}
+                    <NotificationsDropdown />
+
+                    {/* Theme toggle - only visible on desktop */}
+                    <div className="hidden lg:block">
                         <Button
                             variant="ghost"
                             size="icon"
