@@ -7,6 +7,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useSession } from 'next-auth/react';
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationNext,
+    PaginationPrevious
+} from "@/components/ui/pagination";
 
 const BookSearch = () => {
     const [searchParams, setSearchParams] = useState({
@@ -16,6 +23,8 @@ const BookSearch = () => {
     const [results, setResults] = useState([]);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
     const setStagingItem = useSearchStore((state) => state.setStagingItem);
     const { data: session } = useSession();
 
@@ -29,20 +38,18 @@ const BookSearch = () => {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (!searchParams.query && !searchParams.author) {
-            setError('Please enter either a title or an author.');
-            return;
-        }
-
+        if (e) e.preventDefault();
+        setError('');
         setIsLoading(true);
+
         try {
-            const response = await fetch(
-                `/api/media-api/google-books?query=${searchParams.query}&author=${searchParams.author}`
-            );
+            const response = await fetch(`/api/search/books?query=${encodeURIComponent(searchParams.query)}&author=${encodeURIComponent(searchParams.author)}&page=${page}`);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
             const data = await response.json();
             setResults(data.results);
+            setTotalPages(data.total_pages || 1);
         } catch (error) {
             console.error('Error fetching data:', error);
             setError('Failed to fetch books. Please try again.');
@@ -185,6 +192,31 @@ const BookSearch = () => {
                         </Card>
                     ))}
                 </div>
+            )}
+
+            {results.length > 0 && totalPages > 1 && (
+                <Pagination>
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious
+                                onClick={() => {
+                                    setPage(p => Math.max(1, p - 1));
+                                    handleSubmit(new Event('submit'));
+                                }}
+                                disabled={page === 1 || isLoading}
+                            />
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationNext
+                                onClick={() => {
+                                    setPage(p => Math.min(totalPages, p + 1));
+                                    handleSubmit(new Event('submit'));
+                                }}
+                                disabled={page === totalPages || isLoading}
+                            />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
             )}
         </div>
     );

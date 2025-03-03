@@ -122,6 +122,28 @@ body {
   [class*='animate-'] {
     @apply select-none;
   }
+
+  /* Make textareas and inputs wider on mobile */
+  textarea,
+  input[type="text"],
+  input[type="email"],
+  input[type="number"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Ensure the full-width-mobile class works globally */
+  .full-width-mobile {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Fix dialog content for mobile */
+  .dialog-content {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    padding: 16px !important;
+  }
 }
 
 /* Optimize scrolling */

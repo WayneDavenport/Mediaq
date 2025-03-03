@@ -1,0 +1,59 @@
+.searchContainer {
+    @apply space-y-4;
+}
+
+.searchForm {
+    @apply space-y-2 p-4 bg-background rounded-lg shadow-sm border sm:border md:border lg:border xl:border;
+    @apply border-0 rounded-none sm:rounded-lg md:rounded-lg lg:rounded-lg xl:rounded-lg;
+}
+
+.searchFormTitle {
+    @apply text-lg font-medium mb-2;
+}
+
+.inputGroup {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-2;
+}
+
+.resultsGrid {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+
+.mediaCard {
+    @apply transition-all duration-200 hover:shadow-md bg-card text-card-foreground;
+    @apply sm:border md:border lg:border xl:border;
+    @apply border-0 rounded-none sm:rounded-lg md:rounded-lg;
+}
+
+.mediaImage {
+    @apply w-full h-auto rounded-none sm:rounded-lg md:rounded-lg mb-4 aspect-[2/3] object-cover;
+}
+
+.mediaTitle {
+    @apply text-lg font-semibold leading-tight mb-1;
+}
+
+.mediaAuthor,
+.mediaInfo {
+    @apply text-sm text-muted-foreground mb-2;
+}
+
+.mediaDescription {
+    @apply text-sm text-muted-foreground mb-4 line-clamp-3;
+}
+
+.mediaMetadata {
+    @apply space-y-1 mb-4 text-sm text-muted-foreground;
+}
+
+.badgeContainer {
+    @apply flex flex-wrap gap-1 mb-3;
+}
+
+.actionButton {
+    @apply w-full;
+}
+
+.loaderContainer {
+    @apply flex items-center justify-center min-h-[200px];
+}

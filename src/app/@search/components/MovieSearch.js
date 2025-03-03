@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/pagination";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import styles from './search.module.css';
+import { Badge } from "@/components/ui/badge";
 
 const MovieSearch = () => {
     const [searchParams, setSearchParams] = useState({
@@ -92,26 +94,28 @@ const MovieSearch = () => {
     };
 
     return (
-        <div className="space-y-4">
-            <form onSubmit={handleSubmit} className="flex gap-2">
-                <Input
-                    type="text"
-                    name="query"
-                    placeholder="Search movies..."
-                    value={searchParams.query}
-                    onChange={handleInputChange}
-                    required
-                />
-                <Button type="submit" disabled={isLoading}>
-                    {isLoading ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Searching
-                        </>
-                    ) : (
-                        'Search'
-                    )}
-                </Button>
+        <div className={styles.searchContainer}>
+            <form onSubmit={handleSubmit} className={styles.searchForm}>
+                <h3 className={styles.searchFormTitle}>Search for Movies</h3>
+                <div className={styles.inputGroup}>
+                    <Input
+                        type="text"
+                        name="query"
+                        placeholder="Movie title..."
+                        value={searchParams.query}
+                        onChange={handleInputChange}
+                    />
+                    <Button type="submit" disabled={isLoading}>
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Searching...
+                            </>
+                        ) : (
+                            'Search'
+                        )}
+                    </Button>
+                </div>
             </form>
 
             {error && (
@@ -121,52 +125,51 @@ const MovieSearch = () => {
             )}
 
             {isLoading ? (
-                <div className="flex items-center justify-center min-h-[200px]">
+                <div className={styles.loaderContainer}>
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className={styles.resultsGrid}>
                     {results.map((result) => (
-                        <Card key={`movie-${result.movie_details.tmdb_id}`}>
+                        <Card key={`movie-${result.movie_details.tmdb_id}`} className={styles.mediaCard}>
                             <CardContent className="p-4">
                                 {result.poster_path && (
                                     <img
                                         src={`https://image.tmdb.org/t/p/w500${result.poster_path}`}
                                         alt={result.title}
-                                        className="w-full h-auto rounded-lg mb-4"
+                                        className={styles.mediaImage}
                                     />
                                 )}
-                                <h3 className="text-lg font-semibold mb-2">
-                                    {result.title}
-                                </h3>
-                                <p className="text-sm text-muted-foreground mb-4">
-                                    {result.description?.substring(0, 150)}...
+                                <h3 className={styles.mediaTitle}>{result.title}</h3>
+                                {result.movie_details.release_date && (
+                                    <p className={styles.mediaInfo}>
+                                        Released: {result.movie_details.release_date}
+                                    </p>
+                                )}
+                                <p className={styles.mediaDescription}>
+                                    {result.description?.substring(0, 150)}
+                                    {result.description?.length > 150 ? '...' : ''}
                                 </p>
-                                <div className="space-y-1 mb-4">
-                                    {result.movie_details.director && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Director: {result.movie_details.director}
-                                        </p>
-                                    )}
-                                    {result.movie_details.release_date && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Release Date: {result.movie_details.release_date}
-                                        </p>
+                                <div className={styles.mediaMetadata}>
+                                    {result.movie_details.duration > 0 && (
+                                        <p>Runtime: {result.movie_details.duration} min</p>
                                     )}
                                     {result.movie_details.vote_average > 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Rating: {result.movie_details.vote_average}/10
-                                        </p>
-                                    )}
-                                    {result.genres && result.genres.length > 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Genres: {result.genres.join(', ')}
-                                        </p>
+                                        <p>Rating: {result.movie_details.vote_average}/10</p>
                                     )}
                                 </div>
+                                {result.movie_details.genres && (
+                                    <div className={styles.badgeContainer}>
+                                        {result.movie_details.genres.map((genre, idx) => (
+                                            <Badge key={idx} variant="outline">
+                                                {genre}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
                                 <Button
                                     onClick={() => handleAdd(result)}
-                                    className="w-full"
+                                    className={styles.actionButton}
                                 >
                                     Add to Queue
                                 </Button>
@@ -187,9 +190,6 @@ const MovieSearch = () => {
                                 }}
                                 disabled={page === 1 || isLoading}
                             />
-                        </PaginationItem>
-                        <PaginationItem>
-                            <span className="px-4">Page {page} of {totalPages}</span>
                         </PaginationItem>
                         <PaginationItem>
                             <PaginationNext
