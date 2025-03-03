@@ -43,7 +43,7 @@ const BookSearch = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`/api/search/books?query=${encodeURIComponent(searchParams.query)}&author=${encodeURIComponent(searchParams.author)}&page=${page}`);
+            const response = await fetch(`/api/media-api/google-books?query=${encodeURIComponent(searchParams.query)}&author=${encodeURIComponent(searchParams.author)}`);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }

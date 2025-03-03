@@ -58,7 +58,7 @@ import { COMMON_GENRES, MEDIA_SPECIFIC_GENRES, GAME_GENRE_DURATIONS } from '../l
 import { MultipleSelector } from '@/components/ui/multiple-selector';
 import React from 'react';
 import { validateCategory, PROTECTED_CATEGORIES } from "@/lib/utils";
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, PlusCircle, Plus, X } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 
@@ -972,7 +972,7 @@ const Staging = () => {
     }
 
     return (
-        <Card className={styles.stagingCard}>
+        <Card className={`${styles.stagingCard} ${styles.dashboardStyle}`}>
             <style>{errorStyles}</style>
             <CardHeader className={styles.stagingHeader}>
                 <CardTitle className={styles.stagingTitle}>
@@ -985,490 +985,493 @@ const Staging = () => {
             <CardContent className={styles.stagingContent}>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className={styles.stagingForm}>
-                        {/* Basic Information Section */}
-                        <div className={styles.formSection}>
-                            <button
-                                type="button"
+                        {/* Basic Information Section - Dashboard Style */}
+                        <div className={styles.sectionWrapper}>
+                            <div
+                                className={styles.expandedSectionHeader}
                                 onClick={() => toggleSection('basic')}
-                                className={styles.sectionToggle}
                             >
-                                <h3 className={styles.sectionTitle}>Basic Information</h3>
+                                <h3 className={styles.expandedSectionTitle}>Basic Information</h3>
                                 {expandedSections.basic ? <ChevronUp /> : <ChevronDown />}
-                            </button>
+                            </div>
 
-                            {expandedSections.basic && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className={styles.sectionContent}
-                                >
-                                    {/* Basic form fields */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* Title field */}
-                                        <FormField
-                                            control={form.control}
-                                            name="title"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Title</FormLabel>
-                                                    <FormControl>
-                                                        <Input {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                            <AnimatePresence>
+                                {expandedSections.basic && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className={styles.expandedSectionContent}
+                                    >
+                                        {/* Basic form fields */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Title field */}
+                                            <FormField
+                                                control={form.control}
+                                                name="title"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Title</FormLabel>
+                                                        <FormControl>
+                                                            <Input {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
 
-                                        {/* Enhanced Category field */}
-                                        <FormField
-                                            control={form.control}
-                                            name="category"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Category</FormLabel>
-                                                    {!isAddingCustomCategory ? (
-                                                        <>
-                                                            <Select
-                                                                onValueChange={field.onChange}
-                                                                value={field.value}
-                                                            >
-                                                                <FormControl>
-                                                                    <SelectTrigger>
-                                                                        <SelectValue placeholder="Select category" />
-                                                                    </SelectTrigger>
-                                                                </FormControl>
-                                                                <SelectContent>
-                                                                    <SelectGroup>
-                                                                        {allCategories.map((cat) => (
-                                                                            <SelectItem key={cat} value={cat}>
-                                                                                {cat}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectGroup>
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="mt-1"
-                                                                onClick={() => setIsAddingCustomCategory(true)}
-                                                            >
-                                                                <PlusCircle className="h-4 w-4 mr-1" />
-                                                                Add custom category
-                                                            </Button>
-                                                        </>
-                                                    ) : (
-                                                        <div className="flex flex-col gap-2">
-                                                            <div className="flex gap-2">
-                                                                <Input
-                                                                    value={customCategory}
-                                                                    onChange={(e) => setCustomCategory(e.target.value)}
-                                                                    onKeyPress={handleCustomCategoryKeyPress}
-                                                                    placeholder="Enter custom category"
-                                                                    className="flex-1"
-                                                                    autoFocus
-                                                                />
+                                            {/* Enhanced Category field */}
+                                            <FormField
+                                                control={form.control}
+                                                name="category"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Category</FormLabel>
+                                                        {!isAddingCustomCategory ? (
+                                                            <>
+                                                                <Select
+                                                                    onValueChange={field.onChange}
+                                                                    value={field.value}
+                                                                >
+                                                                    <FormControl>
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select category" />
+                                                                        </SelectTrigger>
+                                                                    </FormControl>
+                                                                    <SelectContent>
+                                                                        <SelectGroup>
+                                                                            {allCategories.map((cat) => (
+                                                                                <SelectItem key={cat} value={cat}>
+                                                                                    {cat}
+                                                                                </SelectItem>
+                                                                            ))}
+                                                                        </SelectGroup>
+                                                                    </SelectContent>
+                                                                </Select>
                                                                 <Button
                                                                     type="button"
-                                                                    onClick={handleCustomCategoryAdd}
-                                                                    disabled={!customCategory.trim()}
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="mt-1"
+                                                                    onClick={() => setIsAddingCustomCategory(true)}
                                                                 >
-                                                                    Add
+                                                                    <PlusCircle className="h-4 w-4 mr-1" />
+                                                                    Add custom category
+                                                                </Button>
+                                                            </>
+                                                        ) : (
+                                                            <div className="flex flex-col gap-2">
+                                                                <div className="flex gap-2">
+                                                                    <Input
+                                                                        value={customCategory}
+                                                                        onChange={(e) => setCustomCategory(e.target.value)}
+                                                                        onKeyPress={handleCustomCategoryKeyPress}
+                                                                        placeholder="Enter custom category"
+                                                                        className="flex-1"
+                                                                        autoFocus
+                                                                    />
+                                                                    <Button
+                                                                        type="button"
+                                                                        onClick={handleCustomCategoryAdd}
+                                                                        disabled={!customCategory.trim()}
+                                                                    >
+                                                                        Add
+                                                                    </Button>
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => {
+                                                                        setIsAddingCustomCategory(false);
+                                                                        setCustomCategory('');
+                                                                    }}
+                                                                >
+                                                                    Cancel
                                                                 </Button>
                                                             </div>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => {
-                                                                    setIsAddingCustomCategory(false);
-                                                                    setCustomCategory('');
-                                                                }}
-                                                            >
-                                                                Cancel
-                                                            </Button>
-                                                        </div>
-                                                    )}
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
+                                                        )}
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
 
-                                    {/* Description field with full-width class */}
-                                    <FormField
-                                        control={form.control}
-                                        name="description"
-                                        render={({ field }) => (
-                                            <FormItem className="full-width-mobile">
-                                                <FormLabel>Description</FormLabel>
-                                                <FormControl>
-                                                    <Textarea
-                                                        placeholder="Enter a description"
-                                                        {...field}
-                                                        value={field.value || ''}
-                                                        className="min-h-[100px]"
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    {/* Genres selector */}
-                                    <GenreSelector />
-                                </motion.div>
-                            )}
-                        </div>
-
-                        {/* Media Details Section */}
-                        <div className={styles.formSection}>
-                            <button
-                                type="button"
-                                onClick={() => toggleSection('details')}
-                                className={styles.sectionToggle}
-                            >
-                                <h3 className={styles.sectionTitle}>Media Details</h3>
-                                {expandedSections.details ? <ChevronUp /> : <ChevronDown />}
-                            </button>
-
-                            {expandedSections.details && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className={styles.sectionContent}
-                                >
-                                    {/* Media type specific fields */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* Fields common to all media types */}
+                                        {/* Description field - full width on mobile */}
                                         <FormField
                                             control={form.control}
-                                            name="genres"
+                                            name="description"
                                             render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Genres</FormLabel>
+                                                <FormItem className="full-width-mobile">
+                                                    <FormLabel>Description</FormLabel>
                                                     <FormControl>
-                                                        <Input {...field} value={field.value || ''} />
+                                                        <Textarea
+                                                            placeholder="Enter a description"
+                                                            {...field}
+                                                            value={field.value || ''}
+                                                            className="min-h-[100px]"
+                                                        />
                                                     </FormControl>
-                                                    <FormDescription>
-                                                        Comma-separated list of genres
-                                                    </FormDescription>
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
 
-                                        {/* Book-specific fields */}
-                                        {mediaType === 'book' && (
-                                            <>
-                                                <FormField
-                                                    control={form.control}
-                                                    name="authors"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Author(s)</FormLabel>
-                                                            <FormControl>
-                                                                <Input {...field} value={field.value || ''} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="page_count"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Page Count</FormLabel>
-                                                            <FormControl>
-                                                                <Input
-                                                                    type="number"
-                                                                    {...field}
-                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                                                    value={field.value || ''}
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="isbn"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>ISBN</FormLabel>
-                                                            <FormControl>
-                                                                <Input {...field} value={field.value || ''} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="publisher"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Publisher</FormLabel>
-                                                            <FormControl>
-                                                                <Input {...field} value={field.value || ''} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            </>
-                                        )}
-
-                                        {/* Movie-specific fields */}
-                                        {mediaType === 'movie' && (
-                                            <>
-                                                <FormField
-                                                    control={form.control}
-                                                    name="runtime"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Runtime (minutes)</FormLabel>
-                                                            <FormControl>
-                                                                <Input
-                                                                    type="number"
-                                                                    {...field}
-                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                                                    value={field.value || ''}
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="director"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Director</FormLabel>
-                                                            <FormControl>
-                                                                <Input {...field} value={field.value || ''} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="release_date"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Release Date</FormLabel>
-                                                            <FormControl>
-                                                                <Input {...field} value={field.value || ''} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="vote_average"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Rating</FormLabel>
-                                                            <FormControl>
-                                                                <Input
-                                                                    type="number"
-                                                                    step="0.1"
-                                                                    min="0"
-                                                                    max="10"
-                                                                    {...field}
-                                                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                                                    value={field.value || ''}
-                                                                />
-                                                            </FormControl>
-                                                            <FormDescription>Rating out of 10</FormDescription>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            </>
-                                        )}
-
-                                        {/* TV-specific fields */}
-                                        {mediaType === 'tv' && (
-                                            <>
-                                                <FormField
-                                                    control={form.control}
-                                                    name="seasons"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Seasons</FormLabel>
-                                                            <FormControl>
-                                                                <Input
-                                                                    type="number"
-                                                                    {...field}
-                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                                                    value={field.value || ''}
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="total_episodes"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Total Episodes</FormLabel>
-                                                            <FormControl>
-                                                                <Input
-                                                                    type="number"
-                                                                    {...field}
-                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                                                    value={field.value || ''}
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="average_runtime"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Episode Runtime (min)</FormLabel>
-                                                            <FormControl>
-                                                                <Input
-                                                                    type="number"
-                                                                    {...field}
-                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                                                    value={field.value || ''}
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="release_date"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>First Air Date</FormLabel>
-                                                            <FormControl>
-                                                                <Input {...field} value={field.value || ''} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            </>
-                                        )}
-
-                                        {/* Game-specific fields */}
-                                        {mediaType === 'game' && (
-                                            <>
-                                                <FormField
-                                                    control={form.control}
-                                                    name="platforms"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Platforms</FormLabel>
-                                                            <FormControl>
-                                                                <Input {...field} value={field.value || ''} />
-                                                            </FormControl>
-                                                            <FormDescription>
-                                                                Comma-separated list of platforms
-                                                            </FormDescription>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="publishers"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Publisher(s)</FormLabel>
-                                                            <FormControl>
-                                                                <Input {...field} value={field.value || ''} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="average_playtime"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Average Playtime (min)</FormLabel>
-                                                            <FormControl>
-                                                                <Input
-                                                                    type="number"
-                                                                    {...field}
-                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                                                    value={field.value || ''}
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="release_date"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Release Date</FormLabel>
-                                                            <FormControl>
-                                                                <Input {...field} value={field.value || ''} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            </>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            )}
+                                        {/* Genres selector */}
+                                        <GenreSelector />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
-                        {/* Lock genre Section */}
-                        <div className={styles.formSection}>
-                            <button
-                                type="button"
-                                onClick={() => toggleSection('lock')}
-                                className={styles.sectionToggle}
+                        {/* Media Details Section - Dashboard Style */}
+                        <div className={styles.sectionWrapper}>
+                            <div
+                                className={styles.expandedSectionHeader}
+                                onClick={() => toggleSection('details')}
                             >
-                                <h3 className={styles.sectionTitle}>Lock Requirements</h3>
-                                {expandedSections.lock ? <ChevronUp /> : <ChevronDown />}
-                            </button>
+                                <h3 className={styles.expandedSectionTitle}>Media Details</h3>
+                                {expandedSections.details ? <ChevronUp /> : <ChevronDown />}
+                            </div>
 
-                            {expandedSections.lock && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className={styles.sectionContent}
-                                >
-                                    <LockRequirements
-                                        form={form}
-                                        incompleteItems={incompleteItems}
-                                        allCategories={allCategories}
-                                        calculateReadingTime={calculateReadingTime}
-                                        userId={session?.user?.id}
-                                    />
-                                </motion.div>
-                            )}
+                            <AnimatePresence>
+                                {expandedSections.details && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className={styles.expandedSectionContent}
+                                    >
+                                        {/* Media type specific fields */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Fields common to all media types */}
+                                            <FormField
+                                                control={form.control}
+                                                name="genres"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Genres</FormLabel>
+                                                        <FormControl>
+                                                            <Input {...field} value={field.value || ''} />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            Comma-separated list of genres
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            {/* Book-specific fields */}
+                                            {mediaType === 'book' && (
+                                                <>
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="authors"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Author(s)</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...field} value={field.value || ''} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="page_count"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Page Count</FormLabel>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        type="number"
+                                                                        {...field}
+                                                                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                        value={field.value || ''}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="isbn"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>ISBN</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...field} value={field.value || ''} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="publisher"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Publisher</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...field} value={field.value || ''} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </>
+                                            )}
+
+                                            {/* Movie-specific fields */}
+                                            {mediaType === 'movie' && (
+                                                <>
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="runtime"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Runtime (minutes)</FormLabel>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        type="number"
+                                                                        {...field}
+                                                                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                        value={field.value || ''}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="director"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Director</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...field} value={field.value || ''} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="release_date"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Release Date</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...field} value={field.value || ''} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="vote_average"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Rating</FormLabel>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        type="number"
+                                                                        step="0.1"
+                                                                        min="0"
+                                                                        max="10"
+                                                                        {...field}
+                                                                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                                        value={field.value || ''}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormDescription>Rating out of 10</FormDescription>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </>
+                                            )}
+
+                                            {/* TV-specific fields */}
+                                            {mediaType === 'tv' && (
+                                                <>
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="seasons"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Seasons</FormLabel>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        type="number"
+                                                                        {...field}
+                                                                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                        value={field.value || ''}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="total_episodes"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Total Episodes</FormLabel>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        type="number"
+                                                                        {...field}
+                                                                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                        value={field.value || ''}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="average_runtime"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Episode Runtime (min)</FormLabel>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        type="number"
+                                                                        {...field}
+                                                                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                        value={field.value || ''}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="release_date"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>First Air Date</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...field} value={field.value || ''} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </>
+                                            )}
+
+                                            {/* Game-specific fields */}
+                                            {mediaType === 'game' && (
+                                                <>
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="platforms"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Platforms</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...field} value={field.value || ''} />
+                                                                </FormControl>
+                                                                <FormDescription>
+                                                                    Comma-separated list of platforms
+                                                                </FormDescription>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="publishers"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Publisher(s)</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...field} value={field.value || ''} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="average_playtime"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Average Playtime (min)</FormLabel>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        type="number"
+                                                                        {...field}
+                                                                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                        value={field.value || ''}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="release_date"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Release Date</FormLabel>
+                                                                <FormControl>
+                                                                    <Input {...field} value={field.value || ''} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
-                        {/* Submit section */}
+                        {/* Lock Requirements Section - Dashboard Style */}
+                        <div className={styles.sectionWrapper}>
+                            <div
+                                className={styles.expandedSectionHeader}
+                                onClick={() => toggleSection('lock')}
+                            >
+                                <h3 className={styles.expandedSectionTitle}>Lock Requirements</h3>
+                                {expandedSections.lock ? <ChevronUp /> : <ChevronDown />}
+                            </div>
+
+                            <AnimatePresence>
+                                {expandedSections.lock && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className={styles.expandedSectionContent}
+                                    >
+                                        <LockRequirements
+                                            form={form}
+                                            incompleteItems={incompleteItems}
+                                            allCategories={allCategories}
+                                            calculateReadingTime={calculateReadingTime}
+                                            userId={session?.user?.id}
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Submit section - keep consistent with dashboard */}
                         <div className={styles.submitSection}>
                             <Button type="submit" disabled={isLoading}>
                                 {isLoading ? (
