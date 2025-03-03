@@ -72,10 +72,26 @@ export default function NavBar() {
         await signOut({ redirect: true, callbackUrl: '/' })
     }
 
+    // Add theme toggle and signout to mobile menu for easier access
+    const mobileMenuItems = [
+        ...navLinks,
+        {
+            href: '#theme-toggle',
+            label: theme === 'dark' ? 'Light Mode' : 'Dark Mode',
+            icon: theme === 'dark' ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />,
+            onClick: () => setTheme(theme === 'dark' ? 'light' : 'dark')
+        },
+        {
+            href: '#sign-out',
+            label: 'Sign Out',
+            onClick: handleSignOut
+        }
+    ];
+
     return (
         <nav className={styles.navbar}>
             <div className={styles.navContent}>
-                {/* Mobile Menu */}
+                {/* Mobile Menu Button */}
                 <Sheet open={isOpen} onOpenChange={setIsOpen}>
                     <SheetTrigger asChild className="lg:hidden">
                         <Button variant="ghost" size="icon">
@@ -98,26 +114,44 @@ export default function NavBar() {
                                 <span className="ml-2 font-medium">Home</span>
                             </Link>
 
-                            {/* Other nav links */}
-                            {navLinks.map((link) => (
-                                <Link
-                                    key={link.href}
-                                    href={link.href}
-                                    className={`px-4 py-2 rounded-md transition-colors flex items-center
-                                        ${pathname === link.href ? 'bg-primary/10 text-primary' : 'hover:bg-accent'}
-                                        ${link.label === 'Admin' ? 'text-amber-500 font-medium' : ''}
-                                    `}
-                                    onClick={() => setIsOpen(false)}
-                                >
-                                    {link.icon && link.icon}
-                                    {link.label}
-                                </Link>
+                            {/* Mobile menu items */}
+                            {mobileMenuItems.map((item, index) => (
+                                <div key={index}>
+                                    {item.onClick ? (
+                                        <button
+                                            className={`px-4 py-2 rounded-md transition-colors flex items-center w-full text-left
+                                                ${item.href === pathname ? 'bg-primary/10 text-primary' : 'hover:bg-accent'}
+                                                ${item.label === 'Admin' ? 'text-amber-500 font-medium' : ''}
+                                            `}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                item.onClick();
+                                                setIsOpen(false);
+                                            }}
+                                        >
+                                            {item.icon && item.icon}
+                                            {item.label}
+                                        </button>
+                                    ) : (
+                                        <Link
+                                            href={item.href}
+                                            className={`px-4 py-2 rounded-md transition-colors flex items-center
+                                                ${item.href === pathname ? 'bg-primary/10 text-primary' : 'hover:bg-accent'}
+                                                ${item.label === 'Admin' ? 'text-amber-500 font-medium' : ''}
+                                            `}
+                                            onClick={() => setIsOpen(false)}
+                                        >
+                                            {item.icon && item.icon}
+                                            {item.label}
+                                        </Link>
+                                    )}
+                                </div>
                             ))}
                         </div>
                     </SheetContent>
                 </Sheet>
 
-                {/* Logo for desktop */}
+                {/* Logo (visible on all screen sizes) */}
                 <div className={styles.logoContainer}>
                     <Link href="/user-pages/dashboard">
                         <div className={styles.logoCircle}>Mq</div>
@@ -139,22 +173,26 @@ export default function NavBar() {
                     ))}
                 </div>
 
-                {/* Right Section */}
-                <div className="flex items-center gap-2 sm:gap-4">
-                    <NotificationsDropdown />
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                    >
-                        {theme === 'dark' ? (
-                            <Sun className="h-5 w-5" />
-                        ) : (
-                            <Moon className="h-5 w-5" />
-                        )}
-                        <span className="sr-only">Toggle theme</span>
-                    </Button>
+                {/* Right Section - Only show avatar on mobile, full controls on desktop */}
+                <div className="flex items-center gap-2">
+                    {/* Only show on desktop */}
+                    <div className="hidden lg:flex items-center gap-2 sm:gap-4">
+                        <NotificationsDropdown />
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        >
+                            {theme === 'dark' ? (
+                                <Sun className="h-5 w-5" />
+                            ) : (
+                                <Moon className="h-5 w-5" />
+                            )}
+                            <span className="sr-only">Toggle theme</span>
+                        </Button>
+                    </div>
 
+                    {/* Avatar dropdown - show on all screen sizes */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
