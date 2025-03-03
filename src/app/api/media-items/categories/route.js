@@ -10,17 +10,30 @@ export async function GET(request) {
     }
 
     try {
+        // Use user_id instead of user_email for more reliable filtering
         const { data, error } = await supabase
             .from('media_items')
             .select('category')
-            .eq('user_email', session.user.email);
+            .eq('user_id', session.user.id)
+            .not('category', 'is', null);
 
         if (error) throw error;
 
-        // Get unique categories
-        const categories = [...new Set(data.map(item => item.category))];
+        // Get unique user categories
+        const userCategories = [...new Set(data.map(item => item.category))];
 
-        return NextResponse.json({ categories });
+        // Add default categories
+        const defaultCategories = ['General', 'Learning', 'Work', 'Fun'];
+
+        // Combine default and user categories, ensuring no duplicates
+        const allCategories = [...defaultCategories];
+        userCategories.forEach(category => {
+            if (!defaultCategories.includes(category)) {
+                allCategories.push(category);
+            }
+        });
+
+        return NextResponse.json({ categories: allCategories });
 
     } catch (error) {
         console.error('Error fetching categories:', error);

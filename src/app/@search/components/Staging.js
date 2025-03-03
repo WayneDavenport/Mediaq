@@ -58,6 +58,9 @@ import { COMMON_GENRES, MEDIA_SPECIFIC_GENRES, GAME_GENRE_DURATIONS } from '../l
 import { MultipleSelector } from '@/components/ui/multiple-selector';
 import React from 'react';
 import { validateCategory, PROTECTED_CATEGORIES } from "@/lib/utils";
+import { motion } from 'framer-motion';
+import { ChevronDown, ChevronUp, PlusCircle, Plus, X } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 const READING_SPEED = 250; // Average reading speed in words per minute
@@ -70,7 +73,7 @@ const formSchema = z.object({
     media_type: z.string(),
     category: z.string().min(1, "Category is required"),
     description: z.string().optional().nullable().default(""),
-    genres: z.array(z.string()).optional().default([]),
+    genres: z.any().optional(),  // Change from array validation to any (completely optional)
     poster_path: z.string().optional().nullable().default(""),
     backdrop_path: z.string().optional().nullable().default(""),
 
@@ -143,6 +146,14 @@ const Staging = () => {
     const [isInitializing, setIsInitializing] = useState(true);
     const [durationHours, setDurationHours] = useState(2); // Default 2 hours
     const [validationErrors, setValidationErrors] = useState({});
+    const [expandedSections, setExpandedSections] = useState({
+        basic: true,
+        details: false,
+        lock: false
+    });
+    const [isAddingCustomCategory, setIsAddingCustomCategory] = useState(false);
+    const [genreDialogOpen, setGenreDialogOpen] = useState(false);
+    const [genreInput, setGenreInput] = useState('');
 
     const form = useForm({
         resolver: zodResolver(formSchema),
@@ -168,6 +179,9 @@ const Staging = () => {
             completed: false,
         },
     });
+
+    // Add a watch for the media_type to conditionally render fields
+    const mediaType = form.watch('media_type');
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -273,7 +287,7 @@ const Staging = () => {
         }
     }, [stagingItem, form]);
 
-    // Add a function to validate form data and highlight missing fields
+    // Update validateFormData to remove genre validation
     const validateFormData = (data) => {
         const errors = {};
 
@@ -523,8 +537,8 @@ const Staging = () => {
         }
     `;
 
-    const handleCustomCategoryAdd = (newCategory) => {
-        const trimmedCategory = newCategory.trim();
+    const handleCustomCategoryAdd = () => {
+        const trimmedCategory = customCategory.trim();
         if (!trimmedCategory) return;
 
         if (!validateCategory(trimmedCategory)) {
@@ -537,8 +551,24 @@ const Staging = () => {
 
         if (!allCategories.includes(trimmedCategory)) {
             setAllCategories(prev => [...prev, trimmedCategory]);
+            // Immediately set the form value to the new category
             form.setValue('category', trimmedCategory);
-            setCustomCategory('');
+            toast.success(`Added "${trimmedCategory}" category`);
+        } else {
+            // If category already exists, just select it
+            form.setValue('category', trimmedCategory);
+        }
+
+        // Reset custom category input and hide it
+        setCustomCategory('');
+        setIsAddingCustomCategory(false);
+    };
+
+    // Handle input keypress events for the custom category field
+    const handleCustomCategoryKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleCustomCategoryAdd();
         }
     };
 
@@ -736,15 +766,90 @@ const Staging = () => {
         );
     };
 
+    // Log genre structure for debugging
+    useEffect(() => {
+        console.log("Common Genres Structure:", COMMON_GENRES);
+        console.log("Media Specific Genres:", MEDIA_SPECIFIC_GENRES);
+    }, []);
+
+    // Enhanced GenreSelector with better format handling
     const GenreSelector = () => {
         const mediaType = form.getValues('media_type');
+        const selectedGenres = form.watch('genres') || [];
 
-        // Combine common genres with media-specific genres
-        const allGenres = React.useMemo(() => [
-            ...COMMON_GENRES,
-            ...(MEDIA_SPECIFIC_GENRES[mediaType] || [])
-        ], [mediaType]);
-        console.log('Available genres:', allGenres);
+        console.log("Current selected genres:", selectedGenres);
+
+        // Combine genres and handle both string and object formats
+        const availableGenres = React.useMemo(() => {
+            const mediaSpecificGenres = MEDIA_SPECIFIC_GENRES[mediaType] || [];
+            const allGenres = [...COMMON_GENRES, ...mediaSpecificGenres];
+
+            // Normalize genres to ensure consistent structure
+            return allGenres.map(genre => {
+                // If genre is a string, convert to object
+                if (typeof genre === 'string') {
+                    return { label: genre, value: genre.toLowerCase() };
+                }
+                // If genre is already an object with value/label
+                if (genre && typeof genre === 'object') {
+                    // Ensure both label and value exist
+                    return {
+                        label: genre.label || genre.value || genre.name || String(genre),
+                        value: genre.value || genre.label || genre.name || String(genre)
+                    };
+                }
+                // Fallback for any other case
+                return { label: String(genre), value: String(genre) };
+            });
+        }, [mediaType]);
+
+        const handleSelectGenre = (genreValue) => {
+            // For custom input, create a properly formatted genre object
+            if (typeof genreValue === 'string') {
+                const existingGenre = availableGenres.find(g =>
+                    g.value === genreValue || g.label.toLowerCase() === genreValue.toLowerCase()
+                );
+
+                if (existingGenre) {
+                    // Use existing genre object if found
+                    if (!selectedGenres.some(g => g.value === existingGenre.value)) {
+                        form.setValue('genres', [...selectedGenres, existingGenre]);
+                    }
+                } else {
+                    // Create new genre object for custom input
+                    const newGenre = {
+                        label: genreValue,
+                        value: genreValue.toLowerCase().replace(/\s+/g, '_')
+                    };
+                    form.setValue('genres', [...selectedGenres, newGenre]);
+                }
+            }
+            setGenreInput('');
+        };
+
+        const handleRemoveGenre = (genreValue) => {
+            form.setValue('genres', selectedGenres.filter(g => {
+                if (typeof g === 'string') return g !== genreValue;
+                return g.value !== genreValue;
+            }));
+        };
+
+        // Helper to safely get label/value from potentially inconsistent genre format
+        const getGenreLabel = (genre) => {
+            if (typeof genre === 'string') return genre;
+            if (genre && typeof genre === 'object') {
+                return genre.label || genre.value || genre.name || "Genre";
+            }
+            return "Genre";
+        };
+
+        const getGenreValue = (genre) => {
+            if (typeof genre === 'string') return genre;
+            if (genre && typeof genre === 'object') {
+                return genre.value || genre.label || genre.name || String(genre);
+            }
+            return String(genre);
+        };
 
         return (
             <FormField
@@ -753,22 +858,109 @@ const Staging = () => {
                 render={({ field }) => (
                     <FormItem className="w-full">
                         <FormLabel>Genres</FormLabel>
-                        <MultipleSelector
-                            options={allGenres}  // Make sure we're passing the options
-                            placeholder="Select genres..."
-                            selected={field.value ? field.value.map(genre => ({
-                                label: genre,
-                                value: genre.toLowerCase()
-                            })) : []}
-                            onChange={(selected) => {
-                                field.onChange(selected.map(s => s.value));
-                            }}
-                        />
+                        <div className="flex flex-wrap gap-1 mb-2">
+                            {selectedGenres.map((genre, index) => (
+                                <Badge
+                                    key={`genre-${index}-${getGenreValue(genre)}`}
+                                    variant="secondary"
+                                    className="flex items-center gap-1"
+                                >
+                                    {getGenreLabel(genre)}
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-auto p-0 text-muted-foreground hover:text-foreground"
+                                        onClick={() => handleRemoveGenre(getGenreValue(genre))}
+                                    >
+                                        <X className="h-3 w-3" />
+                                        <span className="sr-only">Remove {getGenreLabel(genre)}</span>
+                                    </Button>
+                                </Badge>
+                            ))}
+                            {selectedGenres.length === 0 && (
+                                <div className="text-sm text-muted-foreground">No genres selected</div>
+                            )}
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setGenreDialogOpen(true)}
+                            className="w-full justify-start text-left font-normal"
+                        >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add genres...
+                        </Button>
+
+                        <Dialog open={genreDialogOpen} onOpenChange={setGenreDialogOpen}>
+                            <DialogContent className="dialog-content sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Select Genres</DialogTitle>
+                                </DialogHeader>
+                                <div className="py-4">
+                                    <div className="flex items-center space-x-2 mb-4">
+                                        <Input
+                                            value={genreInput}
+                                            onChange={(e) => setGenreInput(e.target.value)}
+                                            placeholder="Search or add custom genre..."
+                                            className="flex-1"
+                                        />
+                                        <Button
+                                            type="button"
+                                            onClick={() => {
+                                                if (genreInput.trim()) {
+                                                    handleSelectGenre(genreInput.trim());
+                                                }
+                                            }}
+                                            disabled={!genreInput.trim()}
+                                        >
+                                            Add
+                                        </Button>
+                                    </div>
+                                    <div className="space-y-1 max-h-[300px] overflow-y-auto">
+                                        {availableGenres
+                                            .filter(genre => {
+                                                const genreLabel = getGenreLabel(genre).toLowerCase();
+                                                const input = genreInput.toLowerCase();
+
+                                                // Check if genre is already selected
+                                                const isSelected = selectedGenres.some(g =>
+                                                    getGenreValue(g) === getGenreValue(genre)
+                                                );
+
+                                                return genreLabel.includes(input) && !isSelected;
+                                            })
+                                            .map((genre, index) => (
+                                                <Button
+                                                    key={`available-${index}-${getGenreValue(genre)}`}
+                                                    type="button"
+                                                    variant="ghost"
+                                                    className="w-full justify-start text-left py-3"
+                                                    onClick={() => {
+                                                        handleSelectGenre(getGenreValue(genre));
+                                                    }}
+                                                >
+                                                    {getGenreLabel(genre)}
+                                                </Button>
+                                            ))}
+                                        {/* ...no results message... */}
+                                    </div>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
                         <FormMessage />
                     </FormItem>
                 )}
             />
         );
+    };
+
+    const toggleSection = (section) => {
+        setExpandedSections(prev => ({
+            ...prev,
+            [section]: !prev[section]
+        }));
     };
 
     if (isInitializing || !stagingItem) {
@@ -792,171 +984,505 @@ const Staging = () => {
             </CardHeader>
             <CardContent className={styles.stagingContent}>
                 <Form {...form}>
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            console.log("Form submit event triggered");
-                            console.log("Current form state:", form.formState);
-
-                            // Check if there are any validation errors
-                            if (Object.keys(form.formState.errors).length > 0) {
-                                console.log("Form validation errors:", form.formState.errors);
-
-                                // If backdrop_path is the only error, fix it and continue
-                                if (Object.keys(form.formState.errors).length === 1 && form.formState.errors.backdrop_path) {
-                                    console.log("Only backdrop_path error detected, fixing and continuing");
-                                    const formData = form.getValues();
-                                    formData.backdrop_path = "";
-                                    onSubmit(formData);
-                                    return;
-                                }
-
-                                // Show toast for other validation errors
-                                toast.error("Please fix validation errors", {
-                                    description: "Check form fields highlighted in red"
-                                });
-                                return;
-                            }
-
-                            // If no validation errors, proceed with submit
-                            form.handleSubmit(onSubmit)(e);
-                        }}
-                        className={styles.formGrid}
-                    >
-                        <FormField
-                            control={form.control}
-                            name="title"
-                            render={({ field }) => (
-                                <FormItem className={`${styles.formField} ${validationErrors.title ? 'error-highlight' : ''}`}>
-                                    <FormLabel className={styles.formLabel}>Title</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            {...field}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-
-                                                // Clear validation error if present
-                                                if (validationErrors.title && e.target.value.trim() !== '') {
-                                                    const newErrors = { ...validationErrors };
-                                                    delete newErrors.title;
-                                                    setValidationErrors(newErrors);
-                                                }
-                                            }}
-                                        />
-                                    </FormControl>
-                                    {validationErrors.title && (
-                                        <p className="text-sm text-destructive">{validationErrors.title}</p>
-                                    )}
-                                    <FormMessage className={styles.errorMessage} />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="category"
-                            render={({ field }) => (
-                                <FormItem className="space-y-2">
-                                    <FormLabel>Category</FormLabel>
-                                    <div className="flex flex-col gap-2">
-                                        <Select
-                                            value={field.value}
-                                            onValueChange={field.onChange}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select a category" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    {allCategories.map((category) => (
-                                                        <SelectItem key={category} value={category}>
-                                                            {category}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
-
-                                        <div className="flex gap-2">
-                                            <Input
-                                                placeholder="Add new category..."
-                                                value={customCategory}
-                                                onChange={(e) => setCustomCategory(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        handleCustomCategoryAdd(customCategory);
-                                                    }
-                                                }}
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="secondary"
-                                                onClick={() => handleCustomCategoryAdd(customCategory)}
-                                                disabled={!customCategory.trim()}
-                                                className="shrink-0"
-                                            >
-                                                Add
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                                <FormItem className={styles.descriptionWrapper}>
-                                    <FormLabel className={styles.formLabel}>Description</FormLabel>
-                                    <FormControl>
-                                        <Textarea
-                                            {...field}
-                                            className={styles.descriptionField}
-                                        />
-                                    </FormControl>
-                                    <FormMessage className={styles.errorMessage} />
-                                </FormItem>
-                            )}
-                        />
-
-                        <GenreSelector />
-
-                        <LockRequirements
-                            form={form}
-                            incompleteItems={incompleteItems}
-                            calculateReadingTime={calculateReadingTime}
-                            allCategories={allCategories}
-                            userId={session?.user?.id}
-                            className={styles.fullWidth}
-                        />
-
-                        {renderDurationInfo()}
-
-                        <div className={styles.formActions}>
-                            <Button
+                    <form onSubmit={form.handleSubmit(onSubmit)} className={styles.stagingForm}>
+                        {/* Basic Information Section */}
+                        <div className={styles.formSection}>
+                            <button
                                 type="button"
-                                variant="outline"
-                                onClick={clearStagingItem}
+                                onClick={() => toggleSection('basic')}
+                                className={styles.sectionToggle}
                             >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                disabled={isLoading}
+                                <h3 className={styles.sectionTitle}>Basic Information</h3>
+                                {expandedSections.basic ? <ChevronUp /> : <ChevronDown />}
+                            </button>
+
+                            {expandedSections.basic && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className={styles.sectionContent}
+                                >
+                                    {/* Basic form fields */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Title field */}
+                                        <FormField
+                                            control={form.control}
+                                            name="title"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Title</FormLabel>
+                                                    <FormControl>
+                                                        <Input {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        {/* Enhanced Category field */}
+                                        <FormField
+                                            control={form.control}
+                                            name="category"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Category</FormLabel>
+                                                    {!isAddingCustomCategory ? (
+                                                        <>
+                                                            <Select
+                                                                onValueChange={field.onChange}
+                                                                value={field.value}
+                                                            >
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Select category" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    <SelectGroup>
+                                                                        {allCategories.map((cat) => (
+                                                                            <SelectItem key={cat} value={cat}>
+                                                                                {cat}
+                                                                            </SelectItem>
+                                                                        ))}
+                                                                    </SelectGroup>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="mt-1"
+                                                                onClick={() => setIsAddingCustomCategory(true)}
+                                                            >
+                                                                <PlusCircle className="h-4 w-4 mr-1" />
+                                                                Add custom category
+                                                            </Button>
+                                                        </>
+                                                    ) : (
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="flex gap-2">
+                                                                <Input
+                                                                    value={customCategory}
+                                                                    onChange={(e) => setCustomCategory(e.target.value)}
+                                                                    onKeyPress={handleCustomCategoryKeyPress}
+                                                                    placeholder="Enter custom category"
+                                                                    className="flex-1"
+                                                                    autoFocus
+                                                                />
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={handleCustomCategoryAdd}
+                                                                    disabled={!customCategory.trim()}
+                                                                >
+                                                                    Add
+                                                                </Button>
+                                                            </div>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    setIsAddingCustomCategory(false);
+                                                                    setCustomCategory('');
+                                                                }}
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    {/* Description field with full-width class */}
+                                    <FormField
+                                        control={form.control}
+                                        name="description"
+                                        render={({ field }) => (
+                                            <FormItem className="full-width-mobile">
+                                                <FormLabel>Description</FormLabel>
+                                                <FormControl>
+                                                    <Textarea
+                                                        placeholder="Enter a description"
+                                                        {...field}
+                                                        value={field.value || ''}
+                                                        className="min-h-[100px]"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    {/* Genres selector */}
+                                    <GenreSelector />
+                                </motion.div>
+                            )}
+                        </div>
+
+                        {/* Media Details Section */}
+                        <div className={styles.formSection}>
+                            <button
+                                type="button"
+                                onClick={() => toggleSection('details')}
+                                className={styles.sectionToggle}
                             >
+                                <h3 className={styles.sectionTitle}>Media Details</h3>
+                                {expandedSections.details ? <ChevronUp /> : <ChevronDown />}
+                            </button>
+
+                            {expandedSections.details && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className={styles.sectionContent}
+                                >
+                                    {/* Media type specific fields */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Fields common to all media types */}
+                                        <FormField
+                                            control={form.control}
+                                            name="genres"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Genres</FormLabel>
+                                                    <FormControl>
+                                                        <Input {...field} value={field.value || ''} />
+                                                    </FormControl>
+                                                    <FormDescription>
+                                                        Comma-separated list of genres
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        {/* Book-specific fields */}
+                                        {mediaType === 'book' && (
+                                            <>
+                                                <FormField
+                                                    control={form.control}
+                                                    name="authors"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Author(s)</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} value={field.value || ''} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="page_count"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Page Count</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="number"
+                                                                    {...field}
+                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                    value={field.value || ''}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="isbn"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>ISBN</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} value={field.value || ''} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="publisher"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Publisher</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} value={field.value || ''} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </>
+                                        )}
+
+                                        {/* Movie-specific fields */}
+                                        {mediaType === 'movie' && (
+                                            <>
+                                                <FormField
+                                                    control={form.control}
+                                                    name="runtime"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Runtime (minutes)</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="number"
+                                                                    {...field}
+                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                    value={field.value || ''}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="director"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Director</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} value={field.value || ''} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="release_date"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Release Date</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} value={field.value || ''} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="vote_average"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Rating</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="number"
+                                                                    step="0.1"
+                                                                    min="0"
+                                                                    max="10"
+                                                                    {...field}
+                                                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                                    value={field.value || ''}
+                                                                />
+                                                            </FormControl>
+                                                            <FormDescription>Rating out of 10</FormDescription>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </>
+                                        )}
+
+                                        {/* TV-specific fields */}
+                                        {mediaType === 'tv' && (
+                                            <>
+                                                <FormField
+                                                    control={form.control}
+                                                    name="seasons"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Seasons</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="number"
+                                                                    {...field}
+                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                    value={field.value || ''}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="total_episodes"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Total Episodes</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="number"
+                                                                    {...field}
+                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                    value={field.value || ''}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="average_runtime"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Episode Runtime (min)</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="number"
+                                                                    {...field}
+                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                    value={field.value || ''}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="release_date"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>First Air Date</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} value={field.value || ''} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </>
+                                        )}
+
+                                        {/* Game-specific fields */}
+                                        {mediaType === 'game' && (
+                                            <>
+                                                <FormField
+                                                    control={form.control}
+                                                    name="platforms"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Platforms</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} value={field.value || ''} />
+                                                            </FormControl>
+                                                            <FormDescription>
+                                                                Comma-separated list of platforms
+                                                            </FormDescription>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="publishers"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Publisher(s)</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} value={field.value || ''} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="average_playtime"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Average Playtime (min)</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="number"
+                                                                    {...field}
+                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                    value={field.value || ''}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="release_date"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Release Date</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} value={field.value || ''} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </div>
+
+                        {/* Lock genre Section */}
+                        <div className={styles.formSection}>
+                            <button
+                                type="button"
+                                onClick={() => toggleSection('lock')}
+                                className={styles.sectionToggle}
+                            >
+                                <h3 className={styles.sectionTitle}>Lock Requirements</h3>
+                                {expandedSections.lock ? <ChevronUp /> : <ChevronDown />}
+                            </button>
+
+                            {expandedSections.lock && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className={styles.sectionContent}
+                                >
+                                    <LockRequirements
+                                        form={form}
+                                        incompleteItems={incompleteItems}
+                                        allCategories={allCategories}
+                                        calculateReadingTime={calculateReadingTime}
+                                        userId={session?.user?.id}
+                                    />
+                                </motion.div>
+                            )}
+                        </div>
+
+                        {/* Submit section */}
+                        <div className={styles.submitSection}>
+                            <Button type="submit" disabled={isLoading}>
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Adding...
+                                        Adding to Queue...
                                     </>
                                 ) : (
                                     'Add to Queue'
                                 )}
                             </Button>
                         </div>
+
+                        {/* Dialogs as before */}
                     </form>
                 </Form>
                 <DurationDialog />
