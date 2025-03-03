@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Mail, Phone } from 'lucide-react';
+import { Mail, Phone, Coffee } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ContactPage() {
@@ -94,6 +94,24 @@ export default function ContactPage() {
                             MediaQ helps you track and manage your media consumption.
                             Our mission is to help users discover new content and make the most of their entertainment time.
                         </p>
+
+                        <div className="mt-6 border-t pt-4 border-border">
+                            <h4 className="text-sm font-medium mb-2">Support MediaQ</h4>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Thank you for trying MediaQ! If you're enjoying the app and would like to help with the initial development costs, buying me a coffee would be greatly appreciated. ☕
+                            </p>
+                            <div className="flex items-start">
+                                <a
+                                    href="https://www.buymeacoffee.com/wainiaq"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[#5F7FFF] text-white hover:bg-[#4F6FEF] transition-colors font-medium"
+                                >
+                                    <Coffee className="h-4 w-4" />
+                                    Buy me a coffee
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

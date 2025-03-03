@@ -17,3 +17,37 @@
 .active {
     @apply text-primary font-semibold;
 }
+
+.logoContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+}
+
+.logoCircle {
+    width: 52px;
+    height: 52px;
+    border-radius: 55%;
+    background-color: hsl(var(--primary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'SpecialElite', serif;
+    font-size: 24px;
+    font-weight: bold;
+    color: hsl(var(--primary-foreground));
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+}
+
+.logoCircle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.5);
+}
+
+@media (max-width: 768px) {
+    .logoContainer {
+        margin-right: 0;
+    }
+}

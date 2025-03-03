@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import UpdateProgressModal from "@/components/progress/UpdateProgressModal";
 import { Button } from "@/components/ui/button";
 import ProgressSection from "@/components/progress/ProgressSection";
-import { Trash2, X, Loader2, Plus, ArrowUp, ArrowDown, MoveRight, Users, ExternalLink } from 'lucide-react';
+import { Trash2, X, Loader2, Plus, ArrowUp, ArrowDown, MoveRight, Users, ExternalLink, ShoppingCart } from 'lucide-react';
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -824,9 +824,16 @@ export default function Dashboard() {
                                                 {/* External links in second bento box */}
                                                 <div className={styles.bentoBox}>
                                                     <div className={styles.externalLinksContainer}>
-                                                        <h3 className="flex items-center gap-1">
-                                                            <ExternalLink className="h-4 w-4" /> External Links
-                                                        </h3>
+                                                        {/* Media-specific headings */}
+                                                        {item.media_type === 'game' ? (
+                                                            <h3 className="flex items-center gap-1 text-sm">
+                                                                <ShoppingCart className="h-4 w-4" /> Buy Now!
+                                                            </h3>
+                                                        ) : (
+                                                            <h3 className="flex items-center gap-1">
+                                                                <ExternalLink className="h-4 w-4" /> External Links
+                                                            </h3>
+                                                        )}
 
                                                         {(item.media_type === 'movie' || item.media_type === 'tv') && (
                                                             <div className="mt-1 mb-1">
@@ -864,10 +871,18 @@ export default function Dashboard() {
                                                                             href={affiliateLink.affiliate_link}
                                                                             target="_blank"
                                                                             rel="noopener noreferrer"
-                                                                            className="flex items-center gap-2 text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
+                                                                            className={styles.affiliateLink}
                                                                         >
-                                                                            <span>Buy on Green Man Gaming</span>
-                                                                            <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
+                                                                            <div className={styles.affiliateLinkContent}>
+                                                                                <Image
+                                                                                    src="/images/Green-Man-Gaming-logo_RGB_Dark-BG.png"
+                                                                                    alt="Green Man Gaming"
+                                                                                    width={80}
+                                                                                    height={22}
+                                                                                    className={styles.affiliateLogo}
+                                                                                />
+                                                                            </div>
+                                                                            <span className={styles.affiliatePrice}>
                                                                                 ${affiliateLink.price}
                                                                             </span>
                                                                         </a>

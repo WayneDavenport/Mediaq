@@ -243,8 +243,8 @@
     gap: 0.5rem;
     font-size: 0.875rem;
     font-weight: 600;
-    margin-bottom: 0.25rem;
-    /* Reduced spacing */
+    margin-bottom: 0.5rem;
+    color: hsl(var(--foreground));
 }
 
 .externalLinksContainer a {
@@ -314,4 +314,89 @@
 
 .sortingControls {
     @apply flex items-center gap-4 mb-6 p-4 rounded-lg bg-muted/50;
+}
+
+/* Updated styles for the affiliate link */
+.affiliateLink {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.375rem;
+    background-color: rgba(0, 40, 0, 0.05);
+    border: 1px solid rgba(0, 128, 0, 0.2);
+    transition: all 0.3s ease-in-out;
+    overflow: hidden;
+    position: relative;
+}
+
+.affiliateLink:hover {
+    background-color: rgba(0, 40, 0, 0.1);
+    border-color: rgba(0, 160, 0, 0.4);
+    box-shadow: 0 0 5px rgba(0, 255, 0, 0.3),
+        0 0 10px rgba(0, 200, 0, 0.2),
+        0 0 15px rgba(0, 150, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Slightly adjusted logo size */
+.affiliateLogo {
+    height: 24px;
+    width: auto;
+    /* No margin-right needed now that we removed the text */
+    filter: brightness(1.05);
+    transition: filter 0.3s ease;
+}
+
+.affiliateLink:hover .affiliateLogo {
+    filter: brightness(1.2);
+}
+
+/* Make the price tag more prominent */
+.affiliatePrice {
+    background-color: rgba(0, 100, 0, 0.1);
+    color: rgb(0, 130, 0);
+    font-weight: 600;
+    padding: 0.375rem 0.625rem;
+    border-radius: 999px;
+    font-size: 0.9375rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 3px rgba(0, 200, 0, 0.1);
+}
+
+.affiliateLink:hover .affiliatePrice {
+    background-color: rgba(0, 130, 0, 0.2);
+    color: rgb(0, 160, 0);
+    box-shadow: 0 0 5px rgba(0, 200, 0, 0.2);
+}
+
+/* Pulsing animation for the neon effect */
+@keyframes neonPulse {
+    0% {
+        box-shadow: 0 0 5px rgba(0, 255, 0, 0.3),
+            0 0 10px rgba(0, 200, 0, 0.2),
+            0 0 15px rgba(0, 150, 0, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 8px rgba(0, 255, 0, 0.5),
+            0 0 16px rgba(0, 200, 0, 0.3),
+            0 0 24px rgba(0, 150, 0, 0.2);
+    }
+
+    100% {
+        box-shadow: 0 0 5px rgba(0, 255, 0, 0.3),
+            0 0 10px rgba(0, 200, 0, 0.2),
+            0 0 15px rgba(0, 150, 0, 0.1);
+    }
+}
+
+.affiliateLink:hover {
+    animation: neonPulse 2s infinite ease-in-out;
+}
+
+.affiliateLinkContent {
+    display: flex;
+    align-items: center;
+    flex: 1;
 }
