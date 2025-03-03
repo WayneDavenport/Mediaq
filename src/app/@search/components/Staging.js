@@ -46,6 +46,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
+    DialogDescription,
 } from "@/components/ui/dialog";
 import {
     RadioGroup,
@@ -59,98 +60,71 @@ import React from 'react';
 import { validateCategory, PROTECTED_CATEGORIES } from "@/lib/utils";
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
-const READING_SPEED = 200; // Average reading speed in words per minute
+const READING_SPEED = 250; // Average reading speed in words per minute
+const DEFAULT_WORDS_PER_PAGE = 300; // Average words per page
+const DEFAULT_READING_SPEED_PAGES = 0.667; // Default pages per minute (200wpm/300words per page)
 
 const formSchema = z.object({
     // Base media item fields
     title: z.string().min(1, "Title is required"),
     media_type: z.string(),
     category: z.string().min(1, "Category is required"),
-    description: z.string(),
-    genres: z.array(z.string()).optional(),
-    poster_path: z.string().optional(),
-    backdrop_path: z.string().optional(),
+    description: z.string().optional().nullable().default(""),
+    genres: z.array(z.string()).optional().default([]),
+    poster_path: z.string().optional().nullable().default(""),
+    backdrop_path: z.string().optional().nullable().default(""),
 
-    // Lock fields
+    // Make all other fields more permissive
     locked: z.boolean().default(false),
-    key_parent: z.string().optional(),
-    key_parent_id: z.string().uuid().nullable().optional(),
-    key_parent_text: z.string().nullable().optional(),
-    lock_type: z.enum(['specific', 'category', 'media_type']).optional(),
-    goal_time: z.number().min(0).optional(),
-    goal_pages: z.number().min(0).optional(),
-    goal_episodes: z.number().min(0).optional(),
+    key_parent: z.string().optional().nullable(),
+    key_parent_id: z.string().optional().nullable(),
+    key_parent_text: z.string().optional().nullable(),
+    lock_type: z.string().optional().nullable(), // Changed from enum to string
+    goal_time: z.number().optional().default(0),
+    goal_pages: z.number().optional().default(0),
+    goal_episodes: z.number().optional().default(0),
 
     // Progress fields
-    duration: z.number().min(0),
-    queue_number: z.number().nullable().optional(),
-    completed_duration: z.number().min(0).optional(),
-    completed: z.boolean().optional(),
-    /* completed_timestampz: z.string().nullable().optional(), */
-    pages_completed: z.number().nullable().optional(),
-    episodes_completed: z.number().nullable().optional(),
+    duration: z.number().optional().default(0),
+    queue_number: z.number().optional().nullable(),
+    completed_duration: z.number().optional().default(0),
+    completed: z.boolean().optional().default(false),
+    pages_completed: z.number().optional().nullable(),
+    episodes_completed: z.number().optional().nullable(),
 
-
-    /*Media-specific fields (all optional since they depend on media_type. 
-      Progress related fields for tv and books are in progress) */
-
-    // Books
-    authors: z.array(z.string()).optional(),
-    average_rating: z.number().optional(),
-    categories: z.array(z.string()).optional(),
-    estimated_reading_time: z.number().optional(),
-    google_books_id: z.string().optional(),
-    isbn: z.string().optional(),
-    language: z.string().optional(),
-    page_count: z.number().optional(),
-    preview_link: z.string().optional(),
-    published_date: z.string().optional(),
-    publisher: z.string().optional(),
-    ratings_count: z.number().optional(),
-    reading_speed: z.number().optional(),
-
-    // Movies
-    director: z.string().optional(),
-    original_language: z.string().optional(),
-    release_date: z.string().optional(),
-    tmdb_id: z.number().optional(),
-    vote_average: z.number().optional(),
-
-    // TV Shows
-    average_runtime: z.number().optional(),
-    episode_run_times: z.number().optional(),
-    seasons: z.number().optional(),
-    total_episodes: z.number().optional(),
-
-    // Video Games
-    achievements_count: z.number().nullable().optional(),
-    average_playtime: z.number().nullable().optional(),
-    esrb_rating: z.string().nullable().optional(),
-    metacritic: z.number().nullable().optional(),
-    platforms: z.string().nullable().optional(),
-    publishers: z.string().nullable().optional(),
-    rating: z.number().nullable().optional(),
-    rating_count: z.number().nullable().optional(),
-    rawg_id: z.number().optional(),
-    website: z.string().nullable().optional(),
-}).refine(data => {
-    if (data.locked) {
-        // Ensure key_parent_id XOR key_parent_text exists
-        const hasKeyParentId = data.key_parent_id !== null && data.key_parent_id !== undefined;
-        const hasKeyParentText = data.key_parent_text !== null && data.key_parent_text !== undefined;
-        const validParentKey = (hasKeyParentId && !hasKeyParentText) || (!hasKeyParentId && hasKeyParentText);
-
-        // Ensure lock_type matches the key parent type
-        const validLockType =
-            (hasKeyParentId && data.lock_type === 'specific') ||
-            (!hasKeyParentId && ['category', 'media_type'].includes(data.lock_type));
-
-        return validParentKey && validLockType;
-    }
-    return true;
-}, {
-    message: "Invalid lock configuration. Check parent keys and lock type.",
-    path: ["locked", "key_parent_id", "key_parent_text", "lock_type"],
+    // Make all media-specific fields optional and nullable
+    authors: z.array(z.string()).optional().nullable(),
+    average_rating: z.number().optional().nullable(),
+    categories: z.array(z.string()).optional().nullable(),
+    estimated_reading_time: z.number().optional().nullable(),
+    google_books_id: z.string().optional().nullable(),
+    isbn: z.string().optional().nullable(),
+    language: z.string().optional().nullable(),
+    page_count: z.number().optional().nullable(),
+    preview_link: z.string().optional().nullable(),
+    published_date: z.string().optional().nullable(),
+    publisher: z.string().optional().nullable(),
+    ratings_count: z.number().optional().nullable(),
+    reading_speed: z.number().optional().nullable(),
+    director: z.string().optional().nullable(),
+    original_language: z.string().optional().nullable(),
+    release_date: z.string().optional().nullable(),
+    tmdb_id: z.number().optional().nullable(),
+    vote_average: z.number().optional().nullable(),
+    average_runtime: z.number().optional().nullable(),
+    episode_run_times: z.number().optional().nullable(),
+    seasons: z.number().optional().nullable(),
+    total_episodes: z.number().optional().nullable(),
+    achievements_count: z.number().optional().nullable(),
+    average_playtime: z.number().optional().nullable(),
+    esrb_rating: z.string().optional().nullable(),
+    metacritic: z.number().optional().nullable(),
+    platforms: z.string().optional().nullable(),
+    publishers: z.string().optional().nullable(),
+    rating: z.number().optional().nullable(),
+    rating_count: z.number().optional().nullable(),
+    rawg_id: z.number().optional().nullable(),
+    website: z.string().optional().nullable(),
 });
 
 const Staging = () => {
@@ -167,6 +141,8 @@ const Staging = () => {
     const [customDuration, setCustomDuration] = useState('');
     const [dialogMessage, setDialogMessage] = useState('');
     const [isInitializing, setIsInitializing] = useState(true);
+    const [durationHours, setDurationHours] = useState(2); // Default 2 hours
+    const [validationErrors, setValidationErrors] = useState({});
 
     const form = useForm({
         resolver: zodResolver(formSchema),
@@ -249,14 +225,16 @@ const Staging = () => {
     useEffect(() => {
         if (stagingItem) {
             console.log('Staging Item Data:', stagingItem);
+
+            // Create form data with proper defaults for nullable fields
             const formData = {
                 // Base media item data
-                title: stagingItem.title,
-                media_type: stagingItem.media_type,
+                title: stagingItem.title || "",
+                media_type: stagingItem.media_type || "",
                 category: stagingItem.category || 'General',
-                description: stagingItem.description,
-                poster_path: stagingItem.poster_path,
-                backdrop_path: stagingItem.backdrop_path,
+                description: stagingItem.description || "",
+                poster_path: stagingItem.poster_path || "",
+                backdrop_path: stagingItem.backdrop_path || "",
                 genres: stagingItem.genres || [],
 
                 // Lock fields
@@ -268,7 +246,7 @@ const Staging = () => {
                 goal_episodes: 0,
 
                 // Progress fields
-                duration: stagingItem.duration,
+                duration: stagingItem.duration || 0,
                 queue_number: null,
                 completed_duration: 0,
                 completed: false,
@@ -277,8 +255,16 @@ const Staging = () => {
                 ...stagingItem
             };
 
+            // Check for missing data
             const missingData = checkRequiredData(formData);
             if (missingData.required) {
+                console.log("Initial load - Missing required data:", missingData);
+                setDialogMessage(
+                    stagingItem.media_type === 'tv' ? `No episode length found for "${stagingItem.title}". Please specify the average episode duration.` :
+                        stagingItem.media_type === 'book' ? `No page count found for "${stagingItem.title}". Please specify the number of pages.` :
+                            stagingItem.media_type === 'movie' ? `No duration found for "${stagingItem.title}". Please specify the movie length.` :
+                                `No playtime found for "${stagingItem.title}". Please specify the estimated completion time.`
+                );
                 setShowDurationDialog(true);
             }
 
@@ -286,6 +272,256 @@ const Staging = () => {
             form.reset(formData);
         }
     }, [stagingItem, form]);
+
+    // Add a function to validate form data and highlight missing fields
+    const validateFormData = (data) => {
+        const errors = {};
+
+        // Check for required duration based on media type
+        if (data.media_type === 'movie' || data.media_type === 'tv' || data.media_type === 'game') {
+            if (!data.duration || data.duration <= 0) {
+                errors.duration = `Please enter the ${data.media_type === 'movie' ? 'runtime' :
+                    data.media_type === 'tv' ? 'total runtime' :
+                        'estimated completion time'
+                    } for this ${data.media_type}.`;
+            }
+        } else if (data.media_type === 'book') {
+            if (!data.page_count || data.page_count <= 0) {
+                errors.page_count = "Please enter the number of pages for this book.";
+            }
+        }
+
+        // Add other validations as needed
+        if (!data.title || data.title.trim() === '') {
+            errors.title = "Title is required";
+        }
+
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    // Add this function to check if the form is valid for submission
+    const isFormValid = () => {
+        const formData = form.getValues();
+        const missingData = checkRequiredData(formData);
+
+        // Log validation state for debugging
+        console.log("Form validation check:", {
+            formData: formData,
+            missingData: missingData,
+            formState: form.formState
+        });
+
+        // The form is valid if there's no missing required data
+        return !missingData.required;
+    };
+
+    // Update the onSubmit function to add more logging
+    const onSubmit = async (data) => {
+        console.log("Form submission triggered with data:", data);
+
+        // Check for missing required data first
+        const missingData = checkRequiredData(data);
+        if (missingData.required) {
+            console.log("Missing required data, opening dialog:", missingData);
+            setDialogMessage(
+                data.media_type === 'tv' ? `Please enter the episode length for this TV show.` :
+                    data.media_type === 'book' ? `Please enter the number of pages for this book.` :
+                        data.media_type === 'movie' ? `Please enter the runtime for this movie.` :
+                            `Please enter the estimated completion time for this game.`
+            );
+            setShowDurationDialog(true);
+            return; // Stop submission until dialog is handled
+        }
+
+        try {
+            // Clean up any null values
+            const cleanData = {
+                ...data,
+                backdrop_path: data.backdrop_path || "",
+                poster_path: data.poster_path || "",
+                description: data.description || ""
+            };
+
+            console.log("All required data present, proceeding with submission:", cleanData);
+            setIsLoading(true);
+
+            // Add the queue number
+            const submissionData = {
+                ...cleanData,
+                queue_number: nextQueueNumber
+            };
+
+            console.log("Sending API request with data:", submissionData);
+
+            // Make the API call with detailed error handling
+            const response = await fetch('/api/media-items', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(submissionData),
+            });
+
+            if (!response.ok) {
+                // Try to get detailed error message
+                const errorText = await response.text();
+                console.error("API Error Response:", {
+                    status: response.status,
+                    statusText: response.statusText,
+                    body: errorText
+                });
+
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    throw new Error(errorJson.message || 'Server error');
+                } catch (e) {
+                    throw new Error(`Failed to add item: ${response.status} ${response.statusText}`);
+                }
+            }
+
+            const result = await response.json();
+            console.log('Media item created successfully:', result);
+
+            // Rest of your existing code for locks and success handling
+            // ... existing code ...
+
+            toast.success(`${data.title} added to your queue!`);
+            clearStagingItem();
+        } catch (error) {
+            console.error('Error adding item:', error);
+            toast.error('Failed to add item', {
+                description: error.message
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Create a new component for the duration slider with hours and minutes display
+    const DurationSelector = () => {
+        const mediaType = form.getValues('media_type');
+
+        // Skip if not applicable
+        if (!['movie', 'tv', 'game'].includes(mediaType)) {
+            return null;
+        }
+
+        const durationLabel = {
+            'movie': 'Movie Runtime',
+            'tv': 'TV Show Total Runtime',
+            'game': 'Estimated Completion Time'
+        }[mediaType] || 'Duration';
+
+        // Calculate minutes from hours
+        const minutes = hoursToMinutes(durationHours);
+
+        return (
+            <div className={`space-y-2 ${validationErrors.duration ? 'error-highlight' : ''}`}>
+                <div className="flex justify-between items-center">
+                    <FormLabel>{durationLabel}</FormLabel>
+                    <span className="text-sm text-muted-foreground">
+                        {durationHours.toFixed(1)} hours ({minutes} minutes)
+                    </span>
+                </div>
+
+                <Slider
+                    value={[durationHours]}
+                    min={0.5}
+                    max={24}
+                    step={0.5}
+                    onValueChange={(values) => {
+                        const hours = values[0];
+                        setDurationHours(hours);
+
+                        // Update the form with minutes
+                        const minutes = hoursToMinutes(hours);
+                        form.setValue('duration', minutes);
+
+                        // Clear validation error if present
+                        if (validationErrors.duration) {
+                            const newErrors = { ...validationErrors };
+                            delete newErrors.duration;
+                            setValidationErrors(newErrors);
+                        }
+                    }}
+                />
+
+                {validationErrors.duration && (
+                    <p className="text-sm text-destructive">{validationErrors.duration}</p>
+                )}
+            </div>
+        );
+    };
+
+    // Replace the renderDurationInfo function
+    const renderDurationInfo = () => {
+        const mediaType = form.getValues('media_type');
+        const duration = form.getValues('duration');
+        const pageCount = form.getValues('page_count');
+        const episodeLength = form.getValues('average_runtime');
+        const totalEpisodes = form.getValues('total_episodes');
+
+        if (!mediaType) return null;
+
+        return (
+            <div className="space-y-2 mt-4 p-4 bg-muted/50 rounded-lg">
+                <h3 className="font-semibold">Duration Details</h3>
+                {mediaType === 'tv' && (
+                    <>
+                        <p className="text-sm text-muted-foreground">
+                            Episode Length: {episodeLength} minutes
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            Total Episodes: {totalEpisodes}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            Total Time: {duration} minutes ({Math.round(duration / 60)} hours)
+                        </p>
+                    </>
+                )}
+                {mediaType === 'book' && (
+                    <>
+                        <p className="text-sm text-muted-foreground">
+                            Pages: {pageCount}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            Estimated Reading Time: {duration} minutes ({Math.round(duration / 60)} hours)
+                        </p>
+                        <FormDescription>
+                            Based on {session?.user?.reading_speed ? 'your' : 'an average'} reading speed
+                        </FormDescription>
+                    </>
+                )}
+                {mediaType === 'movie' && (
+                    <p className="text-sm text-muted-foreground">
+                        Runtime: {duration} minutes ({Math.round(duration / 60)} hours)
+                    </p>
+                )}
+                {mediaType === 'game' && (
+                    <p className="text-sm text-muted-foreground">
+                        Estimated Completion Time: {duration} minutes ({Math.round(duration / 60)} hours)
+                    </p>
+                )}
+            </div>
+        );
+    };
+
+    // Add CSS for error highlighting
+    const errorStyles = `
+        .error-highlight {
+            box-shadow: 0 0 0 2px rgb(239, 68, 68);
+            padding: 8px;
+            border-radius: 6px;
+            background-color: rgba(239, 68, 68, 0.05);
+        }
+        
+        .error-highlight input,
+        .error-highlight textarea,
+        .error-highlight .select-trigger {
+            border-color: rgb(239, 68, 68);
+        }
+    `;
 
     const handleCustomCategoryAdd = (newCategory) => {
         const trimmedCategory = newCategory.trim();
@@ -306,72 +542,19 @@ const Staging = () => {
         }
     };
 
-    const calculateReadingTime = (pages) => {
-        const wordsPerPage = 300; // Average words per page
-        const totalWords = pages * wordsPerPage;
-        return Math.round(totalWords / READING_SPEED);
-    };
-
-    const onSubmit = async (data) => {
-        try {
-            setIsLoading(true);
-
-            // Add the queue number to the submission data
-            const submissionData = {
-                ...data,
-                queue_number: nextQueueNumber
-            };
-
-            const response = await fetch('/api/media-items', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(submissionData),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to add item');
-            }
-
-            const result = await response.json();
-            console.log('Media item created:', result);
-
-            // If the item should be locked, create the lock
-            if (data.locked && data.createLock) {
-                console.log('Attempting to create lock...'); // Debug lock creation attempt
-                try {
-                    await data.createLock(result.data.id);
-                    console.log('Lock created successfully');
-                } catch (error) {
-                    console.error('Failed to create lock:', error);
-                    toast.error('Item added but lock creation failed', {
-                        description: error.message
-                    });
-                }
-            } else {
-                console.log('Skipping lock creation:', {
-                    locked: data.locked,
-                    hasCreateLock: !!data.createLock
-                }); // Debug why lock creation was skipped
-            }
-
-            toast.success(`${data.title} added to your queue!`, {
-                description: data.locked ? 'Item added with lock requirements' : 'Item added successfully'
-            });
-
-            clearStagingItem();
-        } catch (error) {
-            console.error('Error adding item:', error);
-            toast.error('Failed to add item', {
-                description: error.message
-            });
-        } finally {
-            setIsLoading(false);
+    const calculateReadingTime = (pages, userReadingSpeed) => {
+        // If user has a custom reading speed, use that
+        if (userReadingSpeed) {
+            return Math.round(pages / userReadingSpeed);
         }
+
+        // Otherwise use the default calculation
+        return Math.round(pages / DEFAULT_READING_SPEED_PAGES);
     };
 
     const checkRequiredData = (data) => {
+        console.log("Checking required data for:", data);
+
         switch (data.media_type) {
             case 'tv':
                 return {
@@ -384,22 +567,22 @@ const Staging = () => {
                 return {
                     required: !data.page_count,
                     type: 'page_count',
-                    defaults: [200],
-                    current: data.page_count || 200
+                    defaults: [200, 300, 400],
+                    current: data.page_count || 300
                 };
             case 'movie':
                 return {
                     required: !data.duration,
                     type: 'duration',
-                    defaults: [120],
+                    defaults: [90, 120, 150],
                     current: data.duration || 120
                 };
             case 'game':
                 return {
                     required: !data.duration,
                     type: 'duration',
-                    defaults: [2400], // 40 hours in minutes
-                    current: data.duration || 2400
+                    defaults: [600, 1200, 2400], // 10, 20, 40 hours in minutes
+                    current: data.duration || 1200
                 };
             default:
                 return { required: false };
@@ -441,10 +624,12 @@ const Staging = () => {
                 case 'game':
                     form.setValue('duration', parseInt(selectedValue));
                     toast.success('Playtime set', {
-                        description: `Set to ${selectedValue / 60} hours`
+                        description: `Set to ${Math.round(selectedValue / 60)} hours`
                     });
                     break;
             }
+
+            // Just close the dialog and DON'T submit the form
             setShowDurationDialog(false);
             setDialogMessage('');
         };
@@ -466,7 +651,7 @@ const Staging = () => {
                         break;
                 }
             }
-        }, [mediaType, title]);
+        }, [mediaType, title, missingData?.required]);
 
         if (!missingData?.required || !mediaType) {
             return null;
@@ -476,9 +661,12 @@ const Staging = () => {
             <Dialog
                 open={showDurationDialog}
                 onOpenChange={(open) => {
+                    console.log("Dialog open state changing to:", open);
                     if (!open && form.getValues('duration')) {
                         setShowDurationDialog(false);
                         setDialogMessage('');
+                    } else {
+                        setShowDurationDialog(open);
                     }
                 }}
             >
@@ -507,7 +695,7 @@ const Staging = () => {
                                     <Label htmlFor={`duration-${value}`}>
                                         {mediaType === 'tv' ? `${value} minutes per episode` :
                                             mediaType === 'book' ? `${value} pages` :
-                                                mediaType === 'game' ? `${value / 60} hours to complete` :
+                                                mediaType === 'game' ? `${Math.round(value / 60)} hours to complete` :
                                                     `${value} minutes`}
                                     </Label>
                                 </div>
@@ -524,7 +712,14 @@ const Staging = () => {
                                     value={customDuration}
                                     onChange={(e) => {
                                         setCustomDuration(e.target.value);
-                                        setSelectedValue(e.target.value);
+                                        // If this is for games and user is inputting hours, convert to minutes
+                                        if (mediaType === 'game') {
+                                            const hours = parseFloat(e.target.value);
+                                            const minutes = Math.round(hours * 60);
+                                            setSelectedValue(minutes.toString());
+                                        } else {
+                                            setSelectedValue(e.target.value);
+                                        }
                                     }}
                                 />
                             </div>
@@ -540,56 +735,6 @@ const Staging = () => {
             </Dialog>
         );
     };
-
-    const renderDurationInfo = () => {
-        const mediaType = form.getValues('media_type');
-        const duration = form.getValues('duration');
-        const pageCount = form.getValues('page_count');
-        const episodeLength = form.getValues('average_runtime');
-        const totalEpisodes = form.getValues('total_episodes');
-
-        if (!mediaType) return null;
-
-        return (
-            <div className="space-y-2 mt-4 p-4 bg-muted/50 rounded-lg">
-                <h3 className="font-semibold">Duration Details</h3>
-                {mediaType === 'tv' && (
-                    <>
-                        <p className="text-sm text-muted-foreground">
-                            Episode Length: {episodeLength} minutes
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            Total Episodes: {totalEpisodes}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            Total Time: {duration} minutes ({Math.round(duration / 60)} hours)
-                        </p>
-                    </>
-                )}
-                {mediaType === 'book' && (
-                    <>
-                        <p className="text-sm text-muted-foreground">
-                            Pages: {pageCount}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            Estimated Reading Time: {duration} minutes ({Math.round(duration / 60)} hours)
-                        </p>
-                    </>
-                )}
-                {mediaType === 'movie' && (
-                    <p className="text-sm text-muted-foreground">
-                        Runtime: {duration} minutes ({Math.round(duration / 60)} hours)
-                    </p>
-                )}
-                {mediaType === 'game' && (
-                    <p className="text-sm text-muted-foreground">
-                        Estimated Completion Time: {duration} minutes ({Math.round(duration / 60)} hours)
-                    </p>
-                )}
-            </div>
-        );
-    };
-
 
     const GenreSelector = () => {
         const mediaType = form.getValues('media_type');
@@ -636,6 +781,7 @@ const Staging = () => {
 
     return (
         <Card className={styles.stagingCard}>
+            <style>{errorStyles}</style>
             <CardHeader className={styles.stagingHeader}>
                 <CardTitle className={styles.stagingTitle}>
                     Review and Customize
@@ -649,8 +795,30 @@ const Staging = () => {
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();
-                            console.log('Form submit event triggered');
-                            console.log('Form errors:', form.formState.errors);
+                            console.log("Form submit event triggered");
+                            console.log("Current form state:", form.formState);
+
+                            // Check if there are any validation errors
+                            if (Object.keys(form.formState.errors).length > 0) {
+                                console.log("Form validation errors:", form.formState.errors);
+
+                                // If backdrop_path is the only error, fix it and continue
+                                if (Object.keys(form.formState.errors).length === 1 && form.formState.errors.backdrop_path) {
+                                    console.log("Only backdrop_path error detected, fixing and continuing");
+                                    const formData = form.getValues();
+                                    formData.backdrop_path = "";
+                                    onSubmit(formData);
+                                    return;
+                                }
+
+                                // Show toast for other validation errors
+                                toast.error("Please fix validation errors", {
+                                    description: "Check form fields highlighted in red"
+                                });
+                                return;
+                            }
+
+                            // If no validation errors, proceed with submit
                             form.handleSubmit(onSubmit)(e);
                         }}
                         className={styles.formGrid}
@@ -659,11 +827,26 @@ const Staging = () => {
                             control={form.control}
                             name="title"
                             render={({ field }) => (
-                                <FormItem className={styles.formField}>
+                                <FormItem className={`${styles.formField} ${validationErrors.title ? 'error-highlight' : ''}`}>
                                     <FormLabel className={styles.formLabel}>Title</FormLabel>
                                     <FormControl>
-                                        <Input {...field} />
+                                        <Input
+                                            {...field}
+                                            onChange={(e) => {
+                                                field.onChange(e);
+
+                                                // Clear validation error if present
+                                                if (validationErrors.title && e.target.value.trim() !== '') {
+                                                    const newErrors = { ...validationErrors };
+                                                    delete newErrors.title;
+                                                    setValidationErrors(newErrors);
+                                                }
+                                            }}
+                                        />
                                     </FormControl>
+                                    {validationErrors.title && (
+                                        <p className="text-sm text-destructive">{validationErrors.title}</p>
+                                    )}
                                     <FormMessage className={styles.errorMessage} />
                                 </FormItem>
                             )}

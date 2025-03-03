@@ -727,99 +727,160 @@ export default function Dashboard() {
                                                 priority
                                             />
                                         </motion.div>
+
                                         <div className={styles.expandedDetails}>
-                                            <div className={styles.progressSection}>
-                                                <ProgressSection
-                                                    item={item}
-                                                    onUpdateClick={(item) => {
-                                                        setSelectedItem(item);
-                                                        setUpdateModalOpen(true);
-                                                    }}
-                                                    allCategories={allCategories}
-                                                    mediaItems={mediaItems}
-                                                    incompleteItems={mediaItems.filter(i => !i.user_media_progress?.completed)}
-                                                />
-                                            </div>
-
-                                            <div className={styles.detailsGrid}>
-                                                <div>
-                                                    <span className="font-semibold">Category:</span> {item.category}
-                                                </div>
-                                                <div>
-                                                    <span className="font-semibold">Type:</span> {item.media_type}
-                                                </div>
-                                                {item.media_type === 'movie' && (
-                                                    <>
-                                                        <div>
-                                                            <span className="font-semibold">Duration:</span> {item.user_media_progress?.duration} min
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-semibold">Director:</span> {item.movies?.director}
-                                                        </div>
-                                                    </>
-                                                )}
-                                                {item.media_type === 'tv' && (
-                                                    <>
-                                                        <div>
-                                                            <span className="font-semibold">Episodes:</span> {item.tv_shows?.total_episodes}
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-semibold">Seasons:</span> {item.tv_shows?.seasons}
-                                                        </div>
-                                                    </>
-                                                )}
-                                                {item.media_type === 'book' && (
-                                                    <>
-                                                        <div>
-                                                            <span className="font-semibold">Pages:</span> {item.books?.page_count}
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-semibold">Author:</span> {
-                                                                item.books?.authors ?
-                                                                    (typeof item.books.authors === 'string'
-                                                                        ? JSON.parse(item.books.authors).join(', ')
-                                                                        : item.books.authors.join(', ')
-                                                                    )
-                                                                    : 'Unknown Author'
-                                                            }
-                                                        </div>
-                                                    </>
-                                                )}
-                                                {item.media_type === 'game' && (
-                                                    <>
-                                                        <div>
-                                                            <span className="font-semibold">Playtime:</span> {item.games?.average_playtime} hours
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-semibold">Rating:</span> {item.games?.metacritic || 'N/A'}
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </div>
-
-                                            {/* Add the streaming section after other details but before description */}
-                                            {(item.media_type === 'movie' || item.media_type === 'tv') && (
-                                                <div className="mt-4 mb-2">
-                                                    <JustWatchLink
-                                                        title={item.title}
-                                                        mediaType={item.media_type}
-                                                        year={item.media_type === 'movie'
-                                                            ? item.movies?.release_date?.substring(0, 4)
-                                                            : item.tv_shows?.first_air_date?.substring(0, 4)
-                                                        }
+                                            {/* Bento box layout for details */}
+                                            <div className={styles.detailsBentoContainer}>
+                                                {/* Progress section - full width */}
+                                                <div className={styles.progressSection}>
+                                                    <ProgressSection
+                                                        item={item}
+                                                        onUpdateClick={(item) => {
+                                                            setSelectedItem(item);
+                                                            setUpdateModalOpen(true);
+                                                        }}
+                                                        allCategories={allCategories}
+                                                        mediaItems={mediaItems}
+                                                        incompleteItems={mediaItems.filter(i => !i.user_media_progress?.completed)}
                                                     />
                                                 </div>
-                                            )}
 
-                                            {item.media_type === 'book' && (
-                                                <div className="mt-4 mb-2">
-                                                    <BookResources
-                                                        title={item.title}
-                                                        author={item.books?.authors}
-                                                        isbn={item.books?.isbn || item.books?.isbn13 || item.books?.isbn10}
-                                                    />
+                                                {/* Details grid in first bento box */}
+                                                <div className={styles.bentoBox}>
+                                                    <div className={styles.detailsGrid}>
+                                                        <div className={styles.detailItem}>
+                                                            <div className={styles.detailLabel}>Category</div>
+                                                            <div className={styles.detailValue}>{item.category}</div>
+                                                        </div>
+
+                                                        <div className={styles.detailItem}>
+                                                            <div className={styles.detailLabel}>Type</div>
+                                                            <div className={styles.detailValue}>
+                                                                {item.media_type === 'tv' ? 'TV Show' :
+                                                                    item.media_type === 'movie' ? 'Movie' :
+                                                                        item.media_type === 'book' ? 'Book' : 'Game'}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Media specific details based on media type */}
+                                                        {item.media_type === 'movie' && (
+                                                            <>
+                                                                <div className={styles.detailItem}>
+                                                                    <div className={styles.detailLabel}>Duration</div>
+                                                                    <div className={styles.detailValue}>{item.user_media_progress?.duration} min</div>
+                                                                </div>
+
+                                                                <div className={styles.detailItem}>
+                                                                    <div className={styles.detailLabel}>Director</div>
+                                                                    <div className={styles.detailValue}>{item.movies?.director || 'Unknown'}</div>
+                                                                </div>
+                                                            </>
+                                                        )}
+
+                                                        {item.media_type === 'tv' && (
+                                                            <>
+                                                                <div className={styles.detailItem}>
+                                                                    <div className={styles.detailLabel}>Episodes</div>
+                                                                    <div className={styles.detailValue}>{item.tv_shows?.total_episodes || '?'}</div>
+                                                                </div>
+
+                                                                <div className={styles.detailItem}>
+                                                                    <div className={styles.detailLabel}>Episode Length</div>
+                                                                    <div className={styles.detailValue}>{item.tv_shows?.average_runtime || '?'} min</div>
+                                                                </div>
+                                                            </>
+                                                        )}
+
+                                                        {item.media_type === 'book' && (
+                                                            <>
+                                                                <div className={styles.detailItem}>
+                                                                    <div className={styles.detailLabel}>Pages</div>
+                                                                    <div className={styles.detailValue}>{item.books?.page_count || '?'}</div>
+                                                                </div>
+
+                                                                <div className={styles.detailItem}>
+                                                                    <div className={styles.detailLabel}>Author</div>
+                                                                    <div className={styles.detailValue}>{item.books?.authors || 'Unknown'}</div>
+                                                                </div>
+                                                            </>
+                                                        )}
+
+                                                        {item.media_type === 'game' && (
+                                                            <>
+                                                                <div className={styles.detailItem}>
+                                                                    <div className={styles.detailLabel}>Playtime</div>
+                                                                    <div className={styles.detailValue}>{Math.round((item.user_media_progress?.duration || 0) / 60)} hours</div>
+                                                                </div>
+
+                                                                <div className={styles.detailItem}>
+                                                                    <div className={styles.detailLabel}>Platform</div>
+                                                                    <div className={styles.detailValue}>{item.games?.platforms || 'Various'}</div>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            )}
+
+                                                {/* External links in second bento box */}
+                                                <div className={styles.bentoBox}>
+                                                    <div className={styles.externalLinksContainer}>
+                                                        <h3 className="flex items-center gap-1">
+                                                            <ExternalLink className="h-4 w-4" /> External Links
+                                                        </h3>
+
+                                                        {(item.media_type === 'movie' || item.media_type === 'tv') && (
+                                                            <div className="mt-1 mb-1">
+                                                                <JustWatchLink
+                                                                    title={item.title}
+                                                                    mediaType={item.media_type}
+                                                                    year={item.media_type === 'movie'
+                                                                        ? item.movies?.release_date?.substring(0, 4)
+                                                                        : item.tv_shows?.first_air_date?.substring(0, 4)
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {item.media_type === 'book' && (
+                                                            <div className="mt-1 mb-1">
+                                                                <BookResources
+                                                                    title={item.title}
+                                                                    author={item.books?.authors}
+                                                                    isbn={item.books?.isbn || item.books?.isbn13 || item.books?.isbn10}
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {item.media_type === 'game' && (
+                                                            <>
+                                                                {isLoadingAffiliate ? (
+                                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                                                        Finding deals...
+                                                                    </div>
+                                                                ) : affiliateLink ? (
+                                                                    <>
+                                                                        <a
+                                                                            href={affiliateLink.affiliate_link}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="flex items-center gap-2 text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
+                                                                        >
+                                                                            <span>Buy on Green Man Gaming</span>
+                                                                            <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
+                                                                                ${affiliateLink.price}
+                                                                            </span>
+                                                                        </a>
+                                                                        <AffiliateDisclosure minimal={true} />
+                                                                    </>
+                                                                ) : (
+                                                                    <span className="text-sm text-muted-foreground">No store links available</span>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className={styles.descriptionWrapper}>
@@ -827,161 +888,121 @@ export default function Dashboard() {
                                             {item.description}
                                         </div>
                                     </div>
-                                    <div className={styles.utilitySection}>
-                                        {/* External Links Placeholder */}
-                                        <div className="flex flex-col gap-2 mb-4 p-2 border rounded-md">
-                                            <h3 className="text-sm font-medium mb-1 flex items-center gap-1">
-                                                <ExternalLink className="h-4 w-4" /> External Links
-                                            </h3>
 
-                                            {item.media_type === 'game' && (
-                                                <>
-                                                    {isLoadingAffiliate ? (
-                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                                            Finding deals...
-                                                        </div>
-                                                    ) : affiliateLink ? (
-                                                        <>
-                                                            <a
-                                                                href={affiliateLink.affiliate_link}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="flex items-center gap-2 text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
-                                                            >
-                                                                <span>Buy on Green Man Gaming</span>
-                                                                <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
-                                                                    ${affiliateLink.price}
-                                                                </span>
-                                                            </a>
-                                                            <AffiliateDisclosure minimal={true} />
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-sm text-muted-foreground">No store links available</span>
-                                                    )}
-                                                </>
-                                            )}
+                                    {/* Action Buttons - Now wrapped in a container for centering */}
+                                    <div className={styles.actionButtonsContainer}>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleMoveToTop(item.id);
+                                                        }}
+                                                    >
+                                                        <ArrowUp className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Move to Top of Queue</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
 
-                                            {item.media_type !== 'game' && (
-                                                <span className="text-sm text-muted-foreground">External links coming soon</span>
-                                            )}
-                                        </div>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleMoveToBottom(item.id);
+                                                        }}
+                                                    >
+                                                        <ArrowDown className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Move to Bottom of Queue</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
 
-                                        {/* Action Buttons */}
-                                        <div className="flex gap-2">
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleMoveToTop(item.id);
-                                                            }}
-                                                        >
-                                                            <ArrowUp className="h-4 w-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Move to Top of Queue</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <Button variant="outline" size="icon">
+                                                                <MoveRight className="h-4 w-4" />
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-40">
+                                                            <div className="space-y-2">
+                                                                <h4 className="font-medium text-sm">Queue Position</h4>
+                                                                <Input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    max={mediaItems.length}
+                                                                    placeholder="Enter position"
+                                                                    onChange={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleCustomQueueNumber(item.id, parseInt(e.target.value));
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Set Custom Queue Position</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
 
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleMoveToBottom(item.id);
-                                                            }}
-                                                        >
-                                                            <ArrowDown className="h-4 w-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Move to Bottom of Queue</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            router.push(`/user-pages/gallery?mediaId=${item.id}`);
+                                                        }}
+                                                    >
+                                                        <Users className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Open in Gallery for Social Features</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
 
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Popover>
-                                                            <PopoverTrigger asChild>
-                                                                <Button variant="outline" size="icon">
-                                                                    <MoveRight className="h-4 w-4" />
-                                                                </Button>
-                                                            </PopoverTrigger>
-                                                            <PopoverContent className="w-40">
-                                                                <div className="space-y-2">
-                                                                    <h4 className="font-medium text-sm">Queue Position</h4>
-                                                                    <Input
-                                                                        type="number"
-                                                                        min="1"
-                                                                        max={mediaItems.length}
-                                                                        placeholder="Enter position"
-                                                                        onChange={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleCustomQueueNumber(item.id, parseInt(e.target.value));
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            </PopoverContent>
-                                                        </Popover>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Set Custom Queue Position</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                router.push(`/user-pages/gallery?mediaId=${item.id}`);
-                                                            }}
-                                                        >
-                                                            <Users className="h-4 w-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Open in Gallery for Social Features</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="destructive"
-                                                            size="icon"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDelete(item.id);
-                                                            }}
-                                                            className="hover:bg-destructive/90"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Delete Item</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                        </div>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="icon"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDelete(item.id);
+                                                        }}
+                                                        className="hover:bg-destructive/90"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Delete Item</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     </div>
                                 </Card>
                             ))}
