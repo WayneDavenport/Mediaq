@@ -32,15 +32,16 @@ export default function AdminLayout({ children }) {
 
     return (
         <div className="min-h-screen bg-background">
-            <header className="border-b p-4 mb-6">
-                <div className="container mx-auto flex items-center justify-between">
+            <header className="border-b p-4 mb-6 z-10">
+                <div className="container mx-auto flex items-center">
                     <div className="flex items-center gap-2">
                         <ShieldAlert className="h-5 w-5 text-amber-500" />
                         <Link href="/admin" className="font-bold text-lg">Admin</Link>
                     </div>
+                    <div className="flex-grow"></div>
                 </div>
             </header>
-            <main className="container mx-auto px-4">
+            <main className="container mx-auto px-4 pb-20">
                 {children}
             </main>
         </div>
