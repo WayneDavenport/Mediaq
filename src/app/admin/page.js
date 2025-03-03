@@ -15,11 +15,13 @@ import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Copy, RefreshCw } from 'lucide-react';
+import { Copy, RefreshCw, Users, Settings, Database, FileSpreadsheet, UserPlus, ShieldAlert } from 'lucide-react';
 import UserManagement from '@/components/admin/UserManagement';
 import GmgCatalogSyncButton from '@/components/admin/GmgCatalogSyncButton';
+import Link from 'next/link';
+import AdminLayout from '@/components/admin/AdminLayout';
 
-export default function AdminPage() {
+export default function AdminDashboard() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [numUsers, setNumUsers] = useState(5);
@@ -230,285 +232,105 @@ export default function AdminPage() {
         return franchiseColors[franchise] || 'bg-gray-500';
     };
 
+    // Admin features cards
+    const adminFeatures = [
+        {
+            title: 'User Management',
+            description: 'Manage users, roles, and permissions',
+            icon: <Users className="h-6 w-6" />,
+            href: '/admin/users',
+            color: 'bg-blue-500/10 text-blue-500',
+        },
+        {
+            title: 'Create Group Profile',
+            description: 'Create hub profiles for community groups',
+            icon: <UserPlus className="h-6 w-6" />,
+            href: '/admin/create-group-profile',
+            color: 'bg-amber-500/10 text-amber-500',
+        },
+        {
+            title: 'Admin Settings',
+            description: 'Configure site-wide settings',
+            icon: <Settings className="h-6 w-6" />,
+            href: '/admin/settings',
+            color: 'bg-green-500/10 text-green-500',
+        },
+        {
+            title: 'Database Tools',
+            description: 'Manage database operations and backups',
+            icon: <Database className="h-6 w-6" />,
+            href: '/admin/database',
+            color: 'bg-purple-500/10 text-purple-500',
+        },
+        {
+            title: 'Reports',
+            description: 'View site analytics and reports',
+            icon: <FileSpreadsheet className="h-6 w-6" />,
+            href: '/admin/reports',
+            color: 'bg-red-500/10 text-red-500',
+        },
+    ];
+
     return (
-        <>
-            <ToasterProvider />
-            <div className="container py-10 space-y-6">
-                <div className="flex flex-col space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-                    <p className="text-muted-foreground">
-                        Manage your application settings and data
-                    </p>
+        <AdminLayout>
+            <div className="container mx-auto px-4 py-8">
+                <div className="flex items-center mb-8 gap-2">
+                    <ShieldAlert className="h-6 w-6 text-amber-500" />
+                    <h1 className="text-3xl font-bold">Admin Dashboard</h1>
                 </div>
 
-                <Tabs defaultValue="users">
-                    <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="users">Nintendo Test Users</TabsTrigger>
-                        <TabsTrigger value="social">Social Data</TabsTrigger>
-                        <TabsTrigger value="queue">Queue</TabsTrigger>
-                        <TabsTrigger value="Green Man Gaming">Green Man Gaming</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="users" className="space-y-4">
+                <section className="mb-8">
+                    <h2 className="text-xl font-semibold mb-4">System Status</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Nintendo Character Test Users</CardTitle>
-                                <CardDescription>
-                                    Create and manage test users based on Nintendo characters
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="prefix">Email Prefix</Label>
-                                        <Input
-                                            id="prefix"
-                                            value={prefix}
-                                            onChange={(e) => setPrefix(e.target.value)}
-                                            placeholder="nintendo"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="count">Number of Characters</Label>
-                                        <Input
-                                            id="count"
-                                            type="number"
-                                            value={numUsers}
-                                            onChange={(e) => setNumUsers(parseInt(e.target.value))}
-                                            min="1"
-                                            max="20"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-muted-foreground">
-                                        Creates test users with Nintendo character names and {prefix}1@testmail.io emails
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        Default password for all test users: <code>Test123!</code>
-                                    </p>
-                                </div>
-
-                                <div className="flex justify-between items-center pt-4">
-                                    <Button
-                                        onClick={handleCreateTestUsers}
-                                        disabled={isCreating}
-                                    >
-                                        {isCreating ? 'Creating...' : 'Create Nintendo Test Users'}
-                                    </Button>
-
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={fetchTestUsers}
-                                        disabled={loadingTestUsers}
-                                    >
-                                        <RefreshCw className="h-4 w-4 mr-2" />
-                                        Refresh List
-                                    </Button>
-                                </div>
-                            </CardContent>
-
-                            <CardContent>
-                                {loadingTestUsers ? (
-                                    <div className="text-center p-4">Loading test users...</div>
-                                ) : testUsers.length === 0 ? (
-                                    <div className="text-center p-4 border rounded-md">
-                                        <p className="text-muted-foreground">No Nintendo test users found</p>
-                                        <p className="text-sm mt-2">Create some test users to see them here</p>
-                                    </div>
-                                ) : (
-                                    <div className="rounded-md border">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="w-[50px]"></TableHead>
-                                                    <TableHead>Character</TableHead>
-                                                    <TableHead>Franchise</TableHead>
-                                                    <TableHead>Username</TableHead>
-                                                    <TableHead>Email</TableHead>
-                                                    <TableHead className="w-[100px]">Actions</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {testUsers.map((user) => {
-                                                    // Extract character name and franchise
-                                                    const characterName = user.first_name || '';
-                                                    const franchise = extractFranchise(user.last_name);
-                                                    const initials = characterName ? characterName.substring(0, 2).toUpperCase() : 'TU';
-                                                    const avatarColor = getFranchiseColor(franchise);
-
-                                                    return (
-                                                        <TableRow key={user.id}>
-                                                            <TableCell>
-                                                                <Avatar className={`h-8 w-8 ${avatarColor}`}>
-                                                                    <AvatarFallback>{initials}</AvatarFallback>
-                                                                </Avatar>
-                                                            </TableCell>
-                                                            <TableCell className="font-medium">{characterName}</TableCell>
-                                                            <TableCell>
-                                                                {franchise && (
-                                                                    <Badge variant="outline" className="bg-muted">
-                                                                        {franchise}
-                                                                    </Badge>
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell>{user.username || 'N/A'}</TableCell>
-                                                            <TableCell>{user.email}</TableCell>
-                                                            <TableCell>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => copyCredentials(user.email)}
-                                                                    title="Copy login credentials"
-                                                                >
-                                                                    <Copy className="h-4 w-4" />
-                                                                </Button>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    );
-                                                })}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="social">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Social Data Management</CardTitle>
-                                <CardDescription>
-                                    Manage social interactions data for testing
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="rounded-md bg-amber-50 p-4 border border-amber-200">
-                                    <h3 className="text-amber-800 font-medium">Warning</h3>
-                                    <p className="text-amber-700 text-sm">
-                                        The following actions will delete data from the database. Use with caution.
-                                    </p>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {/* Clear all social data */}
-                                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                                        <div>
-                                            <h3 className="font-medium">Clear All Social Data</h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                Removes all friend requests, friendships, and social notifications for all users
-                                            </p>
-                                        </div>
-                                        <Button
-                                            variant="destructive"
-                                            onClick={handleClearSocialData}
-                                            disabled={isClearing}
-                                        >
-                                            {isClearing ? 'Clearing...' : 'Clear All Data'}
-                                        </Button>
-                                    </div>
-
-                                    {/* Clear test users social data */}
-                                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                                        <div>
-                                            <h3 className="font-medium">Clear Test Users Social Data</h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                Removes social data only for users with @testmail.io emails
-                                            </p>
-                                        </div>
-                                        <Button
-                                            variant="outline"
-                                            onClick={handleClearTestUsersSocialData}
-                                            disabled={isClearingTestUsers}
-                                            className="border-amber-500 text-amber-600 hover:bg-amber-50"
-                                        >
-                                            {isClearingTestUsers ? 'Clearing...' : 'Clear Test Users Data'}
-                                        </Button>
-                                    </div>
-
-                                    {/* Clear specific user social data */}
-                                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                                        <div>
-                                            <h3 className="font-medium">Clear Specific User Social Data</h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                Removes social data for a specific user
-                                            </p>
-                                            <div className="mt-2 w-64">
-                                                <Select
-                                                    value={selectedUserId}
-                                                    onValueChange={setSelectedUserId}
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select a user" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {loadingUsers ? (
-                                                            <SelectItem value="" disabled>Loading users...</SelectItem>
-                                                        ) : users.length === 0 ? (
-                                                            <SelectItem value="" disabled>No users found</SelectItem>
-                                                        ) : (
-                                                            users.map(user => (
-                                                                <SelectItem key={user.id} value={user.id}>
-                                                                    {user.username || user.email}
-                                                                </SelectItem>
-                                                            ))
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-                                        <Button
-                                            variant="outline"
-                                            onClick={handleClearSpecificUserSocialData}
-                                            disabled={isClearingSpecificUser || !selectedUserId}
-                                        >
-                                            {isClearingSpecificUser ? 'Clearing...' : 'Clear User Data'}
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="queue">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Queue Management</CardTitle>
-                                <CardDescription>
-                                    Tools for managing media queue data
-                                </CardDescription>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg">Active Users</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="flex items-center justify-between p-4 border rounded-lg">
-                                    <div>
-                                        <h3 className="font-medium">Fix Queue Numbers</h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Reset and fix queue numbers for all users
-                                        </p>
-                                    </div>
-                                    <FixQueueButton />
+                                <p className="text-3xl font-bold">283</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg">Content Items</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-3xl font-bold">5,482</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg">Server Status</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                    <p className="text-lg font-medium">Healthy</p>
                                 </div>
                             </CardContent>
                         </Card>
-                    </TabsContent>
-                    <TabsContent value="Green Man Gaming">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Green Man Gaming Catalog</CardTitle>
-                                <CardDescription>
-                                    Sync and manage the Green Man Gaming catalog
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <GmgCatalogSyncButton />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                </Tabs>
-                <UserManagement />
+                    </div>
+                </section>
+
+                <section>
+                    <h2 className="text-xl font-semibold mb-4">Admin Tools</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {adminFeatures.map((feature, index) => (
+                            <Link key={index} href={feature.href} className="block">
+                                <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
+                                    <CardHeader>
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${feature.color} mb-2`}>
+                                            {feature.icon}
+                                        </div>
+                                        <CardTitle>{feature.title}</CardTitle>
+                                        <CardDescription>{feature.description}</CardDescription>
+                                    </CardHeader>
+                                </Card>
+                            </Link>
+                        ))}
+                    </div>
+                </section>
             </div>
-        </>
+        </AdminLayout>
     );
 } 
