@@ -6,11 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Users, UserPlus } from 'lucide-react';
+import { Users, UserPlus, Check } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 
 export default function CreateGroupProfile() {
     const [isLoading, setIsLoading] = useState(false);
+    const [createdProfile, setCreatedProfile] = useState(null);
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -31,6 +32,7 @@ export default function CreateGroupProfile() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
+        setCreatedProfile(null);
 
         try {
             const response = await fetch('/api/admin/create-group-profile', {
@@ -47,7 +49,21 @@ export default function CreateGroupProfile() {
                 throw new Error(data.error || 'Failed to create group profile');
             }
 
-            toast.success(`Successfully created ${formData.username} group profile!`);
+            // Set created profile for display
+            setCreatedProfile(data.user);
+
+            // Show enhanced success toast
+            toast.success(
+                <div className="flex flex-col">
+                    <div className="font-medium">Group Profile Created!</div>
+                    <div className="text-sm mt-1">Username: {data.user.username}</div>
+                    <div className="text-sm">Email: {data.user.email}</div>
+                </div>
+                , {
+                    duration: 5000,
+                    id: 'group-profile-created',
+                    icon: <Check className="h-4 w-4 text-green-500" />
+                });
 
             // Reset form fields but keep the reading speed
             setFormData({
@@ -70,6 +86,23 @@ export default function CreateGroupProfile() {
         <AdminLayout>
             <div className="container max-w-4xl mx-auto py-8">
                 <h1 className="text-3xl font-bold mb-8">Create Group Profile</h1>
+
+                {createdProfile && (
+                    <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-medium mb-2">
+                            <Check className="h-5 w-5" />
+                            <h3>Profile Created Successfully</h3>
+                        </div>
+                        <div className="grid gap-1 text-sm">
+                            <p><span className="font-medium">Username:</span> {createdProfile.username}</p>
+                            <p><span className="font-medium">Email:</span> {createdProfile.email}</p>
+                            <p><span className="font-medium">ID:</span> {createdProfile.id}</p>
+                            <p className="mt-2 text-muted-foreground">
+                                Remember to share these login details with the group admin.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 <Card>
                     <CardHeader>

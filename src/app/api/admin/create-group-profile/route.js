@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
-import bcrypt from 'bcrypt';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { sql } from '@vercel/postgres';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import supabase from '@/lib/supabaseClient';
+import { hashPassword } from '@/lib/auth';
 
 export async function POST(request) {
     try {
-        // Verify admin authorization
+        // Check if user is authenticated and is an admin
         const session = await getServerSession(authOptions);
+
         if (!session?.user?.isAdmin) {
-            return NextResponse.json(
-                { error: 'Unauthorized. Admin access required.' },
-                { status: 403 }
-            );
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         // Get group profile data from request
@@ -27,64 +25,64 @@ export async function POST(request) {
         }
 
         // Check if username already exists
-        const usernameCheck = await sql`
-            SELECT id FROM users WHERE username = ${username}
-        `;
+        const { data: existingUsername, error: usernameError } = await supabase
+            .from('users')
+            .select('username')
+            .eq('username', username)
+            .single();
 
-        if (usernameCheck.rowCount > 0) {
-            return NextResponse.json(
-                { error: 'Username already exists.' },
-                { status: 400 }
-            );
+        if (existingUsername) {
+            return NextResponse.json({ error: "Username already taken" }, { status: 400 });
         }
 
         // Check if email already exists
-        const emailCheck = await sql`
-            SELECT id FROM users WHERE email = ${email}
-        `;
+        const { data: existingEmail, error: emailError } = await supabase
+            .from('users')
+            .select('email')
+            .eq('email', email)
+            .single();
 
-        if (emailCheck.rowCount > 0) {
-            return NextResponse.json(
-                { error: 'Email already exists.' },
-                { status: 400 }
-            );
+        if (existingEmail) {
+            return NextResponse.json({ error: "Email already in use" }, { status: 400 });
         }
 
-        // Hash the password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // Hash password using your existing hashPassword function
+        const hashedPassword = await hashPassword(password);
 
         // Current timestamp for verified_at
-        const now = new Date();
+        const now = new Date().toISOString();
 
-        // Create the user in the database with pre-verified status
-        const result = await sql`
-            INSERT INTO users (
-                email, 
-                password, 
-                username, 
-                reading_speed, 
-                is_verified, 
-                verified_at,
-                first_name,
-                last_name
-            )
-            VALUES (
-                ${email}, 
-                ${hashedPassword}, 
-                ${username}, 
-                ${reading_speed || 0.666}, 
-                ${true}, 
-                ${now},
-                ${first_name || null},
-                ${last_name || null}
-            )
-            RETURNING id, username, email
-        `;
+        // Insert group profile into the database
+        const { data: newUser, error: insertError } = await supabase
+            .from('users')
+            .insert([
+                {
+                    email,
+                    password: hashedPassword,
+                    username,
+                    reading_speed: reading_speed || 0.666,
+                    is_verified: true,
+                    verified_at: now,
+                    first_name: first_name || null,
+                    last_name: last_name || null
+                }
+            ])
+            .select()
+            .single();
+
+        if (insertError) {
+            console.error("Error inserting group profile:", insertError);
+            return NextResponse.json({ error: "Error creating group profile" }, { status: 500 });
+        }
 
         // Return success response
         return NextResponse.json({
             success: true,
-            user: result.rows[0]
+            user: {
+                id: newUser.id,
+                username: newUser.username,
+                email: newUser.email
+            }
         });
     } catch (error) {
         console.error('Error creating group profile:', error);
@@ -93,4 +91,4 @@ export async function POST(request) {
             { status: 500 }
         );
     }
-} 
+}
