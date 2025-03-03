@@ -6,7 +6,7 @@
 }
 
 .stagingHeader {
-    @apply space-y-1;
+    @apply space-y-1 mb-2;
 }
 
 .stagingTitle {
@@ -18,7 +18,7 @@
 }
 
 .stagingContent {
-    @apply p-4;
+    @apply p-4 sm:p-6;
 }
 
 .formGrid {
@@ -147,7 +147,7 @@
 }
 
 .stagingForm {
-    @apply space-y-6;
+    @apply space-y-4;
 }
 
 .formSection {
@@ -168,28 +168,63 @@
 
 .sectionContent {
     @apply p-4 space-y-4;
-    @apply border-t;
+    @apply border-t bg-muted/30;
 }
 
-/* Full width on mobile */
+/* Dashboard-inspired section styling */
+.sectionWrapper {
+    @apply mb-4 rounded-lg overflow-hidden;
+}
+
+.expandedSectionHeader {
+    @apply p-3 flex items-center justify-between;
+    @apply bg-muted/50;
+}
+
+.expandedSectionTitle {
+    @apply text-lg font-medium;
+}
+
+.expandedSectionContent {
+    @apply p-4 space-y-4;
+    @apply bg-card;
+}
+
+/* Mobile optimizations */
 @media (max-width: 640px) {
-    .sectionContent {
-        @apply px-2 w-full;
+    .stagingForm {
+        @apply space-y-3;
     }
 
-    /* Target textareas and inputs specifically */
+    .sectionContent,
+    .expandedSectionContent {
+        @apply px-3 w-full;
+    }
+
     .sectionContent :global(textarea),
-    .sectionContent :global(input) {
+    .sectionContent :global(input),
+    .expandedSectionContent :global(textarea),
+    .expandedSectionContent :global(input) {
         @apply w-full max-w-full;
     }
 
-    /* Make sure form items take full width */
-    .sectionContent :global(.full-width-mobile) {
-        @apply w-full max-w-full;
+    .formSection+.formSection {
+        @apply mt-3;
     }
 }
 
 .submitSection {
     @apply flex justify-end pt-4;
     @apply px-4 sm:px-0 md:px-0;
+}
+
+/* For input fields to get better spacing */
+.inputWrapper {
+    @apply mb-4;
+}
+
+/* Match dashboard expanded card styling */
+.dashboardStyle {
+    @apply bg-background mx-auto;
+    @apply sm:max-w-3xl md:max-w-4xl;
 }
