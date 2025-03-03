@@ -2,6 +2,7 @@ export const loadingQuotes = [
     "Gnarfling the Garthock…",
     "Reticulating Splines…",
     "Getting Tokens from the Stillness…",
+    "Getting Tokens from the Stillness…",
     "Exercising the Gaskets…",
     "Wandering, but not lost…",
     "Setting more Goals. Dreaming New Dreams…",

@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import FriendSearch from '@/components/social/FriendSearch';
 import FriendRequests from '@/components/social/FriendRequests';
 import OutgoingFriendRequests from '@/components/social/OutgoingFriendRequests';
+import InviteFriends from '@/components/social/InviteFriends';
 import { LoadingScreen } from '@/components/loading/loading-screen';
 
 
@@ -46,7 +47,6 @@ export default function SocialPage() {
 
     return (
         <>
-
             <div className="container mx-auto px-4 py-8">
                 <h1 className="text-3xl font-bold mb-8">Social</h1>
 
@@ -60,6 +60,9 @@ export default function SocialPage() {
                         currentUserId={session?.user?.id}
                         refreshTrigger={refreshOutgoing}
                     />
+
+                    {/* New Invite Friends component */}
+                    <InviteFriends />
 
                     <FriendSearch
                         currentUserId={session?.user?.id}
@@ -91,6 +94,5 @@ export default function SocialPage() {
                 </div>
             </div>
         </>
-
     );
 }
