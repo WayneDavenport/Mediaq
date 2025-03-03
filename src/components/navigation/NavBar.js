@@ -49,9 +49,8 @@ export default function NavBar() {
             .slice(0, 2)
     }
 
-    // Base navigation links
+    // Base navigation links - removed "Home" since we're replacing it with the logo
     const navLinks = [
-        { href: '/', label: 'Home' },
         { href: '/user-pages/dashboard', label: 'Dashboard' },
         { href: '/user-pages/gallery', label: 'Gallery' },
         { href: '/user-pages/search', label: 'Search' },
@@ -89,6 +88,17 @@ export default function NavBar() {
                             <SheetTitle>Menu</SheetTitle>
                         </SheetHeader>
                         <div className="flex flex-col space-y-4 mt-4">
+                            {/* Add Logo to mobile menu */}
+                            <Link
+                                href="/user-pages/dashboard"
+                                className="flex items-center px-4 py-2"
+                                onClick={() => setIsOpen(false)}
+                            >
+                                <div className={styles.logoCircle}>Mq</div>
+                                <span className="ml-2 font-medium">Home</span>
+                            </Link>
+
+                            {/* Other nav links */}
                             {navLinks.map((link) => (
                                 <Link
                                     key={link.href}
@@ -106,6 +116,13 @@ export default function NavBar() {
                         </div>
                     </SheetContent>
                 </Sheet>
+
+                {/* Logo for desktop */}
+                <div className={styles.logoContainer}>
+                    <Link href="/user-pages/dashboard">
+                        <div className={styles.logoCircle}>Mq</div>
+                    </Link>
+                </div>
 
                 {/* Desktop Navigation */}
                 <div className={`${styles.navLinks} hidden lg:flex`}>
