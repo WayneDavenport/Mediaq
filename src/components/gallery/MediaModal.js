@@ -13,6 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import JustWatchLink from '@/components/streaming/JustWatchLink';
+import BookResources from '@/components/books/BookResources';
+import GameResources from '@/components/resources/GameResources';
 
 
 const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false, isRecommendation = false }) => {
@@ -610,6 +613,40 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false,
                                                 <p>{item.user_media_progress.duration} minutes</p>
                                             </div>
                                         )}
+                                    </div>
+
+                                    {/* Add the External Links section here */}
+                                    <div className="mt-6 border-t pt-6">
+                                        <h3 className="text-lg font-semibold mb-4">Where to Find</h3>
+                                        <div className="space-y-4">
+                                            {(item.media_type === 'movie' || item.media_type === 'tv') && (
+                                                <JustWatchLink
+                                                    title={item.title}
+                                                    mediaType={item.media_type}
+                                                    year={item.media_type === 'movie'
+                                                        ? item.movies?.release_date?.substring(0, 4)
+                                                        : item.tv_shows?.first_air_date?.substring(0, 4)
+                                                    }
+                                                    className="w-full"
+                                                />
+                                            )}
+
+                                            {item.media_type === 'book' && (
+                                                <BookResources
+                                                    title={item.title}
+                                                    author={item.books?.authors}
+                                                    isbn={item.books?.isbn || item.books?.isbn13 || item.books?.isbn10}
+                                                    className="w-full"
+                                                />
+                                            )}
+
+                                            {item.media_type === 'game' && (
+                                                <GameResources
+                                                    title={item.title}
+                                                    className="w-full"
+                                                />
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* Add Comments section */}
