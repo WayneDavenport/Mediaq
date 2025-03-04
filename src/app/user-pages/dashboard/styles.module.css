@@ -312,6 +312,30 @@
     }
 }
 
+/* Portrait media types matched to bento height */
+.expandedPoster[data-media-type="movie"],
+.expandedPoster[data-media-type="tv"],
+.expandedPoster[data-media-type="book"] {
+    height: 110px;
+    /* Reduced from 160px */
+    width: auto;
+    max-width: 75px;
+    /* Reduced from 110px */
+
+    @media (max-width: 640px) {
+        height: 95px;
+        /* Reduced from 140px */
+        max-width: 65px;
+        /* Reduced from 95px */
+    }
+}
+
+/* Game posters remain unchanged */
+.expandedPoster[data-media-type="game"] {
+    width: 100%;
+    max-width: 300px;
+}
+
 .sortingControls {
     @apply flex items-center gap-4 mb-6 p-4 rounded-lg bg-muted/50;
 }
@@ -399,4 +423,51 @@
     display: flex;
     align-items: center;
     flex: 1;
+}
+
+/* Base glow effect for GMG links */
+.mediaContent[data-has-gmg="true"]:not([data-locked="true"]) {
+    box-shadow: 0 0 5px rgba(0, 255, 0, 0.3),
+        0 0 10px rgba(0, 200, 0, 0.2),
+        0 0 15px rgba(0, 150, 0, 0.1);
+}
+
+/* Optional: Blend with existing lock/key colors */
+.mediaContent[data-has-gmg="true"][data-is-key="true"] {
+    box-shadow: 0 0 5px rgba(0, 255, 0, 0.3),
+        0 0 10px rgba(0, 200, 0, 0.2),
+        0 0 15px rgba(0, 150, 0, 0.1),
+        0 0 20px rgba(0, 0, 255, 0.2);
+    /* Blend with blue key glow */
+}
+
+.mediaContent[data-has-gmg="true"][data-is-locked="true"] {
+    box-shadow: 0 0 5px rgba(255, 0, 0, 0.3),
+        0 0 10px rgba(200, 0, 0, 0.2);
+    /* Keep lock red more prominent */
+}
+
+/* Add subtle animation */
+@keyframes gmgPulse {
+    0% {
+        box-shadow: 0 0 5px rgba(0, 255, 0, 0.3),
+            0 0 10px rgba(0, 200, 0, 0.2),
+            0 0 15px rgba(0, 150, 0, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 8px rgba(0, 255, 0, 0.4),
+            0 0 16px rgba(0, 200, 0, 0.3),
+            0 0 24px rgba(0, 150, 0, 0.2);
+    }
+
+    100% {
+        box-shadow: 0 0 5px rgba(0, 255, 0, 0.3),
+            0 0 10px rgba(0, 200, 0, 0.2),
+            0 0 15px rgba(0, 150, 0, 0.1);
+    }
+}
+
+.mediaContent[data-has-gmg="true"]:not([data-locked="true"]):hover {
+    animation: gmgPulse 2s infinite ease-in-out;
 }
