@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import JustWatchLink from '@/components/streaming/JustWatchLink';
 import BookResources from '@/components/books/BookResources';
 import GameResources from '@/components/resources/GameResources';
+import { AffiliateDisclosure } from "@/components/affiliate/AffiliateDisclosure";
 
 
 const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false, isRecommendation = false }) => {
@@ -501,34 +502,51 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false,
         </div>
     );
 
+    const getModalGlow = (item) => {
+        if (item.media_type === 'game' && item.gmg_link) {
+            return "shadow-[0_0_20px_-1px_rgba(0,255,0,0.6)] hover:shadow-[0_0_25px_0px_rgba(0,255,0,0.8)]";
+        }
+        return "";
+    };
+
     return (
         <>
-
             <AnimatePresence mode="wait">
                 {isOpen && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
                         onClick={onClose}
                     >
                         <motion.div
-                            initial={{ ...cardPosition, opacity: 0, scale: 0.75 }}
+                            initial={{
+                                ...cardPosition,
+                                opacity: 0,
+                                scale: 0.75,
+                            }}
                             animate={{
                                 x: 0,
                                 y: 0,
                                 opacity: 1,
                                 scale: 1,
-                                transition: { type: "spring", duration: 0.5 }
+                                transition: {
+                                    type: "spring",
+                                    stiffness: 300,
+                                    damping: 30,
+                                    duration: 0.5
+                                }
                             }}
                             exit={{
-                                ...cardPosition,
                                 opacity: 0,
-                                scale: 0.75,
-                                transition: { duration: 0.3 }
+                                transition: {
+                                    duration: 0.2,
+                                    ease: "easeOut"
+                                }
                             }}
-                            className="relative w-full max-w-2xl mx-auto bg-background rounded-lg shadow-lg overflow-hidden flex flex-col"
+                            className={`relative w-full max-w-2xl mx-auto bg-background rounded-lg overflow-hidden flex flex-col ${getModalGlow(item)}`}
                             style={{ maxHeight: '90vh' }}
                             onClick={e => e.stopPropagation()}
                         >
@@ -645,6 +663,11 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false,
                                                     title={item.title}
                                                     className="w-full"
                                                 />
+                                            )}
+
+                                            {/* Add full disclosure if any affiliate links are present */}
+                                            {item.media_type === 'game' && (
+                                                <AffiliateDisclosure />
                                             )}
                                         </div>
                                     </div>

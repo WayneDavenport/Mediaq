@@ -8,7 +8,7 @@ import { fetchGmgLinksForGames } from '@/components/gmg/GmgLinkFetcher';
 import { AffiliateDisclosure } from "@/components/affiliate/AffiliateDisclosure";
 
 export default function GameResources({ title, className }) {
-    const [gmgLink, setGmgLink] = useState(null);
+    const [gmgData, setGmgData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -18,7 +18,9 @@ export default function GameResources({ title, className }) {
             try {
                 setIsLoading(true);
                 const links = await fetchGmgLinksForGames([{ title }]);
-                setGmgLink(links[title]);
+                if (links[title]) {
+                    setGmgData(links[title]);
+                }
             } catch (error) {
                 console.error('Error fetching GMG link:', error);
             } finally {
@@ -42,30 +44,36 @@ export default function GameResources({ title, className }) {
                     <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                     Finding deals...
                 </div>
-            ) : gmgLink ? (
+            ) : gmgData ? (
                 <>
                     <a
-                        href={gmgLink}
+                        href={gmgData.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center"
+                        className="inline-flex items-center group"
                     >
                         <Button
                             variant="outline"
                             size="sm"
-                            className="w-full flex justify-between items-center bg-slate-900 dark:bg-slate-800 border-slate-700 hover:bg-slate-800 dark:hover:bg-slate-700 text-green-400 hover:text-green-300"
+                            className="w-full flex justify-between items-center bg-slate-900 dark:bg-slate-800 border-slate-700 hover:bg-slate-800 dark:hover:bg-slate-700 text-green-400 hover:text-green-300 gmg-button-glow"
                         >
-                            <span className="flex items-center">
-                                <Image
-                                    src="/images/Green-Man-Gaming-logo_RGB_Dark-BG.png"
-                                    alt="Green Man Gaming"
-                                    width={80}
-                                    height={22}
-                                    className="mr-2"
-                                />
-                                Buy on GMG
-                            </span>
-                            <ExternalLink className="h-3 w-3" />
+                            <div className="flex items-center justify-between w-full">
+                                <span className="flex items-center">
+                                    <Image
+                                        src="/images/Green-Man-Gaming-logo_RGB_Dark-BG.png"
+                                        alt="Green Man Gaming"
+                                        width={80}
+                                        height={22}
+                                        className="mr-2"
+                                    />
+                                </span>
+                                <span className="flex items-center gap-2">
+                                    {gmgData.price && (
+                                        <span className="font-medium">${gmgData.price}</span>
+                                    )}
+                                    <ExternalLink className="h-3 w-3" />
+                                </span>
+                            </div>
                         </Button>
                     </a>
                     <AffiliateDisclosure minimal={true} />

@@ -206,3 +206,13 @@ body {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
+
+/* Add these styles for the GMG button glow effect */
+.gmg-button-glow {
+  transition: all 0.3s ease;
+}
+
+.gmg-button-glow:hover {
+  box-shadow: 0 0 15px -1px rgba(0, 255, 0, 0.4);
+  transform: translateY(-1px);
+}
