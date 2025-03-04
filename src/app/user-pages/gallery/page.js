@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { LoadingScreen } from "@/components/loading/loading-screen";
 import { ToasterProvider } from "@/components/providers/toaster-provider"
+import { fetchGmgLinksForGames } from '@/components/gmg/GmgLinkFetcher';
 
 
 function GalleryContent() {
@@ -31,6 +32,7 @@ function GalleryContent() {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedCommentId, setSelectedCommentId] = useState(null);
     const [recommendations, setRecommendations] = useState([]);
+    const [gmgLinks, setGmgLinks] = useState({});
 
     useEffect(() => {
         const fetchData = async () => {
@@ -41,7 +43,23 @@ function GalleryContent() {
                     console.log(mediaResponse);
                     const mediaData = await mediaResponse.json();
                     if (mediaData.items) {
-                        setMediaItems(mediaData.items);
+                        // Get game items for GMG links
+                        const gameItems = mediaData.items.filter(item => item.media_type === 'game')
+                            .map(item => ({ title: item.title }));
+
+                        // Fetch GMG links if there are games
+                        if (gameItems.length > 0) {
+                            const links = await fetchGmgLinksForGames(gameItems);
+                            setGmgLinks(links);
+                        }
+
+                        // Combine GMG links with media items
+                        const itemsWithGmg = mediaData.items.map(item => ({
+                            ...item,
+                            gmg_link: item.media_type === 'game' ? gmgLinks[item.title]?.url : null
+                        }));
+
+                        setMediaItems(itemsWithGmg);
                     }
 
                     // Fetch friends' queues
@@ -238,6 +256,13 @@ function GalleryContent() {
         }
     };
 
+    const getItemGlow = (item) => {
+        if (item.media_type === 'game' && gmgLinks[item.title]) {
+            return "shadow-[0_0_20px_-1px_rgba(0,255,0,0.6)] hover:shadow-[0_0_25px_0px_rgba(0,255,0,0.8)]";
+        }
+        return "";
+    };
+
     const MediaRow = ({ title, items, isFriendQueue = false, isRecommendation = false }) => (
         <div className="py-4">
             <h2 className="text-2xl font-semibold mb-4">{title}</h2>
@@ -276,7 +301,7 @@ function GalleryContent() {
                         return (
                             <CarouselItem key={item.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
                                 <Card
-                                    className={isPendingRecommendation ? "cursor-default" : "cursor-pointer"}
+                                    className={`cursor-pointer transition-all duration-300 ${getItemGlow(item)}`}
                                     onClick={(e) => {
                                         if (!isPendingRecommendation) {
                                             handleCardClick(item, e, isFriendQueue, isRecommendation);

@@ -19,7 +19,7 @@ export async function fetchGmgLinksForGames(gameItems) {
         // Fetch GMG links from your Supabase table with correct table name
         const { data: gmgLinks, error } = await supabase
             .from('gmg_games')
-            .select('title, affiliate_link')
+            .select('title, affiliate_link, price')
             .in('title', gameTitles);
 
         if (error) {
@@ -29,9 +29,12 @@ export async function fetchGmgLinksForGames(gameItems) {
 
         console.log('GMG links from Supabase:', gmgLinks);
 
-        // Convert array to object with title as key
+        // Convert array to object with title as key and include price
         const linksObject = gmgLinks.reduce((acc, item) => {
-            acc[item.title] = item.affiliate_link;
+            acc[item.title] = {
+                url: item.affiliate_link,
+                price: item.price
+            };
             return acc;
         }, {});
 
