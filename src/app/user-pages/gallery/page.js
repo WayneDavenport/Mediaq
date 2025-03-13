@@ -18,6 +18,7 @@ import { LoadingScreen } from "@/components/loading/loading-screen";
 import { ToasterProvider } from "@/components/providers/toaster-provider"
 import { fetchGmgLinksForGames } from '@/components/gmg/GmgLinkFetcher';
 
+//Hola!
 
 function GalleryContent() {
     const { data: session, status } = useSession();
