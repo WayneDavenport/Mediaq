@@ -169,13 +169,46 @@ export const authOptions = {
             }
             return true;
         },
+        async session({ session, token }) {
+            // Log the session and token for debugging
+            console.log('Session Callback:', {
+                sessionExists: !!session,
+                tokenExists: !!token,
+                tokenSub: token?.sub,
+                tokenEmail: token?.email
+            });
+
+            if (token) {
+                session.user.id = token.sub || token.id; // Try both sub and id
+                session.user.email = token.email;
+                session.user.username = token.username;
+                session.user.isNewUser = token.isNewUser;
+                session.user.reading_speed = token.reading_speed;
+                session.user.isAdmin = token.is_admin || false;
+            }
+
+            // Log the final session
+            console.log('Final Session:', {
+                userId: session?.user?.id,
+                userEmail: session?.user?.email
+            });
+
+            return session;
+        },
         async jwt({ token, user, account }) {
+            // Log the JWT creation
+            console.log('JWT Callback:', {
+                userExists: !!user,
+                accountExists: !!account,
+                tokenSub: token?.sub
+            });
+
             if (user) {
                 token.id = user.id;
                 token.email = user.email;
                 token.username = user.name;
                 token.reading_speed = user.reading_speed;
-                token.is_admin = user.is_admin || false; // Include admin status in token
+                token.is_admin = user.is_admin || false;
             }
 
             if (account?.provider === "google") {
@@ -193,20 +226,20 @@ export const authOptions = {
             }
 
             return token;
-        },
-        async session({ session, token }) {
-            if (token) {
-                session.user.id = token.id;
-                session.user.email = token.email;
-                session.user.username = token.username;
-                session.user.isNewUser = token.isNewUser;
-                session.user.reading_speed = token.reading_speed;
-                session.user.isAdmin = token.is_admin || false; // Add admin status to session
-            }
-            return session;
         }
     },
     secret: process.env.NEXTAUTH_SECRET,
+    cookies: {
+        sessionToken: {
+            name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
+            options: {
+                httpOnly: true,
+                sameSite: 'lax',
+                path: '/',
+                secure: process.env.NODE_ENV === 'production'
+            }
+        }
+    }
 };
 
 const handler = NextAuth(authOptions);

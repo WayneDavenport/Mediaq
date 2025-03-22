@@ -2,13 +2,22 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 
 export async function middleware(request) {
-    // Skip middleware for API routes and static assets
-    if (
-        request.nextUrl.pathname.startsWith('/api') ||
-        request.nextUrl.pathname.startsWith('/_next')
-    ) {
-        return NextResponse.next();
-    }
+    // Log the request for debugging
+    console.log('Middleware Request:', {
+        path: request.nextUrl.pathname,
+        hasSessionCookie: !!request.cookies.get('next-auth.session-token'),
+        hasSecureSessionCookie: !!request.cookies.get('__Secure-next-auth.session-token')
+    });
+
+    // Protected routes that require authentication
+    const protectedPaths = [
+        '/user-pages',
+        '/api/media-items'
+    ];
+
+    const isProtectedPath = protectedPaths.some(path =>
+        request.nextUrl.pathname.startsWith(path)
+    );
 
     // Get the token
     const token = await getToken({
@@ -16,25 +25,36 @@ export async function middleware(request) {
         secret: process.env.NEXTAUTH_SECRET
     });
 
-    // If no token (not logged in), allow the request to proceed
-    if (!token) {
-        return NextResponse.next();
+    console.log('Token in middleware:', {
+        exists: !!token,
+        email: token?.email,
+        isNewUser: token?.isNewUser
+    });
+
+    // Handle protected routes
+    if (isProtectedPath && !token) {
+        console.log('Unauthorized access attempt:', request.nextUrl.pathname);
+
+        // If it's an API route, return 401
+        if (request.nextUrl.pathname.startsWith('/api')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // For page routes, redirect to login
+        return NextResponse.redirect(new URL('/auth-pages/signin', request.url));
     }
 
-    // Check if this is a new user that needs to complete their profile
-    // Only redirect if isNewUser is explicitly true (not undefined or null)
-    if (
-        token.isNewUser === true &&
+    // Handle new user flow
+    if (token?.isNewUser === true &&
         request.nextUrl.pathname.startsWith('/user-pages') &&
         !request.nextUrl.pathname.startsWith('/auth-pages/complete-profile')
     ) {
-        console.log("Redirecting new user to complete profile page");
+        console.log("Redirecting new user to complete profile");
         return NextResponse.redirect(new URL("/auth-pages/complete-profile", request.url));
     }
 
-    // Make sure your middleware doesn't redirect users who are trying to verify their email
-    if (
-        request.nextUrl.pathname.startsWith('/api/auth/verify') ||
+    // Allow verification routes
+    if (request.nextUrl.pathname.startsWith('/api/auth/verify') ||
         request.nextUrl.pathname.startsWith('/auth-pages/verification-pending')
     ) {
         return NextResponse.next();
@@ -45,7 +65,10 @@ export async function middleware(request) {
 
 export const config = {
     matcher: [
-        '/((?!api|_next/static|_next/image|favicon.ico).*)',
-        '/user-pages/:path*'
+        // Match all paths except static files and images
+        '/((?!_next/static|_next/image|favicon.ico).*)',
+        // Match specific paths that need protection
+        '/user-pages/:path*',
+        '/api/media-items/:path*'
     ]
 }; 
