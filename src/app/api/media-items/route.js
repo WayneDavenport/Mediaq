@@ -222,9 +222,20 @@ export async function POST(request) {
 export async function GET(request) {
     try {
         const session = await getServerSession(authOptions);
+        console.log('Session data:', {
+            exists: !!session,
+            user: session?.user,
+            email: session?.user?.email,
+            id: session?.user?.id
+        });
+
         if (!session) {
+            console.log('No session found');
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        // Log before Supabase query
+        console.log('Attempting Supabase query for user:', session.user.id);
 
         // Get active items and their locks - specify the foreign key relationship
         const { data: items, error } = await supabase
@@ -239,6 +250,14 @@ export async function GET(request) {
                 games(*)
             `)
             .eq('user_id', session.user.id);
+
+        // Log query results
+        console.log('Supabase query results:', {
+            hasError: !!error,
+            errorDetails: error,
+            itemCount: items?.length,
+            firstItem: items?.[0]
+        });
 
         // Optionally get completed locks
         const { data: completedLocks, error: completedLocksError } = await supabase
@@ -257,12 +276,19 @@ export async function GET(request) {
             locked_items: item.locked_items ? (Array.isArray(item.locked_items) ? item.locked_items : [item.locked_items]) : []
         }));
 
-        console.log('Transformed items:', transformedItems);
+        console.log('Final transformed data:', {
+            itemCount: transformedItems.length,
+            hasCompletedLocks: !!completedLocks?.length
+        });
 
         return NextResponse.json({ items: transformedItems });
 
     } catch (error) {
-        console.error('Error fetching media items:', error);
+        console.error('Error in GET function:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
         return NextResponse.json(
             { error: 'Failed to fetch media items', details: error.message },
             { status: 500 }
