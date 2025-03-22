@@ -76,26 +76,76 @@ export default function Dashboard() {
             if (status === "authenticated") {
                 try {
                     setLoading(true);
+                    console.log('Fetching media items with session:', {
+                        userEmail: session?.user?.email,
+                        userId: session?.user?.id,
+                        hasToken: !!session?.access_token
+                    });
+
                     const mediaResponse = await fetch('/api/media-items');
+
+                    // Log the raw response
+                    console.log('Media items response:', {
+                        status: mediaResponse.status,
+                        statusText: mediaResponse.statusText,
+                        headers: Object.fromEntries(mediaResponse.headers.entries())
+                    });
+
                     const mediaData = await mediaResponse.json();
+                    console.log('Media items data:', {
+                        hasItems: !!mediaData.items,
+                        itemCount: mediaData.items?.length,
+                        firstItem: mediaData.items?.[0],
+                        error: mediaData.error,
+                        details: mediaData.details
+                    });
+
+                    if (mediaData.error) {
+                        // Log Supabase error details if present
+                        console.error('Supabase Error:', {
+                            message: mediaData.error,
+                            details: mediaData.details,
+                            code: mediaData.details?.code,
+                            hint: mediaData.details?.hint
+                        });
+                        throw new Error(mediaData.error);
+                    }
 
                     if (mediaData.items) {
                         const gameItems = mediaData.items.filter(item => item.media_type === 'game');
+                        console.log('Game items found:', {
+                            count: gameItems.length,
+                            titles: gameItems.map(item => item.title)
+                        });
+
                         if (gameItems.length > 0) {
                             const gmgLinks = await fetchGmgLinksForGames(gameItems);
-                            console.log('GMG Links received:', gmgLinks); // Debug log
+                            console.log('GMG Links received:', gmgLinks);
 
                             setMediaItems(mediaData.items.map(item => ({
                                 ...item,
                                 gmg_link: gmgLinks[item.title] || null,
-                                has_gmg: !!gmgLinks[item.title] // Convert to boolean
+                                has_gmg: !!gmgLinks[item.title]
                             })));
                         } else {
                             setMediaItems(mediaData.items);
                         }
+
+                        // Log the final state update
+                        console.log('Media items state updated:', {
+                            totalItems: mediaData.items.length,
+                            itemTypes: mediaData.items.reduce((acc, item) => {
+                                acc[item.media_type] = (acc[item.media_type] || 0) + 1;
+                                return acc;
+                            }, {})
+                        });
                     }
                 } catch (error) {
-                    console.error('Error fetching data:', error);
+                    console.error('Error in fetchData:', {
+                        message: error.message,
+                        stack: error.stack,
+                        name: error.name
+                    });
                 } finally {
                     setLoading(false);
                 }
@@ -103,7 +153,7 @@ export default function Dashboard() {
         };
 
         fetchData();
-    }, [status]);
+    }, [status, session]);
 
     useEffect(() => {
         const fetchCategories = async () => {
