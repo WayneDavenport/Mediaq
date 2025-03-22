@@ -51,7 +51,7 @@ const nextConfig = {
                     },
                     {
                         key: 'Access-Control-Allow-Origin',
-                        value: 'https://mediaq.io, http://localhost:3000'
+                        value: 'https://mediaq.io, https://www.mediaq.io, http://localhost:3000'
                     },
                     {
                         key: 'Access-Control-Allow-Methods',
