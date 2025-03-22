@@ -100,7 +100,7 @@ export const authOptions = {
             }
 
             console.log("SignIn callback triggered with provider:", account?.provider);
-            console.log("User data:", user);
+            /*  console.log("User data:", user); */
 
             if (account?.provider === "google") {
                 try {
