@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { UserPlus, ShieldAlert } from 'lucide-react';
+import GmgCatalogSyncButton from '@/components/admin/GmgCatalogSyncButton';
 
 export default function AdminDashboard() {
     const { data: session, status } = useSession();
@@ -42,6 +43,10 @@ export default function AdminDashboard() {
                         </Card>
                     </Link>
                 </div>
+            </section>
+            <section>
+                <h2 className="text-xl font-semibold mb-4">GMG Catalog Sync</h2>
+                <GmgCatalogSyncButton />
             </section>
         </div>
     );
