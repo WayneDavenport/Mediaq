@@ -45,6 +45,26 @@
     color: whitesmoke;
     margin-top: 2rem;
     font-family: 'SpecialElite';
+    position: relative;
+}
+
+.betaTag {
+    font-family: monospace;
+    color: #FFA500;
+    font-size: 1.5rem;
+    opacity: 0.8;
+    position: relative;
+    top: -4rem;
+}
+
+.maintenanceNotice {
+    background-color: #FFF3CD;
+    border: 1px solid #FFE69C;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    color: #856404;
+    max-width: 40rem;
 }
 
 .description {
@@ -129,6 +149,18 @@
         gap: 1rem;
         flex-wrap: wrap;
         width: 100%;
+    }
+
+    .betaTag {
+        font-size: 1rem;
+        top: -2rem;
+    }
+
+    .maintenanceNotice {
+        font-size: 0.9rem;
+        padding: 0.75rem;
+        margin: 1rem;
+        text-align: center;
     }
 }
 
