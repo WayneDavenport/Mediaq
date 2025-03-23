@@ -140,7 +140,7 @@ const BookSearch = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {results.map((result) => (
-                        <Card key={`book-${result.book_details.google_books_id}`}>
+                        <Card key={`book-${result.book_details.google_books_id}-${result.book_details.isbn || ''}`}>
                             <CardContent className="p-4">
                                 {result.poster_path && (
                                     <img
