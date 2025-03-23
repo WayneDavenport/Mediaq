@@ -804,34 +804,43 @@ const Staging = () => {
         }, [mediaType]);
 
         const handleSelectGenre = (genreValue) => {
-            // For custom input, create a properly formatted genre object
-            if (typeof genreValue === 'string') {
-                const existingGenre = availableGenres.find(g =>
-                    g.value === genreValue || g.label.toLowerCase() === genreValue.toLowerCase()
-                );
+            // Normalize the input to always get a simple string
+            const normalizedGenre = typeof genreValue === 'string'
+                ? genreValue.trim()
+                : genreValue.label || genreValue.value || '';
 
-                if (existingGenre) {
-                    // Use existing genre object if found
-                    if (!selectedGenres.some(g => g.value === existingGenre.value)) {
-                        form.setValue('genres', [...selectedGenres, existingGenre]);
-                    }
-                } else {
-                    // Create new genre object for custom input
-                    const newGenre = {
-                        label: genreValue,
-                        value: genreValue.toLowerCase().replace(/\s+/g, '_')
-                    };
-                    form.setValue('genres', [...selectedGenres, newGenre]);
-                }
+            // Convert to title case for consistency
+            const formattedGenre = normalizedGenre
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ');
+
+            // Get current genres array (ensure it's always an array of strings)
+            const currentGenres = form.getValues('genres') || [];
+            const normalizedCurrentGenres = currentGenres.map(g =>
+                typeof g === 'string' ? g : g.label || g.value || ''
+            );
+
+            // Check for duplicates (case-insensitive)
+            if (normalizedCurrentGenres.some(g => g.toLowerCase() === formattedGenre.toLowerCase())) {
+                toast.info('Genre already added');
+                return;
             }
+
+            // Update the form with the new genre array (all strings)
+            const updatedGenres = [...normalizedCurrentGenres, formattedGenre];
+            form.setValue('genres', updatedGenres);
             setGenreInput('');
         };
 
-        const handleRemoveGenre = (genreValue) => {
-            form.setValue('genres', selectedGenres.filter(g => {
-                if (typeof g === 'string') return g !== genreValue;
-                return g.value !== genreValue;
-            }));
+        const handleRemoveGenre = (genreToRemove) => {
+            const currentGenres = form.getValues('genres') || [];
+            const updatedGenres = currentGenres.filter(g =>
+                typeof g === 'string'
+                    ? g !== genreToRemove
+                    : (g.value || g.label) !== genreToRemove
+            );
+            form.setValue('genres', updatedGenres);
         };
 
         // Helper to safely get label/value from potentially inconsistent genre format
@@ -859,26 +868,26 @@ const Staging = () => {
                     <FormItem className="w-full">
                         <FormLabel>Genres</FormLabel>
                         <div className="flex flex-wrap gap-1 mb-2">
-                            {selectedGenres.map((genre, index) => (
+                            {(field.value || []).map((genre, index) => (
                                 <Badge
-                                    key={`genre-${index}-${getGenreValue(genre)}`}
+                                    key={`genre-${index}-${typeof genre === 'string' ? genre : genre.value || genre.label}`}
                                     variant="secondary"
                                     className="flex items-center gap-1"
                                 >
-                                    {getGenreLabel(genre)}
+                                    {typeof genre === 'string' ? genre : genre.label || genre.value}
                                     <Button
                                         type="button"
                                         variant="ghost"
                                         size="sm"
                                         className="h-auto p-0 text-muted-foreground hover:text-foreground"
-                                        onClick={() => handleRemoveGenre(getGenreValue(genre))}
+                                        onClick={() => handleRemoveGenre(genre)}
                                     >
                                         <X className="h-3 w-3" />
-                                        <span className="sr-only">Remove {getGenreLabel(genre)}</span>
+                                        <span className="sr-only">Remove {typeof genre === 'string' ? genre : genre.label || genre.value}</span>
                                     </Button>
                                 </Badge>
                             ))}
-                            {selectedGenres.length === 0 && (
+                            {field.value.length === 0 && (
                                 <div className="text-sm text-muted-foreground">No genres selected</div>
                             )}
                         </div>
