@@ -38,7 +38,7 @@ export default function CompleteProfile() {
         setLoading(true);
 
         try {
-            const response = await fetch('/api/user/complete-profile', {
+            const response = await fetch('/api/auth/signup/complete-profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
