@@ -70,8 +70,11 @@ export async function POST(request) {
             // For movies, use the runtime from TMDB
             duration = data.runtime || data.duration || 120;
         } else if (data.media_type === 'game') {
-            // For games, convert hours to minutes
-            duration = (data.average_playtime || data.duration || 4) * 60;
+            // For games, duration should already be in minutes from the frontend
+            duration = data.average_playtime || data.duration || 240; // default 4 hours in minutes
+        } else if (data.media_type === 'tv') {
+            // For TV shows, use the average runtime
+            duration = data.average_runtime || data.duration || 0;
         }
 
         // Insert into the appropriate media type table
