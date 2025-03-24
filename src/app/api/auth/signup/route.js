@@ -12,7 +12,7 @@ const supabase = createClient(
 
 export async function POST(request) {
     try {
-        const { email, password, firstName, lastName, username } = await request.json();
+        const { email, password, firstName, lastName, username, reading_speed } = await request.json();
 
         // Check if user already exists
         const { data: existingUser } = await supabase
@@ -48,6 +48,7 @@ export async function POST(request) {
                     username,
                     is_verified: false,
                     verification_token: verificationToken,
+                    reading_speed: reading_speed || 200,
                 }
             ])
             .select()
