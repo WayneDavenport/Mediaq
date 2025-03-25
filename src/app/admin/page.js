@@ -12,6 +12,9 @@ export default function AdminDashboard() {
     const { data: session, status } = useSession();
     const router = useRouter();
 
+    const [email, setEmail] = useState('');
+    const [message, setMessage] = useState('');
+
     if (status === 'loading') {
         return <div>Loading...</div>;
     }
@@ -20,6 +23,26 @@ export default function AdminDashboard() {
         router.push('/');
         return null;
     }
+
+    const handleSendEmail = async () => {
+        try {
+            const response = await fetch('/api/admin/send-thank-you-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+            });
+
+            if (response.ok) {
+                setMessage('Email sent successfully!');
+            } else {
+                setMessage('Failed to send email.');
+            }
+        } catch (error) {
+            setMessage('An error occurred.');
+        }
+    };
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -47,6 +70,22 @@ export default function AdminDashboard() {
             <section>
                 <h2 className="text-xl font-semibold mb-4">GMG Catalog Sync</h2>
                 <GmgCatalogSyncButton />
+            </section>
+            <section>
+                <h2 className="text-xl font-semibold mb-4">Send Thank You Email</h2>
+                <div className="mb-4">
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter recipient's email"
+                        className="border p-2 w-full"
+                    />
+                </div>
+                <button onClick={handleSendEmail} className="bg-blue-500 text-white px-4 py-2 rounded">
+                    Send Email
+                </button>
+                {message && <p className="mt-2">{message}</p>}
             </section>
         </div>
     );
