@@ -37,7 +37,7 @@ export default function JustWatchLink({ title, mediaType, year, className }) {
                 >
                     <span className="flex items-center">
                         <Play className="h-4 w-4 mr-2" />
-                        Find streaming options on JustWatch
+                        Check JustWatch
                     </span>
                     <ExternalLink className="h-3 w-3" />
                 </Button>
