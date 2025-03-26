@@ -83,6 +83,7 @@ export async function sendThankYouEmail(to) {
     html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #333;">Thank You for Joining MediaQ!</h2>
+                <p>Hey, thanks for checking out MediaQ! I've fixed a few bugs snce you joined, mainly one where user reading speeds weren't getting saved upon account creation. I added the default reading speed to your profile. This can be changed in user settings. I'll be making steady improvements and adding new features for the foreseeable future. But feel free to reach out to me if you have any questions or feedback here or on the app contact page. In the mean time, I encourage you to try out it's current features and see if it provides any value or fun. 
                 <p>We appreciate your interest in MediaQ. If you wish to unsubscribe from future emails, please click the link below:</p>
                 <div style="text-align: center; margin: 30px 0;">
                     <a href="${unsubscribeLink}" 
