@@ -25,10 +25,7 @@ export default function Home() {
           />
         </div>
         <div className={styles.content}>
-          <h1 className={styles.heading}>
-            Mediaq
-            <span className={styles.betaTag}>&lt;Beta&gt;</span>
-          </h1>
+          <h1 className={styles.heading}>Mediaq</h1>
           <div className={styles.maintenanceNotice}>
             ⚠️ Notice: We recently experienced a database reset. If you previously created an account before 3/23/25, you'll need to sign up again. We apologize for any inconvenience as we continue to improve our service.
           </div>
