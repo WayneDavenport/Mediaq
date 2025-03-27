@@ -30,7 +30,7 @@ export default function Home() {
             <span className={styles.betaTag}>&lt;Beta&gt;</span>
           </h1>
           <div className={styles.maintenanceNotice}>
-            ⚠️ Notice: We recently experienced a database reset. If you previously created an account, you'll need to sign up again. We apologize for any inconvenience as we continue to improve our service.
+            ⚠️ Notice: We recently experienced a database reset. If you previously created an account before 3/23/25, you'll need to sign up again. We apologize for any inconvenience as we continue to improve our service.
           </div>
           <p className={styles.description}>
             Welcome to Mediaq, your central hub for organizing your movies, books, video games, and more.  Keep track of everything you want to watch, read, or play in one convenient place.  Explore a vast library of content, fill your queue, and connect with friends to share recommendations and discover new favorites.  Organize your media effortlessly and stay updated on the latest releases. Join Mediaq and transform how you manage your media!
