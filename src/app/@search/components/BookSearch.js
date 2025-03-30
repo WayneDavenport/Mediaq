@@ -14,6 +14,7 @@ import {
     PaginationNext,
     PaginationPrevious
 } from "@/components/ui/pagination";
+import BookResources from '@/components/books/BookResources';
 
 const BookSearch = () => {
     const [searchParams, setSearchParams] = useState({
@@ -141,7 +142,7 @@ const BookSearch = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {results.map((result) => (
                         <Card key={`book-${result.book_details.google_books_id}-${result.book_details.isbn || ''}`}>
-                            <CardContent className="p-4">
+                            <CardContent className="p-4 flex flex-col h-full">
                                 {result.poster_path && (
                                     <img
                                         src={result.poster_path}
@@ -157,30 +158,31 @@ const BookSearch = () => {
                                         By: {result.book_details.authors.join(', ')}
                                     </p>
                                 )}
-                                <p className="text-sm text-muted-foreground mb-4">
-                                    {result.description?.substring(0, 150)}...
+                                <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+                                    {result.description}
                                 </p>
-                                <div className="space-y-1 mb-4">
+                                <div className="space-y-1 mb-4 text-sm text-muted-foreground">
                                     {result.book_details.publisher && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Publisher: {result.book_details.publisher}
-                                        </p>
+                                        <p>Publisher: {result.book_details.publisher}</p>
                                     )}
                                     {result.book_details.page_count > 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Pages: {result.book_details.page_count}
-                                        </p>
+                                        <p>Pages: {result.book_details.page_count}</p>
                                     )}
                                     {result.book_details.published_date && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Published: {result.book_details.published_date}
-                                        </p>
+                                        <p>Published: {result.book_details.published_date}</p>
                                     )}
                                     {result.genres && result.genres.length > 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Genres: {result.genres.join(', ')}
-                                        </p>
+                                        <p>Genres: {result.genres.join(', ')}</p>
                                     )}
+                                </div>
+                                <div className="flex flex-wrap gap-2 justify-center pt-3 border-t mt-auto mb-3">
+                                    <BookResources
+                                        title={result.title}
+                                        author={result.book_details.authors?.join ? result.book_details.authors.join(', ') : result.book_details.authors}
+                                        isbn={result.book_details.isbn || result.book_details.isbn13 || result.book_details.isbn10}
+                                        className="text-xs flex gap-1"
+                                        iconOnly={true}
+                                    />
                                 </div>
                                 <Button
                                     onClick={() => handleAdd(result)}

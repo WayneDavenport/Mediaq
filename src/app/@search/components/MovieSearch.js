@@ -15,6 +15,8 @@ import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import styles from './search.module.css';
 import { Badge } from "@/components/ui/badge";
+import JustWatchLink from '@/components/streaming/JustWatchLink';
+import TmdbWatchProviders from '@/components/streaming/TmdbWatchProviders';
 
 const MovieSearch = () => {
     const [searchParams, setSearchParams] = useState({
@@ -131,8 +133,8 @@ const MovieSearch = () => {
             ) : (
                 <div className={styles.resultsGrid}>
                     {results.map((result) => (
-                        <Card key={`movie-${result.movie_details.tmdb_id}`} className={styles.mediaCard}>
-                            <CardContent className="p-4">
+                        <Card key={`movie-${result.movie_details.tmdb_id}`} className={`${styles.mediaCard} flex flex-col`}>
+                            <CardContent className="p-4 flex flex-col h-full">
                                 {result.poster_path && (
                                     <img
                                         src={`https://image.tmdb.org/t/p/w500${result.poster_path}`}
@@ -146,27 +148,34 @@ const MovieSearch = () => {
                                         Released: {result.movie_details.release_date}
                                     </p>
                                 )}
-                                <p className={styles.mediaDescription}>
-                                    {result.description?.substring(0, 150)}
-                                    {result.description?.length > 150 ? '...' : ''}
+                                <p className={`${styles.mediaDescription} line-clamp-3`}>
+                                    {result.description}
                                 </p>
-                                <div className={styles.mediaMetadata}>
-                                    {result.movie_details.duration > 0 && (
-                                        <p>Runtime: {result.movie_details.duration} min</p>
+                                <div className={`${styles.mediaMetadata} text-sm text-muted-foreground space-y-1`}>
+                                    {result.movie_details.runtime > 0 && (
+                                        <p>Runtime: {result.movie_details.runtime} min</p>
                                     )}
                                     {result.movie_details.vote_average > 0 && (
-                                        <p>Rating: {result.movie_details.vote_average}/10</p>
+                                        <p>Rating: {result.movie_details.vote_average?.toFixed(1)}/10</p>
                                     )}
                                 </div>
                                 {result.movie_details.genres && (
-                                    <div className={styles.badgeContainer}>
+                                    <div className={`${styles.badgeContainer} flex flex-wrap gap-1 mt-2 mb-3`}>
                                         {result.movie_details.genres.map((genre, idx) => (
-                                            <Badge key={idx} variant="outline">
+                                            <Badge key={idx} variant="secondary" className="text-xs">
                                                 {genre}
                                             </Badge>
                                         ))}
                                     </div>
                                 )}
+                                <div className="flex flex-wrap gap-2 justify-center pt-3 border-t mt-auto mb-3">
+                                    <TmdbWatchProviders
+                                        tmdbId={result.movie_details.tmdb_id}
+                                        mediaType="movie"
+                                        title={result.title}
+                                        className="justify-center"
+                                    />
+                                </div>
                                 <Button
                                     onClick={() => handleAdd(result)}
                                     className={styles.actionButton}

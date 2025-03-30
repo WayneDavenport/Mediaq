@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ShoppingCart } from 'lucide-react';
 
 const VideoGameSearch = () => {
     const [searchParams, setSearchParams] = useState({
@@ -135,8 +136,8 @@ const VideoGameSearch = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {results.map((result) => (
-                        <Card key={`game-${result.game_details.rawg_id}`}>
-                            <CardContent className="p-4">
+                        <Card key={`game-${result.game_details.rawg_id}`} className="flex flex-col">
+                            <CardContent className="p-4 flex flex-col h-full">
                                 {result.poster_path && (
                                     <img
                                         src={result.poster_path}
@@ -149,20 +150,20 @@ const VideoGameSearch = () => {
                                 </h3>
 
                                 {result.game_details.genres && (
-                                    <div className="flex flex-wrap gap-2 mb-3">
+                                    <div className="flex flex-wrap gap-1 mb-3">
                                         {result.game_details.genres.split(', ').map((genre, index) => (
-                                            <Badge key={index} variant="secondary">
+                                            <Badge key={index} variant="secondary" className="text-xs">
                                                 {genre}
                                             </Badge>
                                         ))}
                                     </div>
                                 )}
 
-                                <p className="text-sm text-muted-foreground mb-4">
-                                    {result.description?.substring(0, 150)}...
+                                <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+                                    {result.description?.replace(/<[^>]*>?/gm, '')}
                                 </p>
 
-                                <div className="space-y-1 mb-4 text-sm text-muted-foreground">
+                                <div className="space-y-1 mb-3 text-sm text-muted-foreground">
                                     {result.game_details.release_date && (
                                         <p>Released: {result.game_details.release_date}</p>
                                     )}
@@ -176,7 +177,23 @@ const VideoGameSearch = () => {
                                         <p>Metacritic: {result.game_details.metacritic}</p>
                                     )}
                                     {result.game_details.average_playtime > 0 && (
-                                        <p>Average Playtime: {result.game_details.average_playtime} hours</p>
+                                        <p>Avg Playtime: {result.game_details.average_playtime} hours</p>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-wrap gap-2 justify-center pt-3 border-t mt-auto mb-3">
+                                    {result.title && (
+                                        <a
+                                            href={`https://www.greenmangaming.com/search/?query=${encodeURIComponent(result.title)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer nofollow"
+                                            title={`Search ${result.title} on Green Man Gaming`}
+                                            className="text-green-600 hover:text-green-500 transition-colors p-1 rounded hover:bg-muted"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <ShoppingCart className="h-4 w-4" />
+                                            <span className="sr-only">Check Green Man Gaming</span>
+                                        </a>
                                     )}
                                 </div>
 

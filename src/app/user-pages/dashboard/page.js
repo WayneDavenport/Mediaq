@@ -22,6 +22,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { cn } from "@/lib/utils";
 import { LoadingScreen } from "@/components/loading/loading-screen";
 import JustWatchLink from '@/components/streaming/JustWatchLink';
+import TmdbWatchProviders from '@/components/streaming/TmdbWatchProviders';
 import BookResources from "@/components/books/BookResources";
 import {
     Popover,
@@ -922,15 +923,23 @@ export default function Dashboard() {
                                                         )}
 
                                                         {(item.media_type === 'movie' || item.media_type === 'tv') && (
-                                                            <div className="mt-1 mb-1">
-                                                                <JustWatchLink
-                                                                    title={item.title}
+                                                            <div className="mt-1 mb-1 space-y-2">
+                                                                <h3 className="text-sm font-medium text-muted-foreground">Where to Watch</h3>
+                                                                <TmdbWatchProviders
+                                                                    tmdbId={item.movies?.tmdb_id || item.tv_shows?.tmdb_id}
                                                                     mediaType={item.media_type}
-                                                                    year={item.media_type === 'movie'
-                                                                        ? item.movies?.release_date?.substring(0, 4)
-                                                                        : item.tv_shows?.first_air_date?.substring(0, 4)
-                                                                    }
+                                                                    title={item.title}
                                                                 />
+                                                                {(item.movies?.tmdb_id || item.tv_shows?.tmdb_id) && (
+                                                                    <a
+                                                                        href={`https://www.justwatch.com/us/search?q=${encodeURIComponent(item.title)}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer nofollow"
+                                                                        className="text-xs text-muted-foreground hover:text-foreground underline inline-flex items-center gap-1"
+                                                                    >
+                                                                        See all options on JustWatch <ExternalLink className="h-3 w-3" />
+                                                                    </a>
+                                                                )}
                                                             </div>
                                                         )}
 

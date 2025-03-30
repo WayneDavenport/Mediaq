@@ -3,26 +3,38 @@
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Play } from 'lucide-react';
 
-export default function JustWatchLink({ title, mediaType, year, className }) {
-    // Skip rendering if we don't have the necessary data
+export default function JustWatchLink({ title, mediaType, year, className, iconOnly = false }) {
+    // Skip rendering if we don't have the title
     if (!title) {
         return null;
     }
 
-    // Format the title for the URL (spaces to hyphens, lowercase, remove special chars)
-    const formattedTitle = title
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')  // Remove special characters
-        .replace(/\s+/g, '-')      // Replace spaces with hyphens
-        .trim();
+    // Construct the search query - include year if available
+    const searchQuery = year ? `${title} ${year}` : title;
 
-    // Construct the JustWatch search URL
-    // This will take users to JustWatch search results for the title
-    const country = 'us';
-    const justWatchUrl = `https://www.justwatch.com/${country}/search?q=${encodeURIComponent(title)}`;
+    // Construct the JustWatch search URL using the combined query
+    const country = 'us'; // Or make this configurable if needed
+    const justWatchUrl = `https://www.justwatch.com/${country}/search?q=${encodeURIComponent(searchQuery)}`;
 
+    if (iconOnly) {
+        return (
+            <a
+                href={justWatchUrl}
+                target="_blank"
+                rel="noopener noreferrer nofollow" // Added nofollow
+                title={`Check ${title} on JustWatch`}
+                className={`text-amber-500 hover:text-amber-400 transition-colors p-1 rounded hover:bg-muted ${className || ''}`}
+                onClick={(e) => e.stopPropagation()} // Prevent card click
+            >
+                <Play className="h-4 w-4" />
+                <span className="sr-only">Check JustWatch</span>
+            </a>
+        );
+    }
+
+    // Original full display for dashboard/expanded view
     return (
-        <div className={`flex flex-col gap-2 ${className}`}>
+        <div className={`flex flex-col gap-2 ${className || ''}`}>
             <h3 className="text-sm font-medium">Where to Watch</h3>
             <a
                 href={justWatchUrl}

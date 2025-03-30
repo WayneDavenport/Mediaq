@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/pagination";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import JustWatchLink from '@/components/streaming/JustWatchLink';
+import TmdbWatchProviders from '@/components/streaming/TmdbWatchProviders';
 
 const TvSearch = () => {
     const [searchParams, setSearchParams] = useState({
@@ -131,8 +134,8 @@ const TvSearch = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {results.map((result) => (
-                        <Card key={`tv-${result.tv_details.tmdb_id}`}>
-                            <CardContent className="p-4">
+                        <Card key={`tv-${result.tv_details.tmdb_id}`} className="flex flex-col">
+                            <CardContent className="p-4 flex flex-col h-full">
                                 {result.poster_path && (
                                     <img
                                         src={`https://image.tmdb.org/t/p/w500${result.poster_path}`}
@@ -143,41 +146,45 @@ const TvSearch = () => {
                                 <h3 className="text-lg font-semibold mb-2">
                                     {result.title}
                                 </h3>
-                                <p className="text-sm text-muted-foreground mb-4">
-                                    {result.description?.substring(0, 150)}...
+                                <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+                                    {result.description}
                                 </p>
-                                <div className="space-y-1 mb-4">
+                                <div className="space-y-1 mb-2 text-sm text-muted-foreground">
                                     {result.tv_details.release_date && (
-                                        <p className="text-sm text-muted-foreground">
-                                            First Air Date: {result.tv_details.release_date}
-                                        </p>
+                                        <p>First Air Date: {result.tv_details.release_date}</p>
                                     )}
                                     {result.tv_details.seasons > 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Seasons: {result.tv_details.seasons}
-                                        </p>
+                                        <p>Seasons: {result.tv_details.seasons}</p>
                                     )}
                                     {result.tv_details.total_episodes > 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Episodes: {result.tv_details.total_episodes}
-                                        </p>
+                                        <p>Episodes: {result.tv_details.total_episodes}</p>
                                     )}
                                     {result.tv_details.average_runtime > 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Average Episode Runtime: {result.tv_details.average_runtime} min
-                                        </p>
+                                        <p>Avg. Runtime: {result.tv_details.average_runtime} min</p>
                                     )}
                                     {result.tv_details.vote_average > 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Rating: {result.tv_details.vote_average}/10
-                                        </p>
-                                    )}
-                                    {result.genres && result.genres.length > 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Genres: {result.genres.join(', ')}
-                                        </p>
+                                        <p>Rating: {result.tv_details.vote_average?.toFixed(1)}/10</p>
                                     )}
                                 </div>
+                                {result.genres && result.genres.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-2 mb-3">
+                                        {result.genres.map((genre, idx) => (
+                                            <Badge key={idx} variant="secondary" className="text-xs">
+                                                {genre}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="flex flex-wrap gap-2 justify-center pt-3 border-t mt-auto mb-3">
+                                    <TmdbWatchProviders
+                                        tmdbId={result.tv_details.tmdb_id}
+                                        mediaType="tv"
+                                        title={result.title}
+                                        className="justify-center"
+                                    />
+                                </div>
+
                                 <Button
                                     onClick={() => handleAdd(result)}
                                     className="w-full"
