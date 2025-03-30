@@ -630,31 +630,37 @@ const Staging = () => {
         const handleDurationSelect = () => {
             if (!selectedValue) return;
 
+            const value = parseInt(selectedValue); // Parse the selected value
+
             switch (mediaType) {
                 case 'tv':
-                    form.setValue('average_runtime', parseInt(selectedValue));
-                    form.setValue('duration', parseInt(selectedValue) * form.getValues('total_episodes'));
+                    form.setValue('average_runtime', value); // Set the specific field
+                    form.setValue('duration', value * (form.getValues('total_episodes') || 1)); // Recalculate total duration
                     toast.success('Episode length set', {
-                        description: `Set to ${selectedValue} minutes per episode`
+                        description: `Set to ${value} minutes per episode`
                     });
                     break;
                 case 'book':
-                    form.setValue('page_count', parseInt(selectedValue));
-                    form.setValue('duration', calculateReadingTime(parseInt(selectedValue)));
+                    form.setValue('page_count', value); // Set the specific field
+                    form.setValue('duration', calculateReadingTime(value, session?.user?.reading_speed)); // Recalculate reading time
                     toast.success('Page count set', {
-                        description: `Set to ${selectedValue} pages`
+                        description: `Set to ${value} pages`
                     });
                     break;
                 case 'movie':
-                    form.setValue('duration', parseInt(selectedValue));
+                    form.setValue('duration', value); // Set total duration
+                    form.setValue('runtime', value); // <<<<<<<<< EDIT: Also set the specific 'runtime' field
                     toast.success('Duration set', {
-                        description: `Set to ${selectedValue} minutes`
+                        description: `Set to ${value} minutes`
                     });
                     break;
                 case 'game':
-                    form.setValue('duration', parseInt(selectedValue));
+                    // Note: The dialog asks for hours for games, but selectedValue stores minutes
+                    const minutes = value; // selectedValue should already be in minutes
+                    form.setValue('duration', minutes); // Set total duration (playtime in minutes)
+                    form.setValue('average_playtime', minutes); // <<<<<<<<< EDIT: Also set the specific 'average_playtime' field
                     toast.success('Playtime set', {
-                        description: `Set to ${Math.round(selectedValue / 60)} hours`
+                        description: `Set to ${Math.round(minutes / 60)} hours`
                     });
                     break;
             }
@@ -741,16 +747,26 @@ const Staging = () => {
                                         }`}
                                     value={customDuration}
                                     onChange={(e) => {
-                                        setCustomDuration(e.target.value);
+                                        const inputVal = e.target.value;
+                                        setCustomDuration(inputVal);
                                         // If this is for games and user is inputting hours, convert to minutes
                                         if (mediaType === 'game') {
-                                            const hours = parseFloat(e.target.value);
-                                            const minutes = Math.round(hours * 60);
-                                            setSelectedValue(minutes.toString());
+                                            const hours = parseFloat(inputVal);
+                                            if (!isNaN(hours) && hours >= 0) {
+                                                const minutes = Math.round(hours * 60);
+                                                setSelectedValue(minutes.toString()); // <<<<<<<<< EDIT: Set selectedValue to minutes
+                                            } else {
+                                                setSelectedValue(''); // Clear if input is invalid
+                                            }
                                         } else {
-                                            setSelectedValue(e.target.value);
+                                            if (!isNaN(parseInt(inputVal)) && parseInt(inputVal) >= 0) {
+                                                setSelectedValue(inputVal); // <<<<<<<<< EDIT: Use inputVal directly for others
+                                            } else {
+                                                setSelectedValue(''); // Clear if input is invalid
+                                            }
                                         }
                                     }}
+                                    min="0" // Add min attribute for better UX
                                 />
                             </div>
                         </RadioGroup>

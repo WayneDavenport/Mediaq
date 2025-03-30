@@ -63,6 +63,11 @@ export default function ProgressSection({
         lock.key_parent_id === item.id
     );
 
+    // Helper to determine if all existing locks are completed
+    const allLocksCompleted = item.locked_items?.length > 0 && item.locked_items.every(lock => lock.completed);
+    // Helper to determine if there are any active (non-completed) locks
+    const hasActiveLocks = item.locked_items?.some(lock => !lock.completed);
+
     return (
         <div className="space-y-4 relative z-40">
             {showLockForm ? (
@@ -86,18 +91,18 @@ export default function ProgressSection({
             ) : (
                 <div className="space-y-4">
                     <ProgressDisplay item={item} onUpdateClick={onUpdateClick} mediaItems={mediaItems} />
-                    {!item.locked_items?.length && (
+                    {(!item.locked_items?.length || allLocksCompleted) && (
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setShowLockForm(true)}
                             className="w-full"
                         >
-                            Lock This {item.media_type.charAt(0).toUpperCase() + item.media_type.slice(1)}
+                            {allLocksCompleted ? 'Relock This ' : 'Lock This '}
+                            {item.media_type.charAt(0).toUpperCase() + item.media_type.slice(1)}
                         </Button>
                     )}
                 </div>
-
             )}
         </div>
     );

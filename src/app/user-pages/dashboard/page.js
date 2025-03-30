@@ -330,13 +330,15 @@ export default function Dashboard() {
             media_item_id: lock.media_item_id
         })));
 
-        // Check if this item is locked (if it has locked_items)
-        if (item.locked_items && item.locked_items.length > 0) {
+        // Check if this item is actively locked (has at least one non-completed lock)
+        const isActivelyLocked = item.locked_items && item.locked_items.some(lock => !lock.completed);
+        if (isActivelyLocked) {
             return "shadow-[0_0_20px_-1px_rgba(255,0,0,0.6)] hover:shadow-[0_0_25px_0px_rgba(255,0,0,0.8)]";
         }
 
-        // Check if this item is specifically required to unlock something
+        // Check if this item is specifically required to unlock something (that isn't completed)
         const isSpecificRequirement = allLocks.some(lock =>
+            !lock.completed &&
             lock.lock_type === 'specific' &&
             lock.key_parent_id === item.id
         );
@@ -344,17 +346,18 @@ export default function Dashboard() {
             return "shadow-[0_0_20px_-1px_rgba(163,71,255,0.6)] hover:shadow-[0_0_25px_0px_rgba(163,71,255,0.8)]";
         }
 
-        // Check if this item can contribute to any category/type locks
+        // Check if this item can contribute to any category/type locks (that aren't completed)
         const canContribute = allLocks.some(lock =>
-            lock.lock_type === 'media_type' &&
-            lock.key_parent_text === item.media_type
+            !lock.completed &&
+            (lock.lock_type === 'media_type' || lock.lock_type === 'category') &&
+            lock.key_parent_text?.toLowerCase() === (lock.lock_type === 'media_type' ? item.media_type : item.category)?.toLowerCase()
         );
         if (canContribute) {
             return "shadow-[0_0_20px_-1px_rgba(0,149,255,0.6)] hover:shadow-[0_0_25px_0px_rgba(0,149,255,0.8)]";
         }
 
-        // Check for GMG link
-        if (item.media_type === 'game' && item.gmg_link) {
+        // Check for GMG link (only if not actively locked or a key)
+        if (!isActivelyLocked && !isSpecificRequirement && !canContribute && item.media_type === 'game' && item.gmg_link) {
             return "shadow-[0_0_20px_-1px_rgba(0,255,0,0.6)] hover:shadow-[0_0_25px_0px_rgba(0,255,0,0.8)]";
         }
 

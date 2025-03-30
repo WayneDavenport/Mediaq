@@ -80,32 +80,56 @@ export async function PUT(request) {
 
         // Update each locked item's completion tracking
         for (const lockedItem of lockedItems) {
+            if (lockedItem.completed) {
+                console.log(`Skipping already completed lock: ${lockedItem.id} for item ${lockedItem.media_items?.title}`);
+                continue;
+            }
+
             console.log('Processing lock:', {
                 lockId: lockedItem.id,
                 currentProgress: {
                     time: lockedItem.completed_time || 0,
                     pages: lockedItem.pages_completed || 0
-                }
+                },
+                keyParentId: lockedItem.key_parent_id,
+                keyParentText: lockedItem.key_parent_text,
+                triggeringItemId: id,
+                triggeringMediaType: media_type,
+                triggeringCategory: category,
             });
 
             const lockUpdateData = {};
+            let relevantDiff = false;
 
             if (lockedItem.key_parent_id === id) {
-                // For specific item locks, use exact values
+                relevantDiff = true;
                 if (media_type === 'book') {
                     lockUpdateData.pages_completed = pages_completed;
                     lockUpdateData.completed_time = completed_duration;
                 } else {
                     lockUpdateData.completed_time = completed_duration;
                 }
-            } else {
-                // For category/media type locks, use incremental changes
+            } else if (lockedItem.lock_type === 'media_type' && lockedItem.key_parent_text === media_type) {
+                relevantDiff = true;
                 if (media_type === 'book') {
                     lockUpdateData.pages_completed = (lockedItem.pages_completed || 0) + pagesDiff;
                     lockUpdateData.completed_time = (lockedItem.completed_time || 0) + timeDiff;
                 } else {
                     lockUpdateData.completed_time = (lockedItem.completed_time || 0) + timeDiff;
                 }
+            } else if (lockedItem.lock_type === 'category' && lockedItem.key_parent_text === category) {
+                relevantDiff = true;
+                if (media_type === 'book') {
+                    lockUpdateData.pages_completed = (lockedItem.pages_completed || 0) + pagesDiff;
+                    lockUpdateData.completed_time = (lockedItem.completed_time || 0) + timeDiff;
+                } else {
+                    lockUpdateData.completed_time = (lockedItem.completed_time || 0) + timeDiff;
+                }
+            }
+
+            if (!relevantDiff) {
+                console.log(`Skipping irrelevant lock update for lock ID: ${lockedItem.id}`);
+                continue;
             }
 
             console.log('Lock update calculation:', {
@@ -115,14 +139,17 @@ export async function PUT(request) {
                 goalTime: lockedItem.goal_time
             });
 
-            // Check if goals are met
-            const isCompleted = media_type === 'book'
+            const isNowCompleted = media_type === 'book' && lockedItem.goal_pages > 0
                 ? (lockUpdateData.pages_completed >= lockedItem.goal_pages)
-                : (lockUpdateData.completed_time >= lockedItem.goal_time);
+                : lockedItem.goal_time > 0
+                    ? (lockUpdateData.completed_time >= lockedItem.goal_time)
+                    : false;
 
-            lockUpdateData.completed = isCompleted;
+            lockUpdateData.completed = isNowCompleted;
+            if (isNowCompleted) {
+                lockUpdateData.lock_completed_timestampz = new Date().toISOString();
+            }
 
-            // Update the locked item
             const { error: lockUpdateError } = await supabase
                 .from('locked_items')
                 .update(lockUpdateData)
@@ -131,23 +158,17 @@ export async function PUT(request) {
 
             if (lockUpdateError) throw lockUpdateError;
 
-            if (isCompleted) {
+            if (isNowCompleted) {
                 newlyCompletedItems.push({
                     title: lockedItem.media_items.title,
                     completed: true
-                });
-            } else {
-                affectedItems.push({
-                    title: lockedItem.media_items.title,
-                    completed: false,
-                    progress: media_type === 'book' ? lockUpdateData.pages_completed : lockUpdateData.completed_time
                 });
             }
         }
 
         return NextResponse.json({
             success: true,
-            affectedItems: [...newlyCompletedItems, ...affectedItems]
+            affectedItems: newlyCompletedItems
         });
 
     } catch (error) {
