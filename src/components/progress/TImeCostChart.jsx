@@ -63,7 +63,7 @@ const getProgressData = (items, groupBy = 'category') => {
 };
 
 const TimeCostChart = ({ mediaItems }) => {
-    const [localSortOption, setLocalSortOption] = useState("category");
+    const [localSortOption, setLocalSortOption] = useState("media_type");
     const [showBarChart, setShowBarChart] = useState(false);
     const data = getProgressData(mediaItems, localSortOption);
 

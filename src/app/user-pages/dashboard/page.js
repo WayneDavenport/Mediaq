@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import UpdateProgressModal from "@/components/progress/UpdateProgressModal";
 import { Button } from "@/components/ui/button";
 import ProgressSection from "@/components/progress/ProgressSection";
-import { Trash2, X, Loader2, Plus, ArrowUp, ArrowDown, MoveRight, Users, ExternalLink, ShoppingCart } from 'lucide-react';
+import { Trash2, X, Loader2, Plus, ArrowUp, ArrowDown, MoveRight, Users, ExternalLink, ShoppingCart, Zap } from 'lucide-react';
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -55,6 +55,7 @@ export default function Dashboard() {
     const [selectedItem, setSelectedItem] = useState(null);
     const id = useId();
     const [sortOption, setSortOption] = useState("queue");
+    const [visualSortOption, setVisualSortOption] = useState("queue");
     const [lockedItems, setLockedItems] = useState([]);
     const [activeChart, setActiveChart] = useState("time");
     const router = useRouter();
@@ -62,6 +63,8 @@ export default function Dashboard() {
     const [isLoadingAffiliate, setIsLoadingAffiliate] = useState(false);
     const [editingNotes, setEditingNotes] = useState({});
     const [savingNotes, setSavingNotes] = useState(false);
+    const [isRandomizing, setIsRandomizing] = useState(false);
+    const sortIntervalRef = useRef(null);
 
     useOutsideClick(ref, (event) => {
         // Check if the click is within a Select/dropdown component
@@ -297,30 +300,24 @@ export default function Dashboard() {
     };
 
     const getSortedMediaItems = () => {
-        // Filter out completed items from the queue
         const activeItems = mediaItems.filter(item => !item.user_media_progress?.completed);
-
         switch (sortOption) {
             case "queue":
                 return activeItems.sort((a, b) =>
                     (a.user_media_progress?.queue_number || 0) - (b.user_media_progress?.queue_number || 0)
                 );
-
             case "title":
                 return activeItems.sort((a, b) =>
                     a.title.localeCompare(b.title)
                 );
-
             case "media-type":
                 return activeItems
-                    .sort((a, b) => a.title.localeCompare(b.title)) // First sort by title
-                    .sort((a, b) => a.media_type.localeCompare(b.media_type)); // Then by media type
-
+                    .sort((a, b) => a.title.localeCompare(b.title))
+                    .sort((a, b) => a.media_type.localeCompare(b.media_type));
             case "category":
                 return activeItems
-                    .sort((a, b) => a.title.localeCompare(b.title)) // First sort by title
-                    .sort((a, b) => a.category.localeCompare(b.category)); // Then by category
-
+                    .sort((a, b) => a.title.localeCompare(b.title))
+                    .sort((a, b) => a.category.localeCompare(b.category));
             default:
                 return activeItems;
         }
@@ -534,6 +531,81 @@ export default function Dashboard() {
         }
     };
 
+    // --- UPDATED: Randomizer Function ---
+    const handleRandomize = () => {
+        if (isRandomizing) return;
+
+        setIsRandomizing(true);
+        // Keep the current visual sort option displayed
+        // setVisualSortOption(sortOption); // No longer needed, keep it as is
+
+        const sortOptionsCycle = ['queue', 'title', 'media-type', 'category'];
+        let cycleIndex = 0;
+        const intervalTime = 250; // ms between sort changes - slowed down slightly
+        const cycles = 3; // Number of sort animations to show
+        const cycleDuration = intervalTime * cycles; // Total animation duration
+
+        // Start cycling through actual sort options for animation effect
+        sortIntervalRef.current = setInterval(() => {
+            // Cycle through options, skipping the currently displayed one initially for better effect
+            let nextIndex = cycleIndex % sortOptionsCycle.length;
+            let nextSortOption = sortOptionsCycle[nextIndex];
+            // If the next option is the same as the visually selected one, try the one after that
+            if (nextSortOption === visualSortOption && sortOptionsCycle.length > 1) {
+                nextIndex = (cycleIndex + 1) % sortOptionsCycle.length;
+                nextSortOption = sortOptionsCycle[nextIndex];
+            }
+
+            console.log(`Animating sort to: ${nextSortOption}`); // Debug log
+            setSortOption(nextSortOption); // Update sorting logic state only
+            cycleIndex++;
+        }, intervalTime);
+
+        // After the cycle duration, stop cycling and pick a random item
+        setTimeout(() => {
+            clearInterval(sortIntervalRef.current); // Stop the interval
+
+            // Filter out actively locked items
+            const eligibleItems = mediaItems.filter(item =>
+                !(item.locked_items && item.locked_items.some(lock => !lock.completed))
+            );
+
+            if (eligibleItems.length === 0) {
+                toast.info("No eligible items found for randomization!", {
+                    description: "All items might be locked."
+                });
+                setSortOption('queue'); // Reset logical sort
+                setVisualSortOption('queue'); // Reset visual sort
+                setIsRandomizing(false);
+                return;
+            }
+
+            // Select a random item
+            const randomIndex = Math.floor(Math.random() * eligibleItems.length);
+            const selectedItem = eligibleItems[randomIndex];
+
+            console.log("Randomly selected item:", selectedItem.title);
+
+            // Expand the selected item
+            setExpandedId(selectedItem.id);
+
+            // Reset both sort options and randomization state
+            setSortOption('queue');
+            setVisualSortOption('queue');
+            setIsRandomizing(false);
+
+        }, cycleDuration + 50); // Add slight delay after last interval clears
+    };
+
+    // Cleanup interval on component unmount
+    useEffect(() => {
+        return () => {
+            if (sortIntervalRef.current) {
+                clearInterval(sortIntervalRef.current);
+            }
+        };
+    }, []);
+
     if (status === "loading" || loading) {
         return <LoadingScreen />;
     }
@@ -577,52 +649,92 @@ export default function Dashboard() {
 
             <motion.div className={styles.dashboardContainer}>
                 <div>
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
                         <h1 className="text-2xl font-bold">
                             MediaQueue
                         </h1>
-                        {/* Mobile Sort Dropdown */}
-                        <div className="block sm:hidden">
-                            <Select
-                                value={sortOption}
-                                onValueChange={setSortOption}
-                            >
-                                <SelectTrigger className="w-[140px]">
-                                    <SelectValue placeholder="Sort by" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="queue">Queue Order</SelectItem>
-                                    <SelectItem value="title">Title</SelectItem>
-                                    <SelectItem value="media-type">Media Type</SelectItem>
-                                    <SelectItem value="category">Category</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
 
-                        {/* Desktop Radio Group */}
-                        <RadioGroup
-                            defaultValue="queue"
-                            value={sortOption}
-                            onValueChange={setSortOption}
-                            className="hidden sm:flex space-x-4"
-                        >
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="queue" id="queue" />
-                                <Label htmlFor="queue">Queue Order</Label>
+                        {/* Randomizer Button */}
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        onClick={handleRandomize}
+                                        disabled={isRandomizing || mediaItems.length === 0}
+                                        variant="outline"
+                                        className="bg-purple-600 hover:bg-purple-700 text-white border-purple-700 hover:border-purple-800"
+                                    >
+                                        {isRandomizing ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Zap className="mr-2 h-4 w-4" />
+                                        )}
+                                        Infinite Improbability Drive
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Engage the drive! (Selects a random unlocked item)</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+
+                        {/* Sorting Controls */}
+                        <div className="flex items-center gap-4">
+                            {/* Mobile Sort Dropdown (Needs similar logic if you want to prevent visual change) */}
+                            <div className="block sm:hidden">
+                                <Select
+                                    value={visualSortOption}
+                                    onValueChange={(value) => {
+                                        if (!isRandomizing) {
+                                            setSortOption(value);
+                                            setVisualSortOption(value);
+                                        }
+                                    }}
+                                    disabled={isRandomizing}
+                                >
+                                    <SelectTrigger className="w-[140px]">
+                                        <SelectValue placeholder="Sort by" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="queue">Queue Order</SelectItem>
+                                        <SelectItem value="title">Title</SelectItem>
+                                        <SelectItem value="media-type">Media Type</SelectItem>
+                                        <SelectItem value="category">Category</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="title" id="title" />
-                                <Label htmlFor="title">Title</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="media-type" id="media-type" />
-                                <Label htmlFor="media-type">Media Type</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="category" id="category" />
-                                <Label htmlFor="category">Category</Label>
-                            </div>
-                        </RadioGroup>
+
+                            {/* --- UPDATED: Desktop Radio Group --- */}
+                            <RadioGroup
+                                defaultValue="queue"
+                                value={visualSortOption}
+                                onValueChange={(value) => {
+                                    if (!isRandomizing) {
+                                        setSortOption(value);
+                                        setVisualSortOption(value);
+                                    }
+                                }}
+                                className="hidden sm:flex space-x-4"
+                                disabled={isRandomizing}
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="queue" id="queue" />
+                                    <Label htmlFor="queue">Queue Order</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="title" id="title" />
+                                    <Label htmlFor="title">Title</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="media-type" id="media-type" />
+                                    <Label htmlFor="media-type">Media Type</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="category" id="category" />
+                                    <Label htmlFor="category">Category</Label>
+                                </div>
+                            </RadioGroup>
+                        </div>
                     </div>
 
                     <div className={styles.mediaGrid}>
