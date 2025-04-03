@@ -72,6 +72,43 @@ export async function sendWelcomeEmail(to, username) {
   return sgMail.send(msg);
 }
 
+/**
+ * Send a password reset link
+ * @param {string} to - Recipient email address
+ * @param {string} token - Password reset token
+ * @returns {Promise} - SendGrid response
+ */
+export async function sendPasswordResetEmail(to, token) {
+  const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth-pages/reset-password/${token}`;
+
+  const msg = {
+    to,
+    from: 'wayne@mediaq.io', // Your verified sender
+    subject: 'Reset your MediaQ password',
+    text: `You requested a password reset for your MediaQ account. Click this link to set a new password: ${resetLink}\n\nIf you didn't request this, please ignore this email.\n\nThis link will expire in 1 hour.`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Reset Your MediaQ Password</h2>
+        <p>We received a request to reset the password for your MediaQ account associated with this email address.</p>
+        <p>Click the button below to set a new password:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetLink}" 
+             style="background-color: #0070f3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            Reset Password
+          </a>
+        </div>
+        <p>If the button doesn't work, you can also click on this link or copy it to your browser:</p>
+        <p><a href="${resetLink}">${resetLink}</a></p>
+        <p>This link is valid for 1 hour. If you didn't request a password reset, you can safely ignore this email. Your password will not be changed.</p>
+        <p>Thanks,</p>
+        <p>The MediaQ Team</p>
+      </div>
+    `,
+  };
+
+  return sgMail.send(msg);
+}
+
 export async function sendThankYouEmail(to) {
   const unsubscribeLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/admin/unsubscribe?email=${encodeURIComponent(to)}`;
 
@@ -79,20 +116,49 @@ export async function sendThankYouEmail(to) {
     to,
     from: 'wayne@mediaq.io',
     subject: 'Thank You for Joining MediaQ!',
-    text: `Hey, thanks for checking out MediaQ! I've fixed a few bugs snce you joined, mainly one where user reading speeds weren't getting saved upon account creation. I added the default reading speed to your profile. This can be changed in user settings. I'll be making steady improvements and adding new features for the foreseeable future. But feel free to reach out to me if you have any questions or feedback here or on the app contact page. In the mean time, I encourage you to try out it's current features and see if it provides any value or fun. To unsubscribe from the app and emails click here: ${unsubscribeLink}`,
+    text: `Hey, thanks for checking out MediaQ! I've fixed a few bugs since you joined, mainly one where user reading speeds weren't getting saved upon account creation. I added the default reading speed to your profile. This can be changed in user settings.
+
+I'll be making steady improvements and adding new features for the foreseeable future. But feel free to reach out to me if you have any questions or feedback here or on the app contact page.
+
+In the meantime, I encourage you to try out its current features and see if it provides any value or fun.
+
+To unsubscribe from the app and emails click here: ${unsubscribeLink}`,
     html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #333;">Thank You for Joining MediaQ!</h2>
-                <p>Hey, thanks for checking out MediaQ! I've fixed a few bugs snce you joined, mainly one where user reading speeds weren't getting saved upon account creation. I added the default reading speed to your profile. This can be changed in user settings. I'll be making steady improvements and adding new features for the foreseeable future. But feel free to reach out to me if you have any questions or feedback here or on the app contact page. In the mean time, I encourage you to try out it's current features and see if it provides any value or fun. 
-                <p>We appreciate your interest in MediaQ. If you wish to unsubscribe from future emails, please click the link below:</p>
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="${unsubscribeLink}" 
-                       style="background-color: #f44336; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                        Unsubscribe
-                    </a>
-                </div>
-            </div>
-        `,
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Thank You for Joining MediaQ!</h2>
+        
+        <p>Hey, thanks for checking out MediaQ! Just thought I'd reach out and let you know about some updates that have happened since 3/27 (After the Tech For Culture Meetup).</p>
+        
+        <p>I modified the movie and TV streaming service feature to better display platform availability on queue items as well as search results. I added dynamic external links like GoodReads for books as well to the search results. This way, users no longer have to add items to their queue to simply check availability. Some UI flow fixes as well.</p>
+        
+        <p><strong>New Features In Development:</strong></p>
+        <ul style="margin-bottom: 20px;">
+          <li>Queue Randomizer</li>
+          <li>User notes for queue items</li>
+          <li>"Clubs" (which are just user-made groups)</li>
+          <li>Custom Ad and Affiliate Link Switchboard (for premium users)</li>
+          <li>News Feed (with recommendations based on user queue as well as friend and Club activity)</li>
+          <li>Achievement/Trophy System</li>
+        </ul>
+
+        <p>Thanks again for checking it out, and it's more fun with friends so try the invite feature in the "Social" section. I plan on rolling over early adopters to premium for free, but if you'd like to support the development, there's a Buy Me a Coffee link in the Contact page.</p>
+        <p>P.S. Hey Larissa, It was great meeting you and the other RadarQR folks at the Tech for Culture thing. I actually already got liked on your app. Hope ya'll aren't trying to set me up behind the scenes, lol, but I'll promote it at other meetups I attend and probably use it myself once I get time to breathe.  Either way, I would love to stay in touch. Can't remember if it was you or Amberlei who said I should talk to their significant other about my app and possibly life path (first time I got out and drank in a while). I sent you guys a like on RadarQr but I reacted to quick to click the message icon. Feel free to contact me here, LinkedIn(Didn't get any of you guys on there but I've included my qr code), or my personal wayne86davenport@gmail.com. Should this be in a traditional email footer? Maybe. But maybe relaxed professionalism is part of my brand. Wayniaq, signing off.</p>
+
+              <img src="https://6zm8wdn7u7.ufs.sh/f/wciQHFXot4VkniEicTLagT9lAUoBuYFZehqptW8DsSxGvXM0" 
+           alt="MediaQ Image" 
+           style="max-width: 200px; height: auto;" />
+    </div>
+        
+        <p>To unsubscribe from future emails (no hard feelings), please click the link below:</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${unsubscribeLink}" 
+             style="background-color: #f44336; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            Unsubscribe
+          </a>
+        </div>
+      </div>
+    `,
   };
 
   return sgMail.send(msg);

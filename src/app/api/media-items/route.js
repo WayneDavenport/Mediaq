@@ -169,8 +169,10 @@ export async function POST(request) {
                 queue_number: data.queue_number,
                 duration: duration,
                 completed_duration: 0,
+                notes: data.notes,
                 /* completed_timestampz: null, */
                 completed: false,
+
                 user_id: session.user.id,
             });
 

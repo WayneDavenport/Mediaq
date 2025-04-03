@@ -94,6 +94,7 @@ const formSchema = z.object({
     completed: z.boolean().optional().default(false),
     pages_completed: z.number().optional().nullable(),
     episodes_completed: z.number().optional().nullable(),
+    notes: z.string().optional().nullable(),
 
     // Make all media-specific fields optional and nullable
     authors: z.array(z.string()).optional().nullable(),

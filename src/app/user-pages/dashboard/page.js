@@ -40,6 +40,7 @@ import { useRouter } from "next/navigation";
 import { ToasterProvider } from "@/components/providers/toaster-provider"
 import AffiliateDisclosure from '@/components/legal/AffiliateDisclosure';
 import { fetchGmgLinksForGames } from "@/components/gmg/GmgLinkFetcher";
+import { Textarea } from "@/components/ui/textarea";
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 
@@ -59,6 +60,8 @@ export default function Dashboard() {
     const router = useRouter();
     const [affiliateLink, setAffiliateLink] = useState(null);
     const [isLoadingAffiliate, setIsLoadingAffiliate] = useState(false);
+    const [editingNotes, setEditingNotes] = useState({});
+    const [savingNotes, setSavingNotes] = useState(false);
 
     useOutsideClick(ref, (event) => {
         // Check if the click is within a Select/dropdown component
@@ -119,23 +122,37 @@ export default function Dashboard() {
                             titles: gameItems.map(item => item.title)
                         });
 
+                        let processedMediaItems = mediaData.items; // Start with original items
+
                         if (gameItems.length > 0) {
                             const gmgLinks = await fetchGmgLinksForGames(gameItems);
-                            console.log('GMG Links received:', gmgLinks);
+                            console.log('GMG Links object received in dashboard:', gmgLinks); // Log the object received
 
-                            setMediaItems(mediaData.items.map(item => ({
-                                ...item,
-                                gmg_link: gmgLinks[item.title] || null,
-                                has_gmg: !!gmgLinks[item.title]
-                            })));
-                        } else {
-                            setMediaItems(mediaData.items);
+                            // Map over items and add the gmg_link using lowercase lookup
+                            processedMediaItems = mediaData.items.map(item => {
+                                if (item.media_type === 'game') {
+                                    const lowerCaseTitle = item.title.toLowerCase();
+                                    const linkData = gmgLinks[lowerCaseTitle] || null; // Lookup using lowercase title
+
+                                    // Log the lookup process for debugging
+                                    console.log(`Lookup for '${item.title}' (lowercase: '${lowerCaseTitle}'): Found ->`, linkData);
+
+                                    return {
+                                        ...item,
+                                        gmg_link: linkData,
+                                        has_gmg: !!linkData // Check truthiness of the found data
+                                    };
+                                }
+                                return item; // Return non-game items unchanged
+                            });
                         }
+
+                        setMediaItems(processedMediaItems); // Set the processed items
 
                         // Log the final state update
                         console.log('Media items state updated:', {
-                            totalItems: mediaData.items.length,
-                            itemTypes: mediaData.items.reduce((acc, item) => {
+                            totalItems: processedMediaItems.length,
+                            itemTypes: processedMediaItems.reduce((acc, item) => {
                                 acc[item.media_type] = (acc[item.media_type] || 0) + 1;
                                 return acc;
                             }, {})
@@ -322,7 +339,9 @@ export default function Dashboard() {
     const getItemGlow = (item) => {
         const allLocks = getAllLockedItems();
 
+
         // Debug logs
+
         console.log('Checking glow for item:', item.id);
         console.log('Lock types:', allLocks.map(lock => ({
             id: lock.id,
@@ -356,6 +375,19 @@ export default function Dashboard() {
         if (canContribute) {
             return "shadow-[0_0_20px_-1px_rgba(0,149,255,0.6)] hover:shadow-[0_0_25px_0px_rgba(0,149,255,0.8)]";
         }
+
+        // Debug logs
+        console.log('getItemGlow Check:', {
+            id: item.id,
+            title: item.title,
+            media_type: item.media_type,
+            hasGmgLinkProp: item.hasOwnProperty('gmg_link'), // Does the prop exist?
+            gmgLinkValue: item.gmg_link, // What is its value?
+            isTruthy: !!item.gmg_link, // How does the condition evaluate?
+            isActivelyLocked, // Include previous checks for context
+            isSpecificRequirement,
+            canContribute
+        });
 
         // Check for GMG link (only if not actively locked or a key)
         if (!isActivelyLocked && !isSpecificRequirement && !canContribute && item.media_type === 'game' && item.gmg_link) {
@@ -435,6 +467,70 @@ export default function Dashboard() {
         } catch (error) {
             console.error('Error updating queue:', error);
             toast.error("Failed to update queue");
+        }
+    };
+
+    // Function to handle changes in the notes textarea
+    const handleNotesChange = (itemId, value) => {
+        setEditingNotes(prev => ({
+            ...prev,
+            [itemId]: value
+        }));
+    };
+
+    // Function to save notes
+    const handleSaveNotes = async (itemId) => {
+        if (!editingNotes.hasOwnProperty(itemId)) {
+            console.log("No changes to save for notes on item:", itemId);
+            return; // Nothing to save if not edited
+        }
+
+        const notesToSave = editingNotes[itemId];
+        setSavingNotes(true); // Start loading indicator
+
+        try {
+            const response = await fetch(`/api/media-items/${itemId}/notes`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ notes: notesToSave }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to save notes');
+            }
+
+            // Update local state immediately for better UX
+            setMediaItems(prevItems =>
+                prevItems.map(item =>
+                    item.id === itemId
+                        ? {
+                            ...item,
+                            user_media_progress: {
+                                ...item.user_media_progress,
+                                notes: notesToSave,
+                            },
+                        }
+                        : item
+                )
+            );
+
+            // Clear the specific item from editing state after successful save
+            setEditingNotes(prev => {
+                const newState = { ...prev };
+                delete newState[itemId];
+                return newState;
+            });
+
+            toast.success("Notes saved successfully!");
+
+        } catch (error) {
+            console.error('Error saving notes:', error);
+            toast.error(error.message || "Failed to save notes");
+        } finally {
+            setSavingNotes(false); // Stop loading indicator
         }
     };
 
@@ -990,6 +1086,36 @@ export default function Dashboard() {
                                                         )}
                                                     </div>
                                                 </div>
+                                            </div>
+
+                                            {/* New Bento Box for Notes */}
+                                            <div className={styles.bentoBox}>
+                                                <h3 className="text-sm font-medium mb-2">Notes</h3>
+                                                <Textarea
+                                                    placeholder="Add your notes here..."
+                                                    value={editingNotes[item.id] ?? item.user_media_progress?.notes ?? ''}
+                                                    onChange={(e) => handleNotesChange(item.id, e.target.value)}
+                                                    className="min-h-[80px] text-sm" // Adjust height as needed
+                                                    disabled={savingNotes}
+                                                />
+                                                <Button
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // Prevent card close
+                                                        handleSaveNotes(item.id);
+                                                    }}
+                                                    disabled={savingNotes || !editingNotes.hasOwnProperty(item.id)} // Disable if saving or no changes
+                                                    className="mt-2 float-right" // Position button
+                                                >
+                                                    {savingNotes ? (
+                                                        <>
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                            Saving...
+                                                        </>
+                                                    ) : (
+                                                        'Save Notes'
+                                                    )}
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
