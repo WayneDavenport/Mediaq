@@ -4,7 +4,7 @@ import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { Moon, Sun, Menu, X, ShieldAlert } from 'lucide-react'
+import { Moon, Sun, Menu, X, ShieldAlert, Coffee } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import {
@@ -29,6 +29,12 @@ import {
 } from "@/components/ui/avatar"
 import styles from './NavBar.module.css'
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export default function NavBar() {
     const { data: session } = useSession()
@@ -72,9 +78,15 @@ export default function NavBar() {
         await signOut({ redirect: true, callbackUrl: '/' })
     }
 
-    // Add theme toggle and signout to mobile menu for easier access
+    // Add theme toggle, Buy Me a Coffee, and signout to mobile menu
     const mobileMenuItems = [
         ...navLinks,
+        {
+            isExternal: true,
+            href: 'https://www.buymeacoffee.com/wainiaq',
+            label: 'Buy me a coffee',
+            icon: <Coffee className="h-4 w-4 mr-2 text-[#5F7FFF]" />
+        },
         {
             href: '#theme-toggle',
             label: theme === 'dark' ? 'Light Mode' : 'Dark Mode',
@@ -132,6 +144,17 @@ export default function NavBar() {
                                             {item.icon && item.icon}
                                             {item.label}
                                         </button>
+                                    ) : item.isExternal ? (
+                                        <a
+                                            href={item.href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={`px-4 py-2 rounded-md transition-colors flex items-center hover:bg-accent`}
+                                            onClick={() => setIsOpen(false)}
+                                        >
+                                            {item.icon && item.icon}
+                                            {item.label}
+                                        </a>
                                     ) : (
                                         <Link
                                             href={item.href}
@@ -159,18 +182,38 @@ export default function NavBar() {
                 </div>
 
                 {/* Desktop Navigation */}
-                <div className={`${styles.navLinks} hidden lg:flex`}>
+                <div className={`${styles.navLinks} hidden lg:flex items-center`}>
                     {navLinks.map((link) => (
                         <Link
                             key={link.href}
                             href={link.href}
-                            className={`flex items-center ${pathname === link.href ? styles.active : ''} 
-                                       ${link.label === 'Admin' ? 'text-amber-500 font-medium' : ''}`}
+                            className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
+                                       ${pathname === link.href ? 'bg-primary/10 text-primary' : 'hover:bg-accent hover:text-accent-foreground'}
+                                       ${link.label === 'Admin' ? 'text-amber-500 font-medium hover:text-amber-600' : 'text-muted-foreground'}
+                                      `}
                         >
                             {link.icon && link.icon}
                             {link.label}
                         </Link>
                     ))}
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <a
+                                    href="https://www.buymeacoffee.com/wainiaq"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ml-4 inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-[#FFDD00] text-black hover:bg-[#f0d100] transition-colors text-sm font-medium"
+                                >
+                                    <Coffee className="h-4 w-4" />
+                                    Buy me a coffee
+                                </a>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Support MediaQ Development!</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
 
                 {/* Right Section - Fixed to show notification bell on all screen sizes */}

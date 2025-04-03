@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import UpdateProgressModal from "@/components/progress/UpdateProgressModal";
 import { Button } from "@/components/ui/button";
 import ProgressSection from "@/components/progress/ProgressSection";
-import { Trash2, X, Loader2, Plus, ArrowUp, ArrowDown, MoveRight, Users, ExternalLink, ShoppingCart, Zap } from 'lucide-react';
+import { Trash2, X, Loader2, Plus, ArrowUp, ArrowDown, MoveRight, Users, ExternalLink, ShoppingCart, Zap, XCircle } from 'lucide-react';
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -65,6 +65,8 @@ export default function Dashboard() {
     const [savingNotes, setSavingNotes] = useState(false);
     const [isRandomizing, setIsRandomizing] = useState(false);
     const sortIntervalRef = useRef(null);
+    const [adData, setAdData] = useState([]);
+    const [visibleAdIds, setVisibleAdIds] = useState([]);
 
     useOutsideClick(ref, (event) => {
         // Check if the click is within a Select/dropdown component
@@ -150,7 +152,52 @@ export default function Dashboard() {
                             });
                         }
 
-                        setMediaItems(processedMediaItems); // Set the processed items
+                        // --- GENERATE AD DATA ---
+                        // 1. Filter games that successfully got a GMG link from the fetch
+                        const gmgGamesWithLinks = processedMediaItems.filter(item =>
+                            item.media_type === 'game' && item.gmg_link
+                        );
+
+                        // 2. Map these games to the ad data structure
+                        const autoAdData = gmgGamesWithLinks.map(item => ({
+                            id: `ad-${item.id}`, // Unique ID for the ad element
+                            href: item.gmg_link.url, // URL from the fetched link data
+                            image: item.poster_path || item.backdrop_path || '/images/placeholder.jpg', // Use game's poster or backdrop
+                            title: item.title,
+                            alt: `Buy ${item.title} on Green Man Gaming`
+                        }));
+
+                        // 3. Manually create the Assassin's Creed Shadows ad data
+                        // Check if user already has AC Shadows to maybe reuse the image
+                        const userHasAC = processedMediaItems.find(item => item.title === "Assassin's Creed Shadows");
+                        const assassinsCreedAd = {
+                            id: 'ad-ac-shadows',
+                            href: 'https://greenmangaming.sjv.io/jeZPNa', // Your specific link
+                            image: userHasAC?.poster_path || userHasAC?.backdrop_path || 'https://media.rawg.io/media/games/526/526881e0f5f8c1550e51df3801f96ea3.jpg', // Use user's image or a placeholder
+                            title: "Assassin's Creed Shadows",
+                            alt: "Buy Assassin's Creed Shadows on Green Man Gaming"
+                        };
+                        // *** You need to add ac_shadows_placeholder.jpg to your /public/images folder ***
+
+                        // 4. Combine manual ad with auto-generated ones (AC first)
+                        // Ensure AC ad isn't duplicated if it was also found automatically (unlikely based on logs, but safe check)
+                        const finalAdData = [
+                            assassinsCreedAd,
+                            ...autoAdData.filter(ad => ad.title !== "Assassin's Creed Shadows") // Avoid duplicates
+                        ];
+
+                        // Remove duplicates based on title just in case multiple editions exist with links
+                        const uniqueAdData = Array.from(new Map(finalAdData.map(ad => [ad.title, ad])).values());
+
+
+                        // 5. Set the state for ads
+                        setAdData(uniqueAdData);
+                        setVisibleAdIds(uniqueAdData.map(ad => ad.id)); // Initialize all as visible
+                        // --- END GENERATE AD DATA ---
+
+
+                        // Set the main media items state
+                        setMediaItems(processedMediaItems);
 
                         // Log the final state update
                         console.log('Media items state updated:', {
@@ -606,6 +653,15 @@ export default function Dashboard() {
         };
     }, []);
 
+    // --- RENAME: Handler to dismiss an ad ---
+    const handleDismissAd = (adId, event) => {
+        event.stopPropagation(); // Prevent card click when dismissing
+        setVisibleAdIds(prevIds => prevIds.filter(id => id !== adId));
+    };
+
+    // Filter ad links based on visibility state
+    const visibleAds = adData.filter(ad => visibleAdIds.includes(ad.id));
+
     if (status === "loading" || loading) {
         return <LoadingScreen />;
     }
@@ -746,6 +802,62 @@ export default function Dashboard() {
                             </div>
                         ) : (
                             <>
+                                {/* --- UPDATED: Render Visible Ads --- */}
+                                {visibleAds.map((ad) => ( // Use visibleAds
+                                    <motion.div
+                                        key={ad.id} // Use ad.id
+                                        layout // Enable layout animation
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                        className={`${styles.mediaCard} relative group border-2 border-yellow-500 shadow-lg shadow-yellow-500/30`} // Promo styling
+                                    >
+                                        <a
+                                            href={ad.href} // Use ad.href
+                                            target="_blank"
+                                            rel="noopener noreferrer sponsored"
+                                            className="block w-full h-full"
+                                            aria-label={ad.alt} // Use ad.alt
+                                        >
+                                            <Card className="overflow-hidden h-full">
+                                                <div className={styles.mediaContent}>
+                                                    <div className={styles.posterWrapper}>
+                                                        <Image
+                                                            src={ad.image} // Use ad.image
+                                                            alt={ad.alt}
+                                                            width={160}
+                                                            height={160}
+                                                            className="object-cover rounded w-20 h-20"
+                                                            // Consider adding unoptimized prop check for placeholders
+                                                            unoptimized={ad.image.includes('_placeholder')}
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-200 sm:flex items-center justify-center p-2 hidden">
+                                                            <p className="text-white text-xs text-center font-medium line-clamp-2">{ad.title}</p> {/* Use ad.title */}
+                                                        </div>
+                                                        <Badge variant="destructive" className="absolute top-1 left-1 text-xs px-1.5 py-0.5">Ad</Badge>
+                                                    </div>
+                                                    <div className="sm:hidden flex flex-1 justify-between items-center">
+                                                        <h2 className="text-sm font-medium line-clamp-2">{ad.title}</h2> {/* Use ad.title */}
+                                                        <ExternalLink className="h-3 w-3 text-muted-foreground ml-1" />
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        </a>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute top-0 right-0 h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-background/50 rounded-full z-10"
+                                            onClick={(e) => handleDismissAd(ad.id, e)} // Use handleDismissAd and ad.id
+                                            aria-label={`Dismiss ${ad.title} promotion`} // Use ad.title
+                                        >
+                                            <XCircle className="h-4 w-4" />
+                                        </Button>
+                                    </motion.div>
+                                ))}
+                                {/* --- END UPDATED --- */}
+
+                                {/* Render User's Media Items (no changes needed here) */}
                                 {getSortedMediaItems().map((item) => {
                                     console.log('Item GMG data:', {
                                         id: item.id,
