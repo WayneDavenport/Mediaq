@@ -55,50 +55,78 @@ export default function NavBar() {
             .slice(0, 2)
     }
 
-    // Base navigation links - removed "Home" since we're replacing it with the logo
-    const navLinks = [
-        { href: '/user-pages/dashboard', label: 'Dashboard' },
-        { href: '/user-pages/gallery', label: 'Gallery' },
-        { href: '/user-pages/search', label: 'Search' },
-        { href: '/user-pages/social', label: 'Social' },
-        { href: '/contact', label: 'Contact' },
-    ]
+    // --- Moved mobileMenuItems definition inside the component ---
+    const getMobileMenuItems = () => {
+        // Base navigation links
+        const baseNavLinks = [
+            { href: '/user-pages/dashboard', label: 'Dashboard' },
+            { href: '/user-pages/gallery', label: 'Gallery' },
+            { href: '/user-pages/search', label: 'Search' },
+            { href: '/user-pages/social', label: 'Social' },
+            { href: '/contact', label: 'Contact' },
+        ];
 
-    // Add admin link if user is an admin
-    if (session.user.isAdmin) {
-        navLinks.push({
-            href: '/admin',
-            label: 'Admin',
-            icon: <ShieldAlert className="h-4 w-4 mr-2" />
-        });
-    }
+        // Add admin link if user is an admin
+        if (session.user.isAdmin) {
+            baseNavLinks.push({
+                href: '/admin',
+                label: 'Admin',
+                icon: <ShieldAlert className="h-4 w-4 mr-2" />
+            });
+        }
+
+        const menuItems = [...baseNavLinks];
+
+        // --- Conditionally add Buy Me a Coffee link ---
+        if (pathname !== '/contact') {
+            menuItems.push({
+                isExternal: true,
+                href: 'https://www.buymeacoffee.com/wainiaq',
+                label: 'Buy me a coffee',
+                icon: <Coffee className="h-4 w-4 mr-2 text-[#5F7FFF]" />
+            });
+        }
+        // --- End Conditional Add ---
+
+        // Add theme toggle and signout
+        menuItems.push(
+            {
+                href: '#theme-toggle',
+                label: theme === 'dark' ? 'Light Mode' : 'Dark Mode',
+                icon: theme === 'dark' ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />,
+                onClick: () => setTheme(theme === 'dark' ? 'light' : 'dark')
+            },
+            {
+                href: '#sign-out',
+                label: 'Sign Out',
+                onClick: handleSignOut
+            }
+        );
+
+        return menuItems;
+    };
+    // --- End moved definition ---
 
     // Add a signOut handler function near your other functions
     const handleSignOut = async () => {
         await signOut({ redirect: true, callbackUrl: '/' })
     }
 
-    // Add theme toggle, Buy Me a Coffee, and signout to mobile menu
-    const mobileMenuItems = [
-        ...navLinks,
-        {
-            isExternal: true,
-            href: 'https://www.buymeacoffee.com/wainiaq',
-            label: 'Buy me a coffee',
-            icon: <Coffee className="h-4 w-4 mr-2 text-[#5F7FFF]" />
-        },
-        {
-            href: '#theme-toggle',
-            label: theme === 'dark' ? 'Light Mode' : 'Dark Mode',
-            icon: theme === 'dark' ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />,
-            onClick: () => setTheme(theme === 'dark' ? 'light' : 'dark')
-        },
-        {
-            href: '#sign-out',
-            label: 'Sign Out',
-            onClick: handleSignOut
-        }
+    // Define desktop links (admin added later if needed)
+    const desktopNavLinks = [
+        { href: '/user-pages/dashboard', label: 'Dashboard' },
+        { href: '/user-pages/gallery', label: 'Gallery' },
+        { href: '/user-pages/search', label: 'Search' },
+        { href: '/user-pages/social', label: 'Social' },
+        { href: '/contact', label: 'Contact' },
     ];
+    if (session.user.isAdmin) {
+        desktopNavLinks.push({
+            href: '/admin',
+            label: 'Admin',
+            icon: <ShieldAlert className="h-4 w-4 mr-2" />
+        });
+    }
 
     return (
         <nav className={styles.navbar}>
@@ -126,8 +154,8 @@ export default function NavBar() {
                                 <span className="ml-2 font-medium">Home</span>
                             </Link>
 
-                            {/* Mobile menu items */}
-                            {mobileMenuItems.map((item, index) => (
+                            {/* Use the function to get mobile menu items */}
+                            {getMobileMenuItems().map((item, index) => (
                                 <div key={index}>
                                     {item.onClick ? (
                                         <button
@@ -183,7 +211,8 @@ export default function NavBar() {
 
                 {/* Desktop Navigation */}
                 <div className={`${styles.navLinks} hidden lg:flex items-center`}>
-                    {navLinks.map((link) => (
+                    {/* Use desktopNavLinks array */}
+                    {desktopNavLinks.map((link) => (
                         <Link
                             key={link.href}
                             href={link.href}
@@ -196,24 +225,28 @@ export default function NavBar() {
                             {link.label}
                         </Link>
                     ))}
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <a
-                                    href="https://www.buymeacoffee.com/wainiaq"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="ml-4 inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-[#FFDD00] text-black hover:bg-[#f0d100] transition-colors text-sm font-medium"
-                                >
-                                    <Coffee className="h-4 w-4" />
-                                    Buy me a coffee
-                                </a>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Support MediaQ Development!</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    {/* --- Conditionally render Buy Me a Coffee Button for Desktop --- */}
+                    {pathname !== '/contact' && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <a
+                                        href="https://www.buymeacoffee.com/wainiaq"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="ml-4 inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-[#FFDD00] text-black hover:bg-[#f0d100] transition-colors text-sm font-medium"
+                                    >
+                                        <Coffee className="h-4 w-4" />
+                                        Buy me a coffee
+                                    </a>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Support MediaQ Development!</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                    {/* --- END Conditional Render --- */}
                 </div>
 
                 {/* Right Section - Fixed to show notification bell on all screen sizes */}
