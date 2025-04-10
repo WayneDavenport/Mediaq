@@ -8,6 +8,8 @@ import PointerEventsHandler from "@/components/PointerEventsHandler";
 import { PageTracker } from 'react-page-tracker';
 
 
+
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -87,11 +89,13 @@ export default function RootLayout({ children }) {
           disableTransitionOnChange
         >
           <AuthProvider>
+
             <PointerEventsHandler />
             <PageTracker />
             <NavBar />
             {children}
             {/* <ToasterProvider /> */}
+
           </AuthProvider>
         </ThemeProvider>
       </body>

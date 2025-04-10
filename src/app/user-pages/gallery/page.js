@@ -18,6 +18,7 @@ import { LoadingScreen } from "@/components/loading/loading-screen";
 import { ToasterProvider } from "@/components/providers/toaster-provider"
 import { fetchGmgLinksForGames } from '@/components/gmg/GmgLinkFetcher';
 
+
 //Hola!
 
 function GalleryContent() {
@@ -32,29 +33,33 @@ function GalleryContent() {
     const [isFriendItem, setIsFriendItem] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedCommentId, setSelectedCommentId] = useState(null);
-    const [recommendations, setRecommendations] = useState([]);
     const [gmgLinks, setGmgLinks] = useState({});
+    const [pendingActionRecId, setPendingActionRecId] = useState(null);
+
+    const [recommendations, setRecommendations] = useState([]);
+    const [recommendationsLoading, setRecommendationsLoading] = useState(true);
+
 
     useEffect(() => {
         const fetchData = async () => {
             if (status === "authenticated") {
+                const isOverallLoading = loading || recommendationsLoading;
+                if (!isOverallLoading) setLoading(true);
+                setRecommendationsLoading(true);
+
                 try {
-                    // Fetch user's media items
                     const mediaResponse = await fetch('/api/media-items');
                     console.log(mediaResponse);
                     const mediaData = await mediaResponse.json();
                     if (mediaData.items) {
-                        // Get game items for GMG links
                         const gameItems = mediaData.items.filter(item => item.media_type === 'game')
                             .map(item => ({ title: item.title }));
 
-                        // Fetch GMG links if there are games
                         if (gameItems.length > 0) {
                             const links = await fetchGmgLinksForGames(gameItems);
                             setGmgLinks(links);
                         }
 
-                        // Combine GMG links with media items
                         const itemsWithGmg = mediaData.items.map(item => ({
                             ...item,
                             gmg_link: item.media_type === 'game' ? gmgLinks[item.title]?.url : null
@@ -63,14 +68,12 @@ function GalleryContent() {
                         setMediaItems(itemsWithGmg);
                     }
 
-                    // Fetch friends' queues
                     const friendsResponse = await fetch('/api/friends/queues');
                     const friendsData = await friendsResponse.json();
                     if (friendsData.queues) {
                         setFriendsQueues(friendsData.queues);
                     }
 
-                    // Fetch recommendations
                     const recsResponse = await fetch('/api/recommendations');
                     const recsData = await recsResponse.json();
                     setRecommendations(recsData.recommendations);
@@ -78,31 +81,29 @@ function GalleryContent() {
                     console.error('Error fetching data:', error);
                 } finally {
                     setLoading(false);
+                    setRecommendationsLoading(false);
                 }
             }
         };
 
         fetchData();
-    }, [status]);
+    }, [status, setRecommendations, setRecommendationsLoading]);
 
     useEffect(() => {
         const mediaId = searchParams.get('mediaId');
         const commentId = searchParams.get('commentId');
 
-        if (mediaId) {
-            // First check user's media items
+        if (mediaId && !loading && !recommendationsLoading) {
             let item = mediaItems.find(item => item.id === mediaId);
             let isPendingRecommendation = false;
 
-            // If not found in user's items, check recommendations
             if (!item) {
-                const recommendation = recommendations.find(rec => rec.media_item_data.id === mediaId);
+                const recommendation = recommendations.find(rec => rec.media_item_data?.id === mediaId);
                 if (recommendation) {
-                    // Don't automatically open modal for pending recommendations
                     if (recommendation.status === 'pending') {
                         isPendingRecommendation = true;
                     } else {
-                        item = recommendation.media_item_data;
+                        item = { ...recommendation.media_item_data };
                         item.recommendationId = recommendation.id;
                         item.status = recommendation.status;
                         setIsFriendItem(false);
@@ -110,11 +111,11 @@ function GalleryContent() {
                 }
             }
 
-            // If not found in recommendations, check friend queues
             if (!item && !isPendingRecommendation) {
                 for (const friendQueue of friendsQueues) {
-                    item = friendQueue.items.find(i => i.id === mediaId);
-                    if (item) {
+                    const foundItem = friendQueue.items.find(i => i.id === mediaId);
+                    if (foundItem) {
+                        item = { ...foundItem };
                         setIsFriendItem(true);
                         break;
                     }
@@ -124,25 +125,24 @@ function GalleryContent() {
             if (item && !isPendingRecommendation) {
                 setSelectedItem(item);
                 setModalOpen(true);
-
-                // If there's a commentId, pass it to the MediaModal
                 if (commentId) {
                     setSelectedCommentId(commentId);
                 }
+            } else if (mediaId && !isPendingRecommendation) {
+                console.warn(`Media item with ID ${mediaId} not found in user items, recommendations, or friend queues.`);
             }
         }
-    }, [searchParams, mediaItems, friendsQueues, recommendations]);
+    }, [searchParams, mediaItems, friendsQueues, recommendations, loading, recommendationsLoading, router]);
 
     if (status === 'unauthenticated') {
         router.push('/');
         return null;
     }
 
-    if (status === "loading" || loading) {
+    if (status === "loading" || loading || recommendationsLoading) {
         return <LoadingScreen />;
     }
 
-    // Add this check for empty state
     if (mediaItems.length === 0) {
         return (
             <div className="container max-w-2xl mx-auto p-4 text-center space-y-4">
@@ -161,7 +161,6 @@ function GalleryContent() {
         );
     }
 
-    // Separate queued and unqueued items
     const queuedItems = mediaItems
         .filter(item => item.user_media_progress?.queue_number)
         .sort((a, b) => a.user_media_progress.queue_number - b.user_media_progress.queue_number);
@@ -176,23 +175,9 @@ function GalleryContent() {
     }, {});
 
     const groupedByCategory = mediaItems.reduce((acc, item) => {
-        // Get categories from both category field and parsed genres
         const categories = new Set();
         if (item.category) categories.add(item.category);
 
-        // Parse genres if it exists and is a string
-        /*
-        if (item.genres && typeof item.genres === 'string') {
-            try {
-                const genreArray = JSON.parse(item.genres);
-                genreArray.forEach(genre => categories.add(genre));
-            } catch (e) {
-                console.error('Error parsing genres:', e);
-            }
-        }
-        */
-
-        // Add to all relevant category groups
         categories.forEach(category => {
             if (!acc[category]) acc[category] = [];
             acc[category].push(item);
@@ -211,49 +196,34 @@ function GalleryContent() {
     };
 
     const handleApproveRecommendation = async (recommendationId) => {
+        setPendingActionRecId(recommendationId);
         try {
             const response = await fetch(`/api/recommendations/${recommendationId}/approve`, {
                 method: 'POST'
             });
-
             if (!response.ok) throw new Error('Failed to approve recommendation');
-
-            // Update recommendations list after approval
-            const recsResponse = await fetch('/api/recommendations');
-            const recsData = await recsResponse.json();
-            setRecommendations(recsData.recommendations);
-
-            // Refresh media items
-            const mediaResponse = await fetch('/api/media-items');
-            const mediaData = await mediaResponse.json();
-            if (mediaData.items) {
-                setMediaItems(mediaData.items);
-            }
-
-            toast.success('Added to your collection!');
+            toast.success('Processing approval...');
         } catch (error) {
             toast.error('Failed to add item');
             console.error(error);
+        } finally {
+            setPendingActionRecId(null);
         }
     };
 
     const handleRejectRecommendation = async (recommendationId) => {
+        setPendingActionRecId(recommendationId);
         try {
             const response = await fetch(`/api/recommendations/${recommendationId}/reject`, {
                 method: 'POST'
             });
-
             if (!response.ok) throw new Error('Failed to reject recommendation');
-
-            // Update recommendations list after rejection
-            const recsResponse = await fetch('/api/recommendations');
-            const recsData = await recsResponse.json();
-            setRecommendations(recsData.recommendations);
-
-            toast.success('Recommendation rejected');
+            toast.success('Processing rejection...');
         } catch (error) {
             toast.error('Failed to reject recommendation');
             console.error(error);
+        } finally {
+            setPendingActionRecId(null);
         }
     };
 
@@ -281,21 +251,17 @@ function GalleryContent() {
             >
                 <CarouselContent className="-ml-4">
                     {items.map((item) => {
-                        // Get the appropriate image URL based on media type
                         let imageUrl;
                         if (item.media_type === 'book') {
-                            imageUrl = item.poster_path; // Direct Google Books URL
+                            imageUrl = item.poster_path;
                         } else if (item.media_type === 'game') {
-                            imageUrl = item.poster_path; // Direct RAWG URL
+                            imageUrl = item.poster_path;
                         } else {
-                            // TMDB path needs the base URL
                             imageUrl = item.poster_path ?
                                 `https://image.tmdb.org/t/p/w500${item.poster_path}` :
                                 null;
                         }
 
-                        // For recommendations, we should show Accept/Reject buttons directly in the card
-                        // if the status is pending
                         const isPendingRecommendation = isRecommendation &&
                             (item.status === 'pending' || !item.status);
 
@@ -337,7 +303,6 @@ function GalleryContent() {
                                                 )}
                                             </div>
 
-                                            {/* Inline action buttons for pending recommendations */}
                                             {isPendingRecommendation && (
                                                 <div className="flex gap-2 mt-2">
                                                     <button
@@ -380,7 +345,6 @@ function GalleryContent() {
             <div className="container mx-auto px-4 py-8">
                 <h1 className="text-3xl font-bold mb-8">My Media Gallery</h1>
 
-                {/* Queue Row */}
                 {queuedItems.length > 0 && (
                     <MediaRow
                         title="Queue"
@@ -388,7 +352,6 @@ function GalleryContent() {
                     />
                 )}
 
-                {/* Unqueued Row */}
                 {unqueuedItems.length > 0 && (
                     <MediaRow
                         title="Unqueued Items"
@@ -396,8 +359,6 @@ function GalleryContent() {
                     />
                 )}
 
-
-                {/* Media Type Sections */}
                 {Object.entries(groupedByType).map(([type, items]) => (
                     <MediaRow
                         key={type}
@@ -406,7 +367,6 @@ function GalleryContent() {
                     />
                 ))}
 
-                {/* Category Sections */}
                 {Object.entries(groupedByCategory).map(([category, items]) => (
                     <MediaRow
                         key={category}
@@ -415,7 +375,6 @@ function GalleryContent() {
                     />
                 ))}
 
-                {/* Friend Zone Section */}
                 {friendsQueues.length > 0 && (
                     <div className="mt-8">
                         <h2 className="text-3xl font-bold mb-6">Friend Zone</h2>
@@ -430,15 +389,15 @@ function GalleryContent() {
                     </div>
                 )}
 
-                {/* Recommendations */}
-                {recommendations.length > 0 && (
+                {recommendations && recommendations.length > 0 && (
                     <MediaRow
                         title="Recommended by Friends"
-                        items={recommendations.map(rec => ({
-                            ...rec.media_item_data,
-                            recommendedBy: rec.sender.username,
+                        items={recommendations.filter(rec => rec.status === 'pending').map(rec => ({
+                            ...(rec.media_item_data || {}),
+                            id: rec.media_item_data?.id || rec.id,
+                            recommendedBy: rec.sender?.username || 'A friend',
                             recommendationId: rec.id,
-                            status: rec.status  // Include the status
+                            status: rec.status
                         }))}
                         isRecommendation={true}
                     />
