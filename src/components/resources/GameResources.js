@@ -7,31 +7,44 @@ import { useState, useEffect } from 'react';
 import { fetchGmgLinksForGames } from '@/components/gmg/GmgLinkFetcher';
 import { AffiliateDisclosure } from "@/components/affiliate/AffiliateDisclosure";
 
-export default function GameResources({ title, className }) {
+export default function GameResources({ title, className, gmgLinkData }) {
     const [gmgData, setGmgData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        if (gmgLinkData) {
+            setGmgData(gmgLinkData);
+            setIsLoading(false);
+            return;
+        }
+
         const fetchGmgLink = async () => {
-            if (!title) return;
+            if (!title) {
+                setIsLoading(false);
+                return;
+            }
 
             try {
                 setIsLoading(true);
                 const links = await fetchGmgLinksForGames([{ title }]);
-                if (links[title]) {
-                    setGmgData(links[title]);
+                const lowerCaseTitle = title.toLowerCase();
+                if (links[lowerCaseTitle]) {
+                    setGmgData(links[lowerCaseTitle]);
+                } else {
+                    setGmgData(null);
                 }
             } catch (error) {
                 console.error('Error fetching GMG link:', error);
+                setGmgData(null);
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchGmgLink();
-    }, [title]);
+    }, [title, gmgLinkData]);
 
-    if (!title) return null;
+    if (!title && !gmgData) return null;
 
     return (
         <div className={`flex flex-col gap-2 ${className}`}>
@@ -40,7 +53,7 @@ export default function GameResources({ title, className }) {
                 Buy Now!
             </h3>
             {isLoading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground h-9">
                     <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                     Finding deals...
                 </div>

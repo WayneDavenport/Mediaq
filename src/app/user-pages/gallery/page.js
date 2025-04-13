@@ -52,18 +52,24 @@ function GalleryContent() {
                     console.log(mediaResponse);
                     const mediaData = await mediaResponse.json();
                     if (mediaData.items) {
-                        const gameItems = mediaData.items.filter(item => item.media_type === 'game')
-                            .map(item => ({ title: item.title }));
+                        const gameItems = mediaData.items.filter(item => item.media_type === 'game');
 
+                        let links = {};
                         if (gameItems.length > 0) {
-                            const links = await fetchGmgLinksForGames(gameItems);
-                            setGmgLinks(links);
+                            links = await fetchGmgLinksForGames(gameItems);
                         }
 
-                        const itemsWithGmg = mediaData.items.map(item => ({
-                            ...item,
-                            gmg_link: item.media_type === 'game' ? gmgLinks[item.title]?.url : null
-                        }));
+                        const itemsWithGmg = mediaData.items.map(item => {
+                            if (item.media_type === 'game') {
+                                const lowerCaseTitle = item.title?.toLowerCase();
+                                const linkData = links[lowerCaseTitle] || null;
+                                return {
+                                    ...item,
+                                    gmg_link: linkData
+                                };
+                            }
+                            return item;
+                        });
 
                         setMediaItems(itemsWithGmg);
                     }
@@ -228,7 +234,7 @@ function GalleryContent() {
     };
 
     const getItemGlow = (item) => {
-        if (item.media_type === 'game' && gmgLinks[item.title]) {
+        if (item.media_type === 'game' && item.gmg_link) {
             return "shadow-[0_0_20px_-1px_rgba(0,255,0,0.6)] hover:shadow-[0_0_25px_0px_rgba(0,255,0,0.8)]";
         }
         return "";

@@ -77,4 +77,37 @@ export async function findAffiliateLink(gameTitle) {
         console.error('Error finding affiliate link:', error);
         return null;
     }
+}
+
+// --- Add the new function --- 
+export async function findGmgGameByTitle(gameTitle) {
+    // Reusing the logic from findAffiliateLink as the goal is the same
+    // Might be refined later if different fields are needed specifically for this use case
+    try {
+        // First try exact match
+        let { data, error } = await supabase
+            .from('gmg_games')
+            // Select fields potentially useful for the RAWG route
+            .select('title, affiliate_link, image_url, price, currency')
+            .eq('title', gameTitle)
+            .limit(1);
+
+        // If no exact match, try partial match
+        if ((!data || data.length === 0) && gameTitle) {
+            const { data: similarData, error: similarError } = await supabase
+                .from('gmg_games')
+                .select('title, affiliate_link, image_url, price, currency')
+                .ilike('title', `%${gameTitle}%`)
+                .limit(1);
+
+            if (similarError) throw similarError;
+            data = similarData;
+        }
+
+        if (error) throw error;
+        return data?.[0] || null; // Return the found game data or null
+    } catch (error) {
+        console.error('Error finding GMG game by title:', error);
+        return null;
+    }
 } 

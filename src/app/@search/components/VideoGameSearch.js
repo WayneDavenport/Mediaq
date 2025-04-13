@@ -1,6 +1,6 @@
 'use client'
 // Move existing VideoGameSearch component here 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useSearchStore from '@/store/searchStore';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ShoppingCart } from 'lucide-react';
+import { fetchGmgLinksForGames } from '@/components/gmg/GmgLinkFetcher';
+import Image from 'next/image';
+import { ExternalLink } from 'lucide-react';
 
 const VideoGameSearch = () => {
     const [searchParams, setSearchParams] = useState({
@@ -27,6 +30,8 @@ const VideoGameSearch = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const setStagingItem = useSearchStore((state) => state.setStagingItem);
+    const [gmgLinks, setGmgLinks] = useState({});
+    const [gmgLoading, setGmgLoading] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -65,6 +70,29 @@ const VideoGameSearch = () => {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (results.length === 0) {
+            setGmgLinks({});
+            return;
+        }
+
+        const fetchLinks = async () => {
+            setGmgLoading(true);
+            try {
+                const gameItems = results.map(r => ({ title: r.title }));
+                const links = await fetchGmgLinksForGames(gameItems);
+                setGmgLinks(links);
+            } catch (error) {
+                console.error("Error fetching GMG links for search results:", error);
+                setGmgLinks({});
+            } finally {
+                setGmgLoading(false);
+            }
+        };
+
+        fetchLinks();
+    }, [results]);
 
     const handleAdd = (item) => {
         const formData = {
@@ -181,19 +209,47 @@ const VideoGameSearch = () => {
                                     )}
                                 </div>
 
-                                <div className="flex flex-wrap gap-2 justify-center pt-3 border-t mt-auto mb-3">
-                                    {result.title && (
-                                        <a
-                                            href={`https://www.greenmangaming.com/search/?query=${encodeURIComponent(result.title)}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer nofollow"
-                                            title={`Search ${result.title} on Green Man Gaming`}
-                                            className="text-green-600 hover:text-green-500 transition-colors p-1 rounded hover:bg-muted"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <ShoppingCart className="h-4 w-4" />
-                                            <span className="sr-only">Check Green Man Gaming</span>
-                                        </a>
+                                <div className="flex flex-col items-center gap-1 pt-3 border-t mt-auto mb-3 min-h-[40px]">
+                                    {gmgLoading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                    ) : (
+                                        (() => {
+                                            const lowerCaseTitle = result.title?.toLowerCase();
+                                            const linkData = gmgLinks[lowerCaseTitle];
+                                            return linkData ? (
+                                                <a
+                                                    href={linkData.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer sponsored"
+                                                    className="inline-flex items-center group w-full"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="w-full flex justify-between items-center bg-slate-900 dark:bg-slate-800 border-slate-700 hover:bg-slate-800 dark:hover:bg-slate-700 text-green-400 hover:text-green-300 gmg-button-glow h-8 text-xs px-2"
+                                                    >
+                                                        <span className="flex items-center">
+                                                            <Image
+                                                                src="/images/Green-Man-Gaming-logo_RGB_Dark-BG.png"
+                                                                alt="Green Man Gaming"
+                                                                width={60}
+                                                                height={16}
+                                                                className="mr-1.5"
+                                                            />
+                                                        </span>
+                                                        <span className="flex items-center gap-1.5">
+                                                            {linkData.price && (
+                                                                <span className="font-medium">${linkData.price}</span>
+                                                            )}
+                                                            <ExternalLink className="h-3 w-3" />
+                                                        </span>
+                                                    </Button>
+                                                </a>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground italic">No store link found</span>
+                                            );
+                                        })()
                                     )}
                                 </div>
 

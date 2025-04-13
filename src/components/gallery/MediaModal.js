@@ -14,6 +14,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import JustWatchLink from '@/components/streaming/JustWatchLink';
+import TmdbWatchProviders from '@/components/streaming/TmdbWatchProviders';
 import BookResources from '@/components/books/BookResources';
 import GameResources from '@/components/resources/GameResources';
 import { AffiliateDisclosure } from "@/components/affiliate/AffiliateDisclosure";
@@ -638,13 +639,10 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false,
                                         <h3 className="text-lg font-semibold mb-4">Where to Find</h3>
                                         <div className="space-y-4">
                                             {(item.media_type === 'movie' || item.media_type === 'tv') && (
-                                                <JustWatchLink
-                                                    title={item.title}
+                                                <TmdbWatchProviders
+                                                    tmdbId={item.media_type === 'movie' ? item.movies?.tmdb_id : item.tv_shows?.tmdb_id}
                                                     mediaType={item.media_type}
-                                                    year={item.media_type === 'movie'
-                                                        ? item.movies?.release_date?.substring(0, 4)
-                                                        : item.tv_shows?.first_air_date?.substring(0, 4)
-                                                    }
+                                                    title={item.title}
                                                     className="w-full"
                                                 />
                                             )}
@@ -661,6 +659,7 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false,
                                             {item.media_type === 'game' && (
                                                 <GameResources
                                                     title={item.title}
+                                                    gmgLinkData={item.gmg_link}
                                                     className="w-full"
                                                 />
                                             )}

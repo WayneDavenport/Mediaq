@@ -41,6 +41,7 @@ import { ToasterProvider } from "@/components/providers/toaster-provider"
 import AffiliateDisclosure from '@/components/legal/AffiliateDisclosure';
 import { fetchGmgLinksForGames } from "@/components/gmg/GmgLinkFetcher";
 import { Textarea } from "@/components/ui/textarea";
+import { getAdLinks } from '@/components/dashboard/server/AdLinks';
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 
@@ -152,49 +153,11 @@ export default function Dashboard() {
                             });
                         }
 
-                        // --- GENERATE AD DATA ---
-                        // 1. Filter games that successfully got a GMG link from the fetch
-                        const gmgGamesWithLinks = processedMediaItems.filter(item =>
-                            item.media_type === 'game' && item.gmg_link
-                        );
-
-                        // 2. Map these games to the ad data structure
-                        const autoAdData = gmgGamesWithLinks.map(item => ({
-                            id: `ad-${item.id}`, // Unique ID for the ad element
-                            href: item.gmg_link.url, // URL from the fetched link data
-                            image: item.poster_path || item.backdrop_path || '/images/placeholder.jpg', // Use game's poster or backdrop
-                            title: item.title,
-                            alt: `Buy ${item.title} on Green Man Gaming`
-                        }));
-
-                        // 3. Manually create the Assassin's Creed Shadows ad data
-                        // Check if user already has AC Shadows to maybe reuse the image
-                        const userHasAC = processedMediaItems.find(item => item.title === "Assassin's Creed Shadows");
-                        const assassinsCreedAd = {
-                            id: 'ad-ac-shadows',
-                            href: 'https://greenmangaming.sjv.io/jeZPNa', // Your specific link
-                            image: userHasAC?.poster_path || userHasAC?.backdrop_path || 'https://media.rawg.io/media/games/526/526881e0f5f8c1550e51df3801f96ea3.jpg', // Use user's image or a placeholder
-                            title: "Assassin's Creed Shadows",
-                            alt: "Buy Assassin's Creed Shadows on Green Man Gaming"
-                        };
-                        // *** You need to add ac_shadows_placeholder.jpg to your /public/images folder ***
-
-                        // 4. Combine manual ad with auto-generated ones (AC first)
-                        // Ensure AC ad isn't duplicated if it was also found automatically (unlikely based on logs, but safe check)
-                        const finalAdData = [
-                            assassinsCreedAd,
-                            ...autoAdData.filter(ad => ad.title !== "Assassin's Creed Shadows") // Avoid duplicates
-                        ];
-
-                        // Remove duplicates based on title just in case multiple editions exist with links
-                        const uniqueAdData = Array.from(new Map(finalAdData.map(ad => [ad.title, ad])).values());
-
-
-                        // 5. Set the state for ads
-                        setAdData(uniqueAdData);
-                        setVisibleAdIds(uniqueAdData.map(ad => ad.id)); // Initialize all as visible
-                        // --- END GENERATE AD DATA ---
-
+                        // --- FETCH AD DATA --- (Replaces previous generation logic)
+                        const fetchedAdData = await getAdLinks();
+                        setAdData(fetchedAdData);
+                        setVisibleAdIds(fetchedAdData.map(ad => ad.id)); // Initialize all as visible
+                        // --- END FETCH AD DATA ---
 
                         // Set the main media items state
                         setMediaItems(processedMediaItems);
@@ -830,7 +793,7 @@ export default function Dashboard() {
                                                             height={160}
                                                             className="object-cover rounded w-20 h-20"
                                                             // Consider adding unoptimized prop check for placeholders
-                                                            unoptimized={ad.image.includes('_placeholder')}
+                                                            unoptimized={ad.image.includes('_placeholder') || !ad.image.startsWith('/')}
                                                         />
                                                         <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-200 sm:flex items-center justify-center p-2 hidden">
                                                             <p className="text-white text-xs text-center font-medium line-clamp-2">{ad.title}</p> {/* Use ad.title */}

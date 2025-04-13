@@ -43,7 +43,7 @@ export function AffiliateDisclosure({ minimal = false }) {
                 </AccordionTrigger>
                 <AccordionContent className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-4 mt-2">
                     <p>
-                        MediaQ is supported by our readers. When you make a purchase through links on our site,
+                        MediaQ is supported by our users. When you make a purchase through links on our site,
                         we may earn an affiliate commission. This helps us continue providing quality content
                         and improving your experience.
                     </p>
