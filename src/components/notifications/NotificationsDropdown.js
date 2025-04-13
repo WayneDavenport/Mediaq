@@ -290,7 +290,7 @@ export default function NotificationsDropdown() {
         try {
             const response = await fetch(`/api/recommendations/${recommendationId}/approve`, { method: 'POST' });
             if (!response.ok) throw new Error('Failed to approve recommendation');
-            toast.success('Processing approval...');
+            toast.success('Recommendation accepted!');
         } catch (error) {
             toast.error('Failed to add item');
             console.error(error);
@@ -336,7 +336,7 @@ export default function NotificationsDropdown() {
         try {
             const response = await fetch(`/api/notifications/${notificationId}`, { method: 'DELETE' });
             if (!response.ok) throw new Error('Failed to dismiss notification');
-            toast.success('Notification dismissed');
+            console.log('Notification dismissed successfully (no toast shown).');
         } catch (error) {
             console.error('Error dismissing notification:', error);
             toast.error('Failed to dismiss notification');

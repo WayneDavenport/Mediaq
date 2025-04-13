@@ -116,6 +116,8 @@ export async function POST(request) {
             throw error;
         }
 
+        // --- Remove/Comment out redundant notification creation ---
+        /*
         // Create notification
         await supabase
             .from('notifications')
@@ -127,6 +129,9 @@ export async function POST(request) {
                 message: `recommended ${mediaItemData.title} to you`,
                 is_read: false
             });
+        */
+        console.log('Skipped creating redundant text notification for receiver upon recommendation.');
+        // --- End removal ---
 
         return NextResponse.json({ recommendation });
 
