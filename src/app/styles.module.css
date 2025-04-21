@@ -16,36 +16,50 @@
     grid-template-columns: 1fr;
     gap: 2rem;
     padding: 1rem;
-    margin-left: 8%;
+    width: 100%;
+    max-width: 1200px;
+    margin: auto;
+    align-items: center;
+    position: relative;
 }
 
 .artPlaceholder {
     position: relative;
     display: flex;
     justify-content: center;
-    align-self: center;
+    align-items: center;
     width: 100%;
-    height: 24rem;
-    border-radius: 0.5rem;
-    overflow: hidden;
+    min-height: 300px;
+    height: 60vh;
+    max-height: 500px;
+}
+
+.slogan {
+    color: whitesmoke;
+    font-size: 1.8rem;
+    font-weight: bold;
+    text-align: left;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+    margin-top: -2rem;
+    margin-bottom: 2rem;
 }
 
 .content {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    margin-left: 3rem;
-    margin-top: 2.5rem;
-    margin-bottom: 2rem;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
 }
 
 .heading {
     font-size: 9rem;
     font-weight: bold;
     color: whitesmoke;
-    margin-top: 2rem;
     font-family: 'SpecialElite';
     position: relative;
+    text-align: left;
 }
 
 .betaTag {
@@ -103,36 +117,88 @@
     background-color: #10B981;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
     .grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr 1fr;
+        margin-left: 8%;
+        margin-right: 8%;
+        max-width: none;
+    }
+
+    .artPlaceholder {
+        position: relative;
+        z-index: auto;
+        pointer-events: auto;
+        height: 70vh;
+        max-height: 600px;
+    }
+
+    .slogan {
+        font-size: 2rem;
+        text-align: left;
+        margin-top: -2.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .content {
+        z-index: auto;
+        align-items: flex-start;
+    }
+
+    .heading {
+        text-align: left;
     }
 }
 
 @media (max-width: 768px) {
-    .artPlaceholder {
-        display: none;
-    }
-
-    .container {
-        display: flex;
-        flex-direction: column;
-        justify-content: top;
-        align-items: center;
+    .grid {
+        grid-template-columns: 1fr;
         padding: 1rem;
         margin: 0;
+        gap: 0;
         text-align: center;
+    }
+
+    .artPlaceholder {
+        position: absolute;
+        top: 10%;
+        left: 0;
+        right: 0;
+        height: 280px;
+        z-index: 1;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        /* justify-content: center; */
+        overflow: hidden;
+        margin: 0;
+        opacity: 0.8;
     }
 
     .content {
-        margin: .6rem;
         align-items: center;
+        margin: 0;
+        padding-top: .2px;
+        text-align: center;
+        width: 100%;
     }
 
     .heading {
-        font-size: clamp(4rem, 15vw, 8rem);
-        margin-top: .6rem;
+        font-size: clamp(5rem, 20vw, 8rem);
+        margin-top: 0rem;
         text-align: center;
+        width: 100%;
+        position: relative;
+        z-index: 3;
+    }
+
+    .slogan {
+        font-size: 1.5rem;
+        text-align: center;
+        margin-top: 0.5rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        z-index: 3;
     }
 
     .description {
@@ -140,6 +206,9 @@
         margin-bottom: 2rem;
         padding: 0 1rem;
         text-align: center;
+        max-width: 90%;
+        position: relative;
+        z-index: 3;
     }
 
     .actions {
@@ -149,18 +218,8 @@
         gap: 1rem;
         flex-wrap: wrap;
         width: 100%;
-    }
-
-    .betaTag {
-        font-size: 1rem;
-        top: -2rem;
-    }
-
-    .maintenanceNotice {
-        font-size: 0.9rem;
-        padding: 0.75rem;
-        margin: 1rem;
-        text-align: center;
+        position: relative;
+        z-index: 3;
     }
 }
 

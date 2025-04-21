@@ -27,6 +27,7 @@ const nextConfig = {
     compiler: {
         removeConsole: process.env.NODE_ENV === 'production',
     },
+    transpilePackages: ['three'],
     async headers() {
         return [
             {
