@@ -152,16 +152,26 @@ export async function PUT(request) {
                 newValues: lockUpdateData,
                 goalPages: lockedItem.goal_pages,
                 goalTime: lockedItem.goal_time,
-                goalUnits: lockedItem.goal_units
+                goalUnits: lockedItem.goal_units,
+                lockedItemMediaType: lockedItem.media_items?.media_type
             });
 
             let isNowCompleted = false;
-            if (media_type === 'book' && lockedItem.goal_pages > 0) {
-                isNowCompleted = lockUpdateData.pages_completed >= lockedItem.goal_pages;
-            } else if (media_type === 'task' && lockedItem.goal_units > 0) {
-                isNowCompleted = lockUpdateData.pages_completed >= lockedItem.goal_units;
-            } else if (lockedItem.goal_time > 0) {
-                isNowCompleted = lockUpdateData.completed_time >= lockedItem.goal_time;
+
+            // Check against goal_units if it's set (typically for tasks)
+            if (lockedItem.goal_units && lockedItem.goal_units > 0) {
+                // Ensure lockUpdateData.pages_completed has the relevant unit progress
+                isNowCompleted = (lockUpdateData.pages_completed || 0) >= lockedItem.goal_units;
+            }
+            // Check against goal_pages if it's set (typically for books)
+            // and not already completed by units goal (if applicable)
+            else if (!isNowCompleted && lockedItem.goal_pages && lockedItem.goal_pages > 0) {
+                isNowCompleted = (lockUpdateData.pages_completed || 0) >= lockedItem.goal_pages;
+            }
+            // Check against goal_time if it's set (for any type)
+            // and not already completed by units or pages goal
+            else if (!isNowCompleted && lockedItem.goal_time && lockedItem.goal_time > 0) {
+                isNowCompleted = (lockUpdateData.completed_time || 0) >= lockedItem.goal_time;
             }
 
             lockUpdateData.completed = isNowCompleted;

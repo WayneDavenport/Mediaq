@@ -54,7 +54,7 @@ const Comments = ({ mediaItemId, currentUser }) => {
         fetchComments();
         processedComments.current.clear();
 
-        const channel = supabaseRealtime.channel(`comments-${mediaItemId}-${Date.now()}`);
+        const channel = supabaseRealtime.channel(`comments-${mediaItemId}`);
 
         const subscription = channel
             .on('postgres_changes', {

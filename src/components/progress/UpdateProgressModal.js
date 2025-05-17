@@ -207,7 +207,10 @@ export default function UpdateProgressModal({
             const result = await response.json();
             console.log('Received from server:', result);
 
-            onServerConfirmedUpdate(result.updatedItem);
+            onServerConfirmedUpdate({
+                primaryItem: result.updatedItem,
+                unlockedDependents: result.newlyUnlockedItems
+            });
 
             toast.success('Progress updated successfully', {
                 description: getDisplayValueForToast(optimisticProgressDetails)
