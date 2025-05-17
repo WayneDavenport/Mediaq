@@ -18,7 +18,8 @@ export async function POST(request) {
             key_parent_id,
             goal_time,
             goal_pages,
-            goal_episodes
+            goal_episodes,
+            goal_units
         } = body;
 
         // Validate mutual exclusivity
@@ -49,6 +50,7 @@ export async function POST(request) {
                 goal_time: goal_time || null,
                 goal_pages: goal_pages || null,
                 goal_episodes: goal_episodes || null,
+                goal_units: goal_units || null,
                 completed_time: 0,
                 pages_completed: 0,
                 completed: false,
@@ -60,7 +62,48 @@ export async function POST(request) {
 
         if (error) throw error;
 
-        return NextResponse.json(data);
+        // Instead of returning just the lock, fetch and return the parent media item
+        // with all its details, including the newly added lock.
+        const { data: updatedParentItem, error: fetchError } = await supabase
+            .from('media_items')
+            .select(`
+                *,
+                locked_items!locked_items_id_fkey(*),
+                user_media_progress!user_media_progress_id_fkey(*),
+                books(*),
+                movies(*),
+                tv_shows(*),
+                games(*),
+                tasks(*)
+            `)
+            .eq('id', media_item_id) // The ID of the item to which the lock was added
+            .eq('user_id', session.user.id)
+            .single();
+
+        if (fetchError) {
+            console.error('Error fetching parent item after adding lock:', fetchError);
+            // If fetching the parent fails, we might have an orphaned lock or inconsistent state.
+            // For now, re-throw to indicate a problem post-lock creation.
+            throw fetchError;
+        }
+
+        if (!updatedParentItem) {
+            return NextResponse.json({ error: 'Parent item not found after adding lock' }, { status: 404 });
+        }
+
+        // Normalize the fetched parent item before returning
+        const transformedParentItem = {
+            ...updatedParentItem,
+            locked_items: updatedParentItem.locked_items ? (Array.isArray(updatedParentItem.locked_items) ? updatedParentItem.locked_items : [updatedParentItem.locked_items]) : [],
+            user_media_progress: Array.isArray(updatedParentItem.user_media_progress) ? updatedParentItem.user_media_progress[0] : updatedParentItem.user_media_progress,
+            books: Array.isArray(updatedParentItem.books) ? updatedParentItem.books[0] : updatedParentItem.books,
+            movies: Array.isArray(updatedParentItem.movies) ? updatedParentItem.movies[0] : updatedParentItem.movies,
+            tv_shows: Array.isArray(updatedParentItem.tv_shows) ? updatedParentItem.tv_shows[0] : updatedParentItem.tv_shows,
+            games: Array.isArray(updatedParentItem.games) ? updatedParentItem.games[0] : updatedParentItem.games,
+            tasks: Array.isArray(updatedParentItem.tasks) ? updatedParentItem.tasks[0] : updatedParentItem.tasks,
+        };
+
+        return NextResponse.json({ success: true, data: transformedParentItem });
 
     } catch (error) {
         console.error('Error adding lock:', error);

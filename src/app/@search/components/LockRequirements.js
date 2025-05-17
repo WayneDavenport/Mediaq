@@ -20,6 +20,7 @@ import {
     SelectItem,
 } from "@/components/ui/select";
 import { Controller } from "react-hook-form";
+import { Input } from "@/components/ui/input";
 
 const formatGameTime = (minutes) => {
     const hours = Math.floor(minutes / 60);
@@ -54,6 +55,12 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
         }
     }, [form.watch('key_parent')]);
 
+    // For tasks: get selected task and unit info
+    const keyParent = form.watch('key_parent');
+    const selectedTask = keyParent && incompleteItems.find(i => i.id === keyParent && i.media_type === 'task');
+    const unitName = selectedTask?.tasks?.unit_name || 'units';
+    const unitRange = selectedTask?.tasks?.unit_range || 10000;
+
     // Add this function to handle lock creation
     const createLock = async (mediaItemId) => {
         if (!form.watch('locked')) return;
@@ -66,6 +73,7 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
             goal_time: form.watch('goal_time') || 0,
             goal_pages: form.watch('goal_pages') || 0,
             goal_episodes: form.watch('goal_episodes') || 0,
+            goal_units: form.watch('goal_units') || 0,
         };
 
         console.log('Creating lock with data:', lockData); // Debug log
@@ -226,6 +234,7 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
                                 switch (selectedItem.media_type) {
                                     case 'book': return 'goal_pages';
                                     case 'tv': return 'goal_episodes';
+                                    case 'task': return 'goal_units';
                                     default: return 'goal_time';
                                 }
                             })()}
@@ -279,6 +288,25 @@ const LockRequirements = ({ form, incompleteItems, allCategories, calculateReadi
                                             label = 'Time to Complete (minutes)';
                                             valueText = `${field.value} minutes`;
                                             break;
+                                        case 'task':
+                                            // Custom unit goal for tasks
+                                            return (
+                                                <FormItem>
+                                                    <FormLabel>{unitName.charAt(0).toUpperCase() + unitName.slice(1)} Goal</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="number"
+                                                            min={1}
+                                                            max={unitRange}
+                                                            value={field.value || ''}
+                                                            onChange={e => field.onChange(Number(e.target.value))}
+                                                            placeholder={`Number of ${unitName}...`}
+                                                        />
+                                                    </FormControl>
+                                                    <FormDescription>Max: {unitRange} {unitName}</FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            );
                                         default:
                                             const defaultProgress = selectedItem.user_media_progress || {};
                                             max = defaultProgress.duration || 240;

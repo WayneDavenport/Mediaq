@@ -153,6 +153,21 @@ export default function ProgressDisplay({ item, onUpdateClick, mediaItems = [] }
                     </div>
                 )}
 
+                {item.media_type === 'task' && (
+                    <>
+                        <div>
+                            <span className="font-semibold">{item.tasks?.unit_name ? capitalizeFirstLetter(item.tasks.unit_name) : 'Units'} Completed:</span> {
+                                item.user_media_progress?.units_completed || 0
+                            } / {item.tasks?.unit_range || '?'} {item.tasks?.unit_name || 'units'}
+                        </div>
+                        <div>
+                            <span className="font-semibold">Time Spent:</span> {
+                                item.user_media_progress?.completed_duration || 0
+                            } / {item.user_media_progress?.duration || '?'} minutes
+                        </div>
+                    </>
+                )}
+
                 <div>
                     <span className="font-semibold">Status:</span> {
                         item.user_media_progress?.completed ? 'Completed' : 'In Progress'

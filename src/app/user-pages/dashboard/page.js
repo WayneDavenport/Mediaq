@@ -42,6 +42,7 @@ import AffiliateDisclosure from '@/components/legal/AffiliateDisclosure';
 import { fetchGmgLinksForGames } from "@/components/gmg/GmgLinkFetcher";
 import { Textarea } from "@/components/ui/textarea";
 import { getAdLinks } from '@/components/dashboard/server/AdLinks';
+import StagingTask from '@/app/@search/components/StagingTask';
 
 const PRESET_CATEGORIES = ['Fun', 'Learning', 'Hobby', 'Productivity', 'General'];
 
@@ -68,6 +69,10 @@ export default function Dashboard() {
     const sortIntervalRef = useRef(null);
     const [adData, setAdData] = useState([]);
     const [visibleAdIds, setVisibleAdIds] = useState([]);
+    const [showTaskStaging, setShowTaskStaging] = useState(false);
+
+    // For optimistic update revert
+    const mediaItemsBeforeUpdateRef = useRef(null);
 
     useOutsideClick(ref, (event) => {
         // Check if the click is within a Select/dropdown component
@@ -248,29 +253,6 @@ export default function Dashboard() {
         getAffiliateLink();
     }, [expandedId, mediaItems]);
 
-    const handleProgressUpdate = (newProgress) => {
-        setMediaItems(items =>
-            items.map(item =>
-                item.id === selectedItem.id
-                    ? {
-                        ...item,
-                        user_media_progress: {
-                            ...item.user_media_progress,
-                            completed_duration: newProgress,
-                            completed: newProgress >= getMaxValue(item),
-                            episodes_completed: selectedItem.media_type === 'tv'
-                                ? Math.floor(newProgress / (selectedItem.tv_shows?.average_runtime || 30))
-                                : item.user_media_progress?.episodes_completed,
-                            pages_completed: selectedItem.media_type === 'book'
-                                ? newProgress
-                                : item.user_media_progress?.pages_completed
-                        }
-                    }
-                    : item
-            )
-        );
-    };
-
     const getMaxValue = (item) => {
         switch (item.media_type) {
             case 'book':
@@ -278,12 +260,83 @@ export default function Dashboard() {
             case 'movie':
                 return item.user_media_progress?.duration || item.movies?.runtime || 0;
             case 'tv':
-                return item.user_media_progress?.duration || 0;
+                // For TV, max value is total episodes based on total duration and avg runtime
+                const totalDuration = item.user_media_progress?.duration || 0;
+                const avgRuntime = item.tv_shows?.average_runtime || 30;
+                return avgRuntime > 0 ? Math.ceil(totalDuration / avgRuntime) : 0;
             case 'game':
                 return item.user_media_progress?.duration || 0;
+            case 'task':
+                return item.tasks?.unit_range || 1; // Max value for task units
             default:
                 return 100;
         }
+    };
+
+    const optimisticallyUpdateMediaItemProgress = (itemId, newProgressDetails) => {
+        mediaItemsBeforeUpdateRef.current = [...mediaItems]; // Store current state for potential revert
+        setMediaItems(prevItems =>
+            prevItems.map(item =>
+                item.id === itemId
+                    ? {
+                        ...item,
+                        user_media_progress: {
+                            ...item.user_media_progress,
+                            completed_duration: newProgressDetails.completed_duration,
+                            pages_completed: newProgressDetails.pages_completed,
+                            units_completed: newProgressDetails.units_completed,
+                            completed: newProgressDetails.completed,
+                            // Recalculate episodes_completed if it's a TV show based on new completed_duration
+                            episodes_completed: item.media_type === 'tv'
+                                ? Math.floor(newProgressDetails.completed_duration / (item.tv_shows?.average_runtime || 30))
+                                : item.user_media_progress?.episodes_completed,
+                        }
+                    }
+                    : item
+            )
+        );
+    };
+
+    const reconcileMediaItemUpdate = (updatedItemFromServer) => {
+        setMediaItems(prevItems =>
+            prevItems.map(item =>
+                item.id === updatedItemFromServer.id ? updatedItemFromServer : item
+            )
+        );
+        mediaItemsBeforeUpdateRef.current = null; // Clear stored state as update is confirmed
+        console.log('Item reconciled with server data:', updatedItemFromServer.id);
+    };
+
+    const revertMediaItemProgressUpdate = (itemId) => {
+        if (mediaItemsBeforeUpdateRef.current) {
+            setMediaItems(mediaItemsBeforeUpdateRef.current);
+            toast.error("Failed to update progress. Changes have been reverted.");
+            console.log('Progress update reverted for item:', itemId);
+        }
+        mediaItemsBeforeUpdateRef.current = null; // Clear stored state
+    };
+
+    // New handler for generic optimistic updates (e.g., adding a lock)
+    const optimisticallyUpdateItem = (updatedItemData) => {
+        if (!mediaItemsBeforeUpdateRef.current) { // Store only if not already stored by another op
+            mediaItemsBeforeUpdateRef.current = [...mediaItems];
+        }
+        setMediaItems(prevItems =>
+            prevItems.map(item =>
+                item.id === updatedItemData.id ? updatedItemData : item
+            )
+        );
+        console.log('Item optimistically updated:', updatedItemData.id);
+    };
+
+    // New handler for reverting generic item updates
+    const revertGenericItemUpdate = (itemId, actionDescription = "update item") => {
+        if (mediaItemsBeforeUpdateRef.current) {
+            setMediaItems(mediaItemsBeforeUpdateRef.current);
+            toast.error(`Failed to ${actionDescription}. Changes have been reverted.`);
+            console.log(`Generic update reverted for item: ${itemId}, action: ${actionDescription}`);
+        }
+        mediaItemsBeforeUpdateRef.current = null; // Clear stored state
     };
 
     const handleDelete = async (itemId) => {
@@ -757,6 +810,14 @@ export default function Dashboard() {
                     </div>
 
                     <div className={styles.mediaGrid}>
+                        {/* Add Task Button */}
+                        <Button
+                            onClick={() => setShowTaskStaging(true)}
+                            variant="outline"
+                            className="mb-4 bg-blue-600 hover:bg-blue-700 text-white border-blue-700 hover:border-blue-800"
+                        >
+                            + Add Task
+                        </Button>
                         {loading ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {[...Array(6)].map((_, index) => (
@@ -1105,13 +1166,17 @@ export default function Dashboard() {
                                                 <div className={styles.progressSection}>
                                                     <ProgressSection
                                                         item={item}
-                                                        onUpdateClick={(item) => {
-                                                            setSelectedItem(item);
+                                                        onUpdateClick={(itemToUpdate) => {
+                                                            setSelectedItem(itemToUpdate);
                                                             setUpdateModalOpen(true);
                                                         }}
                                                         allCategories={allCategories}
                                                         mediaItems={mediaItems}
                                                         incompleteItems={mediaItems.filter(i => !i.user_media_progress?.completed)}
+                                                        // Pass the new set of handlers for optimistic updates
+                                                        onOptimisticItemUpdate={optimisticallyUpdateItem}
+                                                        onServerConfirmedItemUpdate={reconcileMediaItemUpdate}
+                                                        onItemUpdateError={(itemId) => revertGenericItemUpdate(itemId, "add lock requirements")}
                                                     />
                                                 </div>
 
@@ -1439,16 +1504,40 @@ export default function Dashboard() {
                     onClose={() => {
                         setUpdateModalOpen(false);
                         setSelectedItem(null);
+                        // If an update was attempted and failed, revert might have already happened.
+                        // If modal is closed WITHOUT saving, ensure any lingering revert ref is cleared.
+                        if (mediaItemsBeforeUpdateRef.current && selectedItem && mediaItemsBeforeUpdateRef.current.find(i => i.id === selectedItem.id)) {
+                            // Check if selectedItem still exists in ref, implying it might not have been processed by reconcile/revert for THIS modal instance
+                            // This logic might be tricky if multiple modals/updates can be concurrent (they can't here)
+                            // For safety, let's clear it if the modal for selectedItem is closing.
+                            mediaItemsBeforeUpdateRef.current = null;
+                        }
                     }}
                     item={selectedItem}
-                    onUpdate={(newProgress) => {
-                        handleProgressUpdate(newProgress);
-                    }}
+                    onOptimisticUpdate={optimisticallyUpdateMediaItemProgress}
+                    onServerConfirmedUpdate={reconcileMediaItemUpdate}
+                    onUpdateError={revertMediaItemProgressUpdate}
                     refreshData={async () => {
-                        // Add a refreshData function if needed
-                        // This could fetch updated data from the server
+                        // This refreshData might not be strictly necessary if optimistic updates + reconciliation work well.
+                        // Consider removing if full item data is consistently returned and reconciled.
+                        // For now, let's keep it as a fallback or for scenarios not covered by item-specific updates.
+                        const mediaResponse = await fetch('/api/media-items');
+                        const mediaData = await mediaResponse.json();
+                        if (mediaData.items) {
+                            // Simplified, assuming fetchGmgLinksForGames and ad data are handled elsewhere or not critical for this refresh path
+                            setMediaItems(mediaData.items);
+                        }
                     }}
-                    key={selectedItem.id}
+                    key={selectedItem.id} // Ensure modal re-renders with fresh state if item changes
+                />
+            )}
+            {/* StagingTask Modal */}
+            {showTaskStaging && (
+                <StagingTask
+                    open={showTaskStaging}
+                    onClose={() => setShowTaskStaging(false)}
+                    allCategories={allCategories}
+                    refreshQueue={() => {/* TODO: refetch media items after adding a task */ }}
                 />
             )}
         </>

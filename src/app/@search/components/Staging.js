@@ -85,6 +85,7 @@ const formSchema = z.object({
     lock_type: z.string().optional().nullable(), // Changed from enum to string
     goal_time: z.number().optional().default(0),
     goal_pages: z.number().optional().default(0),
+    goal_units: z.number().optional().default(0),
     goal_episodes: z.number().optional().default(0),
 
     // Progress fields

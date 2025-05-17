@@ -29,29 +29,30 @@ export default function UpdateProgressModal({
     isOpen,
     onClose,
     item,
-    onUpdate,
-    refreshData
+    onOptimisticUpdate,
+    onServerConfirmedUpdate,
+    onUpdateError
 }) {
     const { data: session } = useSession();
     const userReadingSpeed = session?.user?.reading_speed || 0.667;
     const [progress, setProgress] = useState(0);
+    const [taskUnitValue, setTaskUnitValue] = useState(0);
+    const [taskDuration, setTaskDuration] = useState(0);
     const [showCompleteAlert, setShowCompleteAlert] = useState(false);
-    const [isMarkingComplete, setIsMarkingComplete] = useState(false);
-    const [affectedItems, setAffectedItems] = useState([]);
     const [showAffectedItemsAlert, setShowAffectedItemsAlert] = useState(false);
-    const [completedLocks, setCompletedLocks] = useState([]);
-    const [showCompletionAlert, setShowCompletionAlert] = useState(false);
+    const [newlyUnlockedItemsForAlert, setNewlyUnlockedItemsForAlert] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (item.media_type === 'book') {
             setProgress(item.user_media_progress?.pages_completed || 0);
         } else if (item.media_type === 'tv') {
-            // For TV shows, convert minutes to episodes
             const episodeCount = Math.floor((item.user_media_progress?.completed_duration || 0) / (item.tv_shows?.average_runtime || 30));
             setProgress(episodeCount);
+        } else if (item.media_type === 'task') {
+            setTaskUnitValue(item.user_media_progress?.units_completed || 0);
+            setTaskDuration(item.user_media_progress?.completed_duration || 0);
         } else {
-            // For other media types, show minutes completed
             setProgress(item.user_media_progress?.completed_duration || 0);
         }
     }, [item]);
@@ -61,47 +62,65 @@ export default function UpdateProgressModal({
             case 'book':
                 return item.books?.page_count || 0;
             case 'tv':
-                // Max episodes based on total duration divided by average episode length
                 return Math.ceil((item.user_media_progress?.duration || 0) / (item.tv_shows?.average_runtime || 30));
             case 'movie':
                 return item.user_media_progress?.duration || item.movies?.runtime || 0;
             case 'game':
                 return item.user_media_progress?.duration || 0;
+            case 'task':
+                return item.tasks?.unit_range || 1;
             default:
                 return 100;
         }
     };
 
-    const getDisplayValue = () => {
+    const getDisplayValueForToast = (currentProgressDetails) => {
         const max = getMaxValue();
-        const percentage = max > 0 ? Math.round((progress / max) * 100) : 0;
-
+        const percentage = max > 0 ? Math.round(((item.media_type === 'task' ? currentProgressDetails.units_completed : currentProgressDetails.progress_value) / max) * 100) : 0;
         switch (item.media_type) {
             case 'book':
-                return `${progress} pages (${percentage}%)`;
+                return `${currentProgressDetails.pages_completed} pages (${percentage}%)`;
             case 'movie':
-                return `${progress} minutes (${percentage}%)`;
+                return `${currentProgressDetails.completed_duration} minutes (${percentage}%)`;
             case 'tv':
-                const episodes = Math.floor(progress / (item.tv_shows?.average_runtime || 30));
-                return `${episodes} episodes - ${progress} minutes (${percentage}%)`;
+                const episodes = Math.floor(currentProgressDetails.completed_duration / (item.tv_shows?.average_runtime || 30));
+                return `${episodes} episodes - ${currentProgressDetails.completed_duration} minutes (${percentage}%)`;
             case 'game':
-                const hours = (progress / 60).toFixed(1);
+                const hours = (currentProgressDetails.completed_duration / 60).toFixed(1);
                 return `${hours} hours (${percentage}%)`;
+            case 'task':
+                return `${currentProgressDetails.units_completed} / ${item.tasks?.unit_range || 1} ${item.tasks?.unit_name || 'units'} (${percentage}%)\n${currentProgressDetails.completed_duration} / ${(item.user_media_progress?.duration || 60)} min`;
             default:
                 return `${percentage}%`;
         }
     };
 
     const handleMarkComplete = () => {
-        setIsMarkingComplete(true);
+        setIsLoading(true);
         const maxValue = getMaxValue();
-        setProgress(maxValue);
-        handleUpdate(true);
+        if (item.media_type === 'task') {
+            setTaskUnitValue(maxValue);
+            setTaskDuration(item.user_media_progress?.duration || item.tasks?.expected_duration || 60);
+            handleUpdate(true);
+        } else if (item.media_type === 'tv') {
+            setProgress(maxValue);
+            handleUpdate(true);
+        } else {
+            setProgress(maxValue);
+            handleUpdate(true);
+        }
     };
 
     const handleSaveClick = () => {
         const maxValue = getMaxValue();
-        if (progress === maxValue) {
+        let isAtMaxValue = false;
+        if (item.media_type === 'task') {
+            isAtMaxValue = taskUnitValue === maxValue;
+        } else {
+            isAtMaxValue = progress === maxValue;
+        }
+
+        if (isAtMaxValue) {
             setShowCompleteAlert(true);
         } else {
             handleUpdate(false);
@@ -109,47 +128,89 @@ export default function UpdateProgressModal({
     };
 
     const handleUpdate = async (markAsComplete = false) => {
+        if (!item || !onOptimisticUpdate || !onServerConfirmedUpdate || !onUpdateError) return;
         setIsLoading(true);
-        try {
-            let updateData = {
-                id: item.id,
-                media_type: item.media_type,
-                category: item.category,
-                initial_duration: item.user_media_progress?.completed_duration || 0,
-                initial_pages: item.user_media_progress?.pages_completed || 0
+
+        let optimisticProgressDetails = {};
+        let apiUpdateData = {
+            id: item.id,
+            media_type: item.media_type,
+            category: item.category,
+            initial_duration: item.user_media_progress?.completed_duration || 0,
+            initial_pages: item.user_media_progress?.pages_completed || 0,
+            initial_units: item.user_media_progress?.units_completed || 0,
+        };
+
+        if (item.media_type === 'book') {
+            const currentPages = markAsComplete ? getMaxValue() : progress;
+            optimisticProgressDetails = {
+                pages_completed: currentPages,
+                completed_duration: Math.round(currentPages / userReadingSpeed),
+                completed: markAsComplete || currentPages >= getMaxValue(),
+                units_completed: item.user_media_progress?.units_completed,
             };
+            apiUpdateData.pages_completed = optimisticProgressDetails.pages_completed;
+            apiUpdateData.completed_duration = optimisticProgressDetails.completed_duration;
+            apiUpdateData.completed = optimisticProgressDetails.completed;
+        } else if (item.media_type === 'tv') {
+            const currentEpisodes = markAsComplete ? getMaxValue() : progress;
+            const episodeLength = item.tv_shows?.average_runtime || 30;
+            optimisticProgressDetails = {
+                completed_duration: currentEpisodes * episodeLength,
+                completed: markAsComplete || currentEpisodes >= getMaxValue(),
+                pages_completed: item.user_media_progress?.pages_completed,
+                units_completed: item.user_media_progress?.units_completed,
+            };
+            apiUpdateData.completed_duration = optimisticProgressDetails.completed_duration;
+            apiUpdateData.completed = optimisticProgressDetails.completed;
+        } else if (item.media_type === 'task') {
+            const currentUnits = markAsComplete ? getMaxValue() : taskUnitValue;
+            const currentTaskDuration = markAsComplete ? (item.user_media_progress?.duration || item.tasks?.expected_duration || 60) : taskDuration;
+            optimisticProgressDetails = {
+                units_completed: currentUnits,
+                completed_duration: currentTaskDuration,
+                completed: markAsComplete || currentUnits >= getMaxValue(),
+                pages_completed: item.user_media_progress?.pages_completed,
+            };
+            apiUpdateData.units_completed = optimisticProgressDetails.units_completed;
+            apiUpdateData.completed_duration = optimisticProgressDetails.completed_duration;
+            apiUpdateData.completed = optimisticProgressDetails.completed;
+        } else {
+            const currentDuration = markAsComplete ? getMaxValue() : progress;
+            optimisticProgressDetails = {
+                completed_duration: currentDuration,
+                completed: markAsComplete || currentDuration >= getMaxValue(),
+                pages_completed: item.user_media_progress?.pages_completed,
+                units_completed: item.user_media_progress?.units_completed,
+            };
+            apiUpdateData.completed_duration = optimisticProgressDetails.completed_duration;
+            apiUpdateData.completed = optimisticProgressDetails.completed;
+        }
 
-            if (item.media_type === 'book') {
-                updateData.pages_completed = progress;
-                updateData.completed_duration = Math.round(progress / userReadingSpeed);
-                updateData.completed = markAsComplete || progress >= (item.books?.page_count || 0);
-            } else if (item.media_type === 'tv') {
-                // Convert episodes to minutes
-                const episodeLength = item.tv_shows?.average_runtime || 30;
-                updateData.completed_duration = progress * episodeLength;
-                updateData.completed = markAsComplete || progress >= getMaxValue();
-            } else {
-                updateData.completed_duration = progress;
-                updateData.completed = markAsComplete || progress >= (item.user_media_progress?.duration || 0);
-            }
+        optimisticProgressDetails.progress_value = item.media_type === 'task' ? taskUnitValue : progress;
 
-            console.log('Sending update:', updateData);
+        onOptimisticUpdate(item.id, optimisticProgressDetails);
 
+        try {
+            console.log('Sending update to API:', apiUpdateData);
             const response = await fetch('/api/media-items/progress', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updateData),
+                body: JSON.stringify(apiUpdateData),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to update progress');
+                throw new Error(errorData.details || errorData.error || 'Failed to update progress from server');
             }
 
             const result = await response.json();
+            console.log('Received from server:', result);
+
+            onServerConfirmedUpdate(result.updatedItem);
 
             toast.success('Progress updated successfully', {
-                description: getDisplayValue()
+                description: getDisplayValueForToast(optimisticProgressDetails)
             });
 
             if (result.easterEggMessage) {
@@ -163,27 +224,18 @@ export default function UpdateProgressModal({
                 });
             }
 
-            if (result.affectedItems?.length > 0) {
-                const completed = result.affectedItems.filter(item => item.completed);
-                const affected = result.affectedItems.filter(item => !item.completed);
-
-                if (completed.length > 0) {
-                    setCompletedLocks(completed);
-                    setShowCompletionAlert(true);
-                } else if (affected.length > 0) {
-                    setAffectedItems(affected);
-                    setShowAffectedItemsAlert(true);
-                } else {
-                    onUpdate(progress);
-                    onClose();
-                }
+            if (result.newlyUnlockedItems && result.newlyUnlockedItems.length > 0) {
+                setNewlyUnlockedItemsForAlert(result.newlyUnlockedItems);
+                setShowAffectedItemsAlert(true);
+            } else {
+                onClose();
             }
             setShowCompleteAlert(false);
-            setIsMarkingComplete(false);
 
         } catch (error) {
             console.error('Error updating progress:', error);
             toast.error(error.message || "Failed to update progress");
+            onUpdateError(item.id);
         } finally {
             setIsLoading(false);
         }
@@ -195,19 +247,40 @@ export default function UpdateProgressModal({
             handleUpdate(true);
         } else {
             const maxValue = getMaxValue();
-            const newProgress = Math.floor(maxValue * 0.99);
-            setProgress(newProgress);
+            if (item.media_type === 'task') {
+                setTaskUnitValue(Math.floor(maxValue * 0.99) || (maxValue > 1 ? maxValue - 1 : 0));
+            } else {
+                setProgress(Math.floor(maxValue * 0.99) || (maxValue > 1 ? maxValue - 1 : 0));
+            }
             handleUpdate(false);
         }
     };
 
-    const handleAffectedItemsAlertClose = () => {
+    const handleNewlyUnlockedItemsAlertClose = () => {
         setShowAffectedItemsAlert(false);
-        onUpdate(progress);
+        setNewlyUnlockedItemsForAlert([]);
         onClose();
-        setShowCompleteAlert(false);
-        setIsMarkingComplete(false);
     };
+
+    const handleTaskSliderChange = (val) => {
+        const unitValue = val[0];
+        setTaskUnitValue(unitValue);
+        const range = item.tasks?.unit_range || 1;
+        const totalExpectedDuration = item.user_media_progress?.duration || item.tasks?.expected_duration || 60;
+        const proportionalDuration = range > 0 ? Math.round((unitValue / range) * totalExpectedDuration) : 0;
+        setTaskDuration(proportionalDuration);
+    };
+
+    const handleTaskDurationChange = (val) => {
+        const newDuration = val[0] * 60;
+        setTaskDuration(newDuration);
+        const range = item.tasks?.unit_range || 1;
+        const totalExpectedDuration = item.user_media_progress?.duration || item.tasks?.expected_duration || 60;
+        const proportionalUnit = totalExpectedDuration > 0 ? Math.round((newDuration / totalExpectedDuration) * range) : 0;
+        setTaskUnitValue(proportionalUnit > range ? range : proportionalUnit);
+    };
+
+    if (!isOpen || !item) return null;
 
     return (
         <>
@@ -223,50 +296,88 @@ export default function UpdateProgressModal({
                     <div className="py-6">
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label>
-                                    {item.media_type === 'book' ? 'Pages Read' :
-                                        item.media_type === 'tv' ? 'Episodes Watched' :
-                                            'Time Completed (minutes)'}
-                                </Label>
-                                <div className="flex items-center space-x-2">
-                                    <Slider
-                                        value={[progress]}
-                                        onValueChange={([value]) => setProgress(value)}
-                                        max={getMaxValue()}
-                                        step={item.media_type === 'tv' ? 1 : 1}
-                                    />
-                                    <div className="w-20 text-right">
-                                        {item.media_type === 'book'
-                                            ? `${progress}/${item.books?.page_count} pages`
-                                            : item.media_type === 'tv'
-                                                ? `${progress}/${getMaxValue()} eps`
-                                                : `${progress}/${item.user_media_progress?.duration} min`}
-                                    </div>
-                                </div>
-                                {item.media_type === 'tv' && (
-                                    <div className="text-sm text-muted-foreground">
-                                        Total time: {progress * (item.tv_shows?.average_runtime || 30)} minutes
-                                    </div>
-                                )}
-                                {item.media_type === 'book' && (
-                                    <div className="text-sm text-muted-foreground">
-                                        Estimated time: {Math.round(progress / userReadingSpeed)} minutes
-                                    </div>
+                                {item.media_type === 'task' ? (
+                                    <>
+                                        <Label>{item.tasks?.unit_name || 'Units'} Completed</Label>
+                                        <div className="flex items-center space-x-2">
+                                            <Slider
+                                                value={[taskUnitValue]}
+                                                onValueChange={handleTaskSliderChange}
+                                                max={item.tasks?.unit_range || 1}
+                                                min={0}
+                                                step={1}
+                                                disabled={isLoading}
+                                            />
+                                            <div className="w-32 text-right tabular-nums">
+                                                {taskUnitValue} / {item.tasks?.unit_range || '-'} {item.tasks?.unit_name || 'units'}
+                                            </div>
+                                        </div>
+                                        <Label>Time Spent (minutes)</Label>
+                                        <div className="flex items-center space-x-2">
+                                            <Slider
+                                                value={[taskDuration]}
+                                                onValueChange={([value]) => setTaskDuration(value)}
+                                                max={item.user_media_progress?.duration || item.tasks?.expected_duration || 60}
+                                                min={0}
+                                                step={1}
+                                                disabled={isLoading}
+                                            />
+                                            <div className="w-32 text-right tabular-nums">
+                                                {taskDuration} / {item.user_media_progress?.duration || item.tasks?.expected_duration || '-'} min
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Label>
+                                            {item.media_type === 'book' ? 'Pages Read' :
+                                                item.media_type === 'tv' ? 'Episodes Watched' :
+                                                    'Time Completed (minutes)'}
+                                        </Label>
+                                        <div className="flex items-center space-x-2">
+                                            <Slider
+                                                value={[progress]}
+                                                onValueChange={([value]) => setProgress(value)}
+                                                max={getMaxValue()}
+                                                step={1}
+                                                disabled={isLoading}
+                                            />
+                                            <div className="w-24 text-right tabular-nums">
+                                                {item.media_type === 'book'
+                                                    ? `${progress}/${getMaxValue()} pages`
+                                                    : item.media_type === 'tv'
+                                                        ? `${progress}/${getMaxValue()} eps`
+                                                        : `${progress}/${getMaxValue()} min`}
+                                            </div>
+                                        </div>
+                                        {item.media_type === 'tv' && (
+                                            <div className="text-sm text-muted-foreground">
+                                                Total time: {progress * (item.tv_shows?.average_runtime || 30)} minutes
+                                            </div>
+                                        )}
+                                        {item.media_type === 'book' && (
+                                            <div className="text-sm text-muted-foreground">
+                                                Estimated reading time for current pages: {Math.round(progress / userReadingSpeed)} minutes
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex justify-between space-x-2">
+                    <div className="flex justify-between space-x-2 pt-4">
                         <Button
                             variant="secondary"
                             onClick={handleMarkComplete}
                             className="bg-green-500 hover:bg-green-600 text-white"
+                            disabled={isLoading}
                         >
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                             Mark as Complete
                         </Button>
                         <div className="flex space-x-2">
-                            <Button variant="outline" onClick={onClose}>
+                            <Button variant="outline" onClick={onClose} disabled={isLoading}>
                                 Cancel
                             </Button>
                             <Button onClick={handleSaveClick} disabled={isLoading}>
@@ -293,11 +404,11 @@ export default function UpdateProgressModal({
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => handleCompleteAlertResponse(false)}>
-                            Cancel (set to 99%)
+                        <AlertDialogCancel onClick={() => handleCompleteAlertResponse(false)} disabled={isLoading}>
+                            Set to 99% & Save
                         </AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleCompleteAlertResponse(true)}>
-                            Yes, mark as complete
+                        <AlertDialogAction onClick={() => handleCompleteAlertResponse(true)} disabled={isLoading}>
+                            Yes, mark as complete & Save
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -306,61 +417,21 @@ export default function UpdateProgressModal({
             <AlertDialog open={showAffectedItemsAlert} onOpenChange={setShowAffectedItemsAlert}>
                 <AlertDialogContent className="fixed z-[1002]">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Lock Progress Updated</AlertDialogTitle>
+                        <AlertDialogTitle>🎉 Items Unlocked!</AlertDialogTitle>
                         <AlertDialogDescription>
-                            The following locked items had their progress updated:
-                        </AlertDialogDescription>
-                        <ul className="list-disc pl-6 mt-2">
-                            {affectedItems.map((affectedItem, index) => (
-                                <li key={index} className="text-sm">
-                                    {affectedItem.title}
-                                    {affectedItem.progress && (
-                                        <span className="text-muted-foreground">
-                                            {' '}(+{affectedItem.progress} {
-                                                item.media_type === 'book' ? 'pages' :
-                                                    item.media_type === 'tv' ? 'episodes' :
-                                                        'minutes'
-                                            })
-                                        </span>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogAction onClick={handleAffectedItemsAlertClose}>
-                            OK
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog open={showCompletionAlert} onOpenChange={setShowCompletionAlert}>
-                <AlertDialogContent className="fixed z-[1002]">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>🎉 Congratulations!</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            You've unlocked the following items:
-                            <ul className="list-disc pl-6 mt-2">
-                                {completedLocks.map((item, index) => (
+                            Your progress has unlocked the following items:
+                            <ul className="list-disc pl-6 mt-2 max-h-48 overflow-y-auto">
+                                {newlyUnlockedItemsForAlert.map((unlockedItem, index) => (
                                     <li key={index} className="text-sm">
-                                        {item.title}
+                                        {unlockedItem.title}
                                     </li>
                                 ))}
                             </ul>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogAction onClick={() => {
-                            setShowCompletionAlert(false);
-                            if (affectedItems.length > 0) {
-                                setShowAffectedItemsAlert(true);
-                            } else {
-                                onUpdate(progress);
-                                onClose();
-                            }
-                        }}>
-                            Continue
+                        <AlertDialogAction onClick={handleNewlyUnlockedItemsAlertClose}>
+                            OK
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

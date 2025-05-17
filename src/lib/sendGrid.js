@@ -140,9 +140,7 @@ To unsubscribe from the app and emails click here: ${unsubscribeLink}`,
           <li>News Feed (with recommendations based on user queue as well as friend and Club activity)</li>
           <li>Achievement/Trophy System</li>
         </ul>
-
-        <p>Thanks again for checking it out, and it's more fun with friends so try the invite feature in the "Social" section. I plan on rolling over early adopters to premium for free, but if you'd like to support the development, there's a Buy Me a Coffee link in the Contact page.</p>
-        <p>P.S. Hey Larissa, It was great meeting you and the other RadarQR folks at the Tech for Culture thing. I actually already got liked on your app. Hope ya'll aren't trying to set me up behind the scenes, lol, but I'll promote it at other meetups I attend and probably use it myself once I get time to breathe.  Either way, I would love to stay in touch. Can't remember if it was you or Amberlei who said I should talk to their significant other about my app and possibly life path (first time I got out and drank in a while). I sent you guys a like on RadarQr but I reacted to quick to click the message icon. Feel free to contact me here, LinkedIn(Didn't get any of you guys on there but I've included my qr code), or my personal wayne86davenport@gmail.com. Should this be in a traditional email footer? Maybe. But maybe relaxed professionalism is part of my brand. Wayniaq, signing off.</p>
+        
 
               <img src="https://6zm8wdn7u7.ufs.sh/f/wciQHFXot4VkniEicTLagT9lAUoBuYFZehqptW8DsSxGvXM0" 
            alt="MediaQ Image" 

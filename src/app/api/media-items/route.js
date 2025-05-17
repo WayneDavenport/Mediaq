@@ -158,7 +158,20 @@ export async function POST(request) {
                 if (tvError) throw tvError;
                 break;
 
-
+            case 'task': {
+                // Insert into tasks table
+                const { error: taskError } = await supabase
+                    .from('tasks')
+                    .insert({
+                        id: mediaItem.id,
+                        due_date: data.due_date || null,
+                        user_id: session.user.id,
+                        unit_name: data.unit_name || null,
+                        unit_range: data.unit_range || null,
+                    });
+                if (taskError) throw taskError;
+                break;
+            }
         }
 
         // Update progress tracking with UUID
@@ -200,10 +213,12 @@ export async function POST(request) {
                     goal_time: data.goal_time || 0,
                     goal_pages: data.goal_pages || 0,
                     goal_episodes: data.goal_episodes || 0,
+                    goal_units: data.goal_units || 0, // Added for tasks
                     completed_time: 0,
                     completed: false,
                     pages_completed: 0,
                     episodes_completed: 0,
+                    units_completed: 0, // Added for tasks
                     user_id: session.user.id
                 });
 
@@ -213,7 +228,44 @@ export async function POST(request) {
             }
         }
 
-        return NextResponse.json({ success: true, data: mediaItem });
+        // Fetch the newly created item with all its details to return
+        const { data: newItemWithDetails, error: fetchError } = await supabase
+            .from('media_items')
+            .select(`
+                *,
+                locked_items!locked_items_id_fkey(*),
+                user_media_progress!user_media_progress_id_fkey(*),
+                books(*),
+                movies(*),
+                tv_shows(*),
+                games(*),
+                tasks(*)
+            `)
+            .eq('id', mediaItem.id)
+            .eq('user_id', session.user.id)
+            .single();
+
+        if (fetchError) {
+            console.error('Error fetching newly created item:', fetchError);
+            // If fetching fails, we might still want to return the basic mediaItem 
+            // or handle this more gracefully depending on requirements.
+            // For now, let's re-throw to indicate a problem post-creation.
+            throw fetchError;
+        }
+
+        // Normalize the fetched item before returning
+        const transformedNewItem = {
+            ...newItemWithDetails,
+            locked_items: newItemWithDetails.locked_items ? (Array.isArray(newItemWithDetails.locked_items) ? newItemWithDetails.locked_items : [newItemWithDetails.locked_items]) : [],
+            user_media_progress: Array.isArray(newItemWithDetails.user_media_progress) ? newItemWithDetails.user_media_progress[0] : newItemWithDetails.user_media_progress,
+            books: Array.isArray(newItemWithDetails.books) ? newItemWithDetails.books[0] : newItemWithDetails.books,
+            movies: Array.isArray(newItemWithDetails.movies) ? newItemWithDetails.movies[0] : newItemWithDetails.movies,
+            tv_shows: Array.isArray(newItemWithDetails.tv_shows) ? newItemWithDetails.tv_shows[0] : newItemWithDetails.tv_shows,
+            games: Array.isArray(newItemWithDetails.games) ? newItemWithDetails.games[0] : newItemWithDetails.games,
+            tasks: Array.isArray(newItemWithDetails.tasks) ? newItemWithDetails.tasks[0] : newItemWithDetails.tasks,
+        };
+
+        return NextResponse.json({ success: true, data: transformedNewItem });
 
     } catch (error) {
         console.error('Error creating media item:', error);
@@ -252,7 +304,8 @@ export async function GET(request) {
                 books(*),
                 movies(*),
                 tv_shows(*),
-                games(*)
+                games(*),
+                tasks(*)
             `)
             .eq('user_id', session.user.id);
 

@@ -63,6 +63,13 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
     const goalTime = watch('goal_time');
     const goalPages = watch('goal_pages');
     const goalEpisodes = watch('goal_episodes');
+    const goalUnits = watch('goal_units');
+
+    // Find the selected task (if any)
+    const selectedTask = mediaType === 'task' && selectedKeyParent
+        ? incompleteItems.find(item => item.id === selectedKeyParent)
+        : null;
+    const unitName = selectedTask?.tasks?.unit_name || 'units';
 
     // Update corresponding value when either changes for books
     useEffect(() => {
@@ -182,6 +189,22 @@ export default function AddLockForm({ onSubmit, allCategories, incompleteItems }
                             {...register('goal_time', { valueAsNumber: true })}
                             placeholder="Time in minutes..."
                         />
+                    </div>
+                )}
+
+                {(mediaType === 'task') && (
+                    <div className="space-y-2">
+                        <Label>{unitName.charAt(0).toUpperCase() + unitName.slice(1)} Goal</Label>
+                        <Input
+                            type="number"
+                            {...register('goal_units', { valueAsNumber: true })}
+                            placeholder={`Number of ${unitName}...`}
+                        />
+                        {selectedTask && (
+                            <div className="text-sm text-muted-foreground">
+                                Max: {selectedTask.tasks?.unit_range || '?'} {unitName}
+                            </div>
+                        )}
                     </div>
                 )}
 
