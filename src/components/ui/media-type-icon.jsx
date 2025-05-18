@@ -1,3 +1,5 @@
+import { ClipboardCheck } from 'lucide-react';
+
 const MediaTypeIcon = ({ type, className = "" }) => {
     const iconStyle = `w-4 h-4 ${className}`;
 
@@ -30,6 +32,8 @@ const MediaTypeIcon = ({ type, className = "" }) => {
                         fill="currentColor" />
                 </svg>
             );
+        case 'task':
+            return <ClipboardCheck className={iconStyle} />;
         default:
             return null;
     }

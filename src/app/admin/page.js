@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Link from 'next/link';
 import { UserPlus, ShieldAlert } from 'lucide-react';
 import GmgCatalogSyncButton from '@/components/admin/GmgCatalogSyncButton';
+import FixQueueButton from '@/components/admin/FixQueueButton';
 
 export default function AdminDashboard() {
     const { data: session, status } = useSession();
@@ -70,6 +71,10 @@ export default function AdminDashboard() {
             <section>
                 <h2 className="text-xl font-semibold mb-4">GMG Catalog Sync</h2>
                 <GmgCatalogSyncButton />
+            </section>
+            <section>
+                <h2 className="text-xl font-semibold mb-4">Fix Queue</h2>
+                <FixQueueButton />
             </section>
             <section>
                 <h2 className="text-xl font-semibold mb-4">Send Thank You Email</h2>

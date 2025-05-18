@@ -213,7 +213,8 @@ export default function VHSModelCanvas() {
             <directionalLight position={[2, 4, 2]} intensity={1.8} castShadow />
             <Suspense fallback={null}>
                 <ModelCycler />
-                <Environment preset="city" />
+                {/* <Environment preset="city" /> */}
+                <Environment files="/hdri/potsdamer_platz_1k.hdr" /> {/* Load local HDR */}
             </Suspense>
             <OrbitControls enablePan={false} minDistance={2} maxDistance={6} />
         </Canvas>

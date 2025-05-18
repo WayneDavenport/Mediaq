@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ const formSchema = z.object({
     unit_range: z.number().min(1, "Must be at least 1").max(MAX_UNIT_RANGE, `Max is ${MAX_UNIT_RANGE}`),
     duration: z.number().min(1, "Duration required"),
     notes: z.string().optional().nullable(),
+    queue_number: z.number().optional().nullable(),
 });
 
 export default function StagingTask({ open, onClose, allCategories, refreshQueue }) {
@@ -28,6 +29,7 @@ export default function StagingTask({ open, onClose, allCategories, refreshQueue
     const [durationHours, setDurationHours] = useState(1);
     const [unitValue, setUnitValue] = useState(1);
     const [error, setError] = useState(null);
+    const [nextQueueNumber, setNextQueueNumber] = useState(null);
 
     const form = useForm({
         resolver: zodResolver(formSchema),
@@ -38,14 +40,36 @@ export default function StagingTask({ open, onClose, allCategories, refreshQueue
             unit_range: 1,
             duration: 60,
             notes: '',
+            queue_number: null,
         },
     });
 
-    // Keep unitValue and duration in sync proportionally
+    useEffect(() => {
+        if (open) {
+            const fetchNextQueueNumber = async () => {
+                try {
+                    setIsLoading(true);
+                    const response = await fetch('/api/media-items/queue-number');
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch next queue number');
+                    }
+                    const data = await response.json();
+                    setNextQueueNumber(data.nextQueueNumber);
+                    form.setValue('queue_number', data.nextQueueNumber);
+                    console.log('Fetched next queue number:', data.nextQueueNumber);
+                } catch (e) {
+                    console.error('Error fetching next queue number:', e.message);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            fetchNextQueueNumber();
+        }
+    }, [open, form]);
+
     const handleSliderChange = ([val]) => {
         const range = form.getValues('unit_range') || 1;
         setUnitValue(val);
-        // Proportionally update duration
         const totalDuration = durationHours * 60;
         const proportionalDuration = Math.round((val / range) * totalDuration);
         form.setValue('duration', proportionalDuration);
@@ -53,7 +77,6 @@ export default function StagingTask({ open, onClose, allCategories, refreshQueue
 
     const handleDurationChange = (hours) => {
         setDurationHours(hours);
-        // Proportionally update duration and unitValue
         const range = form.getValues('unit_range') || 1;
         const proportionalValue = Math.round((form.getValues('duration') / (hours * 60)) * range);
         setUnitValue(proportionalValue);
@@ -66,6 +89,7 @@ export default function StagingTask({ open, onClose, allCategories, refreshQueue
             const payload = {
                 ...data,
                 media_type: 'task',
+                queue_number: nextQueueNumber,
             };
             const response = await fetch('/api/media-items', {
                 method: 'POST',
@@ -162,7 +186,7 @@ export default function StagingTask({ open, onClose, allCategories, refreshQueue
                                                 onChange={e => {
                                                     const val = Math.max(1, Math.min(MAX_UNIT_RANGE, Number(e.target.value)));
                                                     field.onChange(val);
-                                                    setUnitValue(val); // update slider max
+                                                    setUnitValue(val);
                                                 }}
                                             />
                                         </FormControl>

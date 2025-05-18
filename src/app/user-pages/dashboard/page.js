@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import UpdateProgressModal from "@/components/progress/UpdateProgressModal";
 import { Button } from "@/components/ui/button";
 import ProgressSection from "@/components/progress/ProgressSection";
-import { Trash2, X, Loader2, Plus, ArrowUp, ArrowDown, MoveRight, Users, ExternalLink, ShoppingCart, Zap, XCircle } from 'lucide-react';
+import { Trash2, X, Loader2, Plus, ArrowUp, ArrowDown, MoveRight, Users, ExternalLink, ShoppingCart, Zap, XCircle, ListChecks } from 'lucide-react';
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -86,110 +86,74 @@ export default function Dashboard() {
         }
     });
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (status === "authenticated") {
-                try {
-                    setLoading(true);
-                    console.log('Fetching media items with session:', {
-                        userEmail: session?.user?.email,
-                        userId: session?.user?.id,
-                        hasToken: !!session?.access_token
+    // Extracted data loading function
+    const loadDashboardData = async () => {
+        if (status === "authenticated" && session) {
+            try {
+                setLoading(true);
+                console.log('Fetching media items with session:', {
+                    userEmail: session?.user?.email,
+                    userId: session?.user?.id,
+                    hasToken: !!session?.access_token
+                });
+
+                const mediaResponse = await fetch('/api/media-items');
+                const mediaData = await mediaResponse.json();
+
+                if (mediaData.error) {
+                    console.error('Supabase Error:', {
+                        message: mediaData.error,
+                        details: mediaData.details,
+                        code: mediaData.details?.code,
+                        hint: mediaData.details?.hint
                     });
-
-                    const mediaResponse = await fetch('/api/media-items');
-
-                    // Log the raw response
-                    console.log('Media items response:', {
-                        status: mediaResponse.status,
-                        statusText: mediaResponse.statusText,
-                        headers: Object.fromEntries(mediaResponse.headers.entries())
-                    });
-
-                    const mediaData = await mediaResponse.json();
-                    console.log('Media items data:', {
-                        hasItems: !!mediaData.items,
-                        itemCount: mediaData.items?.length,
-                        firstItem: mediaData.items?.[0],
-                        error: mediaData.error,
-                        details: mediaData.details
-                    });
-
-                    if (mediaData.error) {
-                        // Log Supabase error details if present
-                        console.error('Supabase Error:', {
-                            message: mediaData.error,
-                            details: mediaData.details,
-                            code: mediaData.details?.code,
-                            hint: mediaData.details?.hint
-                        });
-                        throw new Error(mediaData.error);
-                    }
-
-                    if (mediaData.items) {
-                        const gameItems = mediaData.items.filter(item => item.media_type === 'game');
-                        console.log('Game items found:', {
-                            count: gameItems.length,
-                            titles: gameItems.map(item => item.title)
-                        });
-
-                        let processedMediaItems = mediaData.items; // Start with original items
-
-                        if (gameItems.length > 0) {
-                            const gmgLinks = await fetchGmgLinksForGames(gameItems);
-                            console.log('GMG Links object received in dashboard:', gmgLinks); // Log the object received
-
-                            // Map over items and add the gmg_link using lowercase lookup
-                            processedMediaItems = mediaData.items.map(item => {
-                                if (item.media_type === 'game') {
-                                    const lowerCaseTitle = item.title.toLowerCase();
-                                    const linkData = gmgLinks[lowerCaseTitle] || null; // Lookup using lowercase title
-
-                                    // Log the lookup process for debugging
-                                    console.log(`Lookup for '${item.title}' (lowercase: '${lowerCaseTitle}'): Found ->`, linkData);
-
-                                    return {
-                                        ...item,
-                                        gmg_link: linkData,
-                                        has_gmg: !!linkData // Check truthiness of the found data
-                                    };
-                                }
-                                return item; // Return non-game items unchanged
-                            });
-                        }
-
-                        // --- FETCH AD DATA --- (Replaces previous generation logic)
-                        const fetchedAdData = await getAdLinks();
-                        setAdData(fetchedAdData);
-                        setVisibleAdIds(fetchedAdData.map(ad => ad.id)); // Initialize all as visible
-                        // --- END FETCH AD DATA ---
-
-                        // Set the main media items state
-                        setMediaItems(processedMediaItems);
-
-                        // Log the final state update
-                        console.log('Media items state updated:', {
-                            totalItems: processedMediaItems.length,
-                            itemTypes: processedMediaItems.reduce((acc, item) => {
-                                acc[item.media_type] = (acc[item.media_type] || 0) + 1;
-                                return acc;
-                            }, {})
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error in fetchData:', {
-                        message: error.message,
-                        stack: error.stack,
-                        name: error.name
-                    });
-                } finally {
-                    setLoading(false);
+                    throw new Error(mediaData.error);
                 }
-            }
-        };
 
-        fetchData();
-    }, [status, session]);
+                let processedMediaItems = [];
+                if (mediaData.items) {
+                    const gameItems = mediaData.items.filter(item => item.media_type === 'game');
+                    if (gameItems.length > 0) {
+                        const gmgLinks = await fetchGmgLinksForGames(gameItems);
+                        processedMediaItems = mediaData.items.map(item => {
+                            if (item.media_type === 'game') {
+                                const lowerCaseTitle = item.title.toLowerCase();
+                                const linkData = gmgLinks[lowerCaseTitle] || null;
+                                return { ...item, gmg_link: linkData, has_gmg: !!linkData };
+                            }
+                            return item;
+                        });
+                    } else {
+                        processedMediaItems = mediaData.items;
+                    }
+                    setMediaItems(processedMediaItems);
+                } else {
+                    setMediaItems([]); // Ensure mediaItems is an array even if no items
+                }
+
+                const fetchedAdData = await getAdLinks();
+                setAdData(fetchedAdData);
+                setVisibleAdIds(fetchedAdData.map(ad => ad.id));
+
+                console.log('Dashboard data loaded/reloaded.');
+
+            } catch (error) {
+                console.error('Error in loadDashboardData:', {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name
+                });
+                // Potentially set an error state here to show in UI
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    useEffect(() => {
+        // Initial data fetch and on session change
+        loadDashboardData();
+    }, [status, session]); // Dependencies remain the same
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -678,6 +642,13 @@ export default function Dashboard() {
     // Filter ad links based on visibility state
     const visibleAds = adData.filter(ad => visibleAdIds.includes(ad.id));
 
+    const handleTaskAdded = async () => {
+        setShowTaskStaging(false); // Close the modal
+        toast.info("Refreshing queue to include new task...");
+        await loadDashboardData(); // Reload all dashboard data
+        toast.success("Queue refreshed!");
+    };
+
     if (status === "loading" || loading) {
         return <LoadingScreen />;
     }
@@ -810,14 +781,7 @@ export default function Dashboard() {
                     </div>
 
                     <div className={styles.mediaGrid}>
-                        {/* Add Task Button */}
-                        <Button
-                            onClick={() => setShowTaskStaging(true)}
-                            variant="outline"
-                            className="mb-4 bg-blue-600 hover:bg-blue-700 text-white border-blue-700 hover:border-blue-800"
-                        >
-                            + Add Task
-                        </Button>
+
                         {loading ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {[...Array(6)].map((_, index) => (
@@ -961,27 +925,33 @@ export default function Dashboard() {
                                                         )}
 
                                                         {/* Rest of the content */}
-                                                        <Image
-                                                            src={(() => {
-                                                                switch (item.media_type) {
-                                                                    case 'movie':
-                                                                    case 'tv':
-                                                                        return item.poster_path
-                                                                            ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                                                                            : '/images/placeholder.jpg';
-                                                                    case 'book':
-                                                                        return item.poster_path || '/images/placeholder.jpg';
-                                                                    case 'game':
-                                                                        return item.poster_path || '/images/placeholder.jpg';
-                                                                    default:
-                                                                        return '/images/placeholder.jpg';
-                                                                }
-                                                            })()}
-                                                            alt={item.title}
-                                                            width={160}
-                                                            height={160}
-                                                            className="object-cover rounded w-20 h-20"
-                                                        />
+                                                        {item.media_type === 'task' && !item.poster_path ? (
+                                                            <div className="w-20 h-20 grid place-items-center bg-muted rounded">
+                                                                <ListChecks className="h-10 w-10 text-muted-foreground" />
+                                                            </div>
+                                                        ) : (
+                                                            <Image
+                                                                src={(() => {
+                                                                    switch (item.media_type) {
+                                                                        case 'movie':
+                                                                        case 'tv':
+                                                                            return item.poster_path
+                                                                                ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                                                                                : '/images/placeholder.jpg';
+                                                                        case 'book':
+                                                                            return item.poster_path || '/images/placeholder.jpg';
+                                                                        case 'game':
+                                                                            return item.poster_path || '/images/placeholder.jpg';
+                                                                        default:
+                                                                            return '/images/placeholder.jpg';
+                                                                    }
+                                                                })()}
+                                                                alt={item.title}
+                                                                width={160}
+                                                                height={160}
+                                                                className="object-cover rounded w-20 h-20"
+                                                            />
+                                                        )}
                                                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 sm:block hidden">
                                                             <div className="relative h-full flex flex-col">
                                                                 <div className="flex-1 flex items-center justify-center p-2">
@@ -1044,6 +1014,31 @@ export default function Dashboard() {
                                             <div className="sm:hidden flex flex-1 justify-between items-center">
                                                 <h2 className="text-sm font-medium">
                                                     Add New Media
+                                                </h2>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                </Link>
+                                {/* Add Task Button */}
+                                <Link href="#" onClick={() => setShowTaskStaging(true)} className={styles.mediaCard}>
+                                    <Card className="overflow-hidden group relative">
+                                        <div className={styles.mediaContent}>
+                                            <div className={styles.posterWrapper}>
+                                                <div className="w-20 h-20 grid place-items-center bg-blue-600 rounded">
+                                                    <Plus className="h-8 w-8 text-white" />
+                                                </div>
+                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 sm:block hidden">
+                                                    <div className="relative h-full flex items-center justify-center">
+                                                        <h2 className="text-white text-sm text-center font-medium">
+                                                            Add New Task
+                                                        </h2>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {/* Add mobile-only title */}
+                                            <div className="sm:hidden flex flex-1 justify-between items-center">
+                                                <h2 className="text-sm font-medium">
+                                                    Add New Task
                                                 </h2>
                                             </div>
                                         </div>
@@ -1537,7 +1532,7 @@ export default function Dashboard() {
                     open={showTaskStaging}
                     onClose={() => setShowTaskStaging(false)}
                     allCategories={allCategories}
-                    refreshQueue={() => {/* TODO: refetch media items after adding a task */ }}
+                    refreshQueue={handleTaskAdded}
                 />
             )}
         </>
