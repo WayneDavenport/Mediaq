@@ -11,6 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import styles from './staging.module.css';
+import { toast } from 'sonner';
 
 const MAX_UNIT_RANGE = 10000;
 
@@ -28,7 +29,6 @@ export default function StagingTask({ open, onClose, allCategories, refreshQueue
     const [isLoading, setIsLoading] = useState(false);
     const [durationHours, setDurationHours] = useState(1);
     const [unitValue, setUnitValue] = useState(1);
-    const [error, setError] = useState(null);
     const [nextQueueNumber, setNextQueueNumber] = useState(null);
 
     const form = useForm({
@@ -84,7 +84,6 @@ export default function StagingTask({ open, onClose, allCategories, refreshQueue
 
     const onSubmit = async (data) => {
         setIsLoading(true);
-        setError(null);
         try {
             const payload = {
                 ...data,
@@ -98,12 +97,23 @@ export default function StagingTask({ open, onClose, allCategories, refreshQueue
             });
             if (!response.ok) {
                 const err = await response.json();
-                throw new Error(err.error || 'Failed to add task');
+                if (response.status === 403) {
+                    toast.error("Queue Limit Reached", {
+                        description: err.error || "You've reached the maximum number of items in your queue."
+                    });
+                } else {
+                    throw new Error(err.error || 'Failed to add task');
+                }
+                return; // Stop execution if there was a handled error
             }
+
+            toast.success("Task added to queue!");
             if (refreshQueue) refreshQueue();
             onClose();
         } catch (e) {
-            setError(e.message);
+            toast.error("Error", {
+                description: e.message
+            });
         } finally {
             setIsLoading(false);
         }
@@ -235,7 +245,6 @@ export default function StagingTask({ open, onClose, allCategories, refreshQueue
                                     </FormItem>
                                 )}
                             />
-                            {error && <div className="text-red-500 text-sm">{error}</div>}
                             <div className="flex justify-end gap-2 mt-4">
                                 <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading}>Cancel</Button>
                                 <Button type="submit" disabled={isLoading}>

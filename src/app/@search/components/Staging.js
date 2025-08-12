@@ -380,20 +380,17 @@ const Staging = () => {
             });
 
             if (!response.ok) {
-                // Try to get detailed error message
-                const errorText = await response.text();
-                console.error("API Error Response:", {
-                    status: response.status,
-                    statusText: response.statusText,
-                    body: errorText
-                });
-
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    throw new Error(errorJson.message || 'Server error');
-                } catch (e) {
-                    throw new Error(`Failed to add item: ${response.status} ${response.statusText}`);
+                const errorData = await response.json().catch(() => ({}));
+                if (response.status === 403) {
+                    toast.error("Queue Limit Reached", {
+                        description: errorData.error || "You have reached the maximum number of items in your queue.",
+                    });
+                } else {
+                    toast.error("Failed to Add Item", {
+                        description: errorData.error || `The server returned an error: ${response.statusText}`,
+                    });
                 }
+                return; // Stop execution
             }
 
             const result = await response.json();

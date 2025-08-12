@@ -184,13 +184,24 @@ const MediaModal = ({ item, isOpen, onClose, cardPosition, isFriendItem = false,
             });
 
             if (!response.ok) {
-                throw new Error('Failed to add item');
+                const errorData = await response.json();
+                const err = new Error(errorData.error || 'An unknown error occurred.');
+                err.status = response.status;
+                throw err;
             }
 
             toast.success('Item added to your queue!');
             onClose();
         } catch (error) {
-            toast.error(error.message || 'Failed to add item');
+            if (error.status === 403) {
+                toast.error("Queue Limit Reached", {
+                    description: error.message,
+                });
+            } else {
+                toast.error('Failed to add item', {
+                    description: error.message,
+                });
+            }
         } finally {
             setIsAdding(false);
         }

@@ -3,7 +3,7 @@ import supabase from '@/lib/supabaseClient';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
-
+const FREE_TIER_QUEUE_LIMIT = 50;
 
 
 /* 
@@ -41,6 +41,28 @@ export async function POST(request) {
     }
 
     try {
+        // Check user's current queue size against the limit
+        const { count, error: countError } = await supabase
+            .from('user_media_progress')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', session.user.id)
+            .eq('completed', false);
+
+        if (countError) {
+            console.error('Error counting user media items:', countError);
+            // Throwing an error will result in a generic 500, which is fine here.
+            throw new Error('Could not verify queue size.');
+        }
+
+        // Enforce queue limit for free tier
+        // In the future, you can check for a premium subscription here
+        if (count >= FREE_TIER_QUEUE_LIMIT) {
+            return NextResponse.json(
+                { error: `You have reached the ${FREE_TIER_QUEUE_LIMIT}-item limit for your queue.` },
+                { status: 403 } // 403 Forbidden is appropriate for exceeding a quota
+            );
+        }
+
         const data = await request.json();
         console.log('Received data:', data); // Debug log
 

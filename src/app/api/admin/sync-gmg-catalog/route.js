@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { syncGmgCatalogToSupabase } from '@/lib/supabase-gmg';
 
+//cataloge fetch is done in the server component GmgCatalog.js
+
 export async function POST(request) {
     try {
         // Check if user is authenticated and is an admin
