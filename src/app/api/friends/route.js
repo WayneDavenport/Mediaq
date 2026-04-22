@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import supabase from '@/lib/supabaseClient';
+import { createUserSupabaseClient } from '@/lib/supabaseUserClient';
 
 export async function GET(request) {
     try {
@@ -12,6 +12,8 @@ export async function GET(request) {
                 { status: 401 }
             );
         }
+
+        const supabase = createUserSupabaseClient(session.user.id, session.user.email);
 
         // Get all friends for the current user
         const { data: friends, error } = await supabase

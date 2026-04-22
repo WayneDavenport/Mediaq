@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import supabase from '@/lib/supabaseClient';
+import { createUserSupabaseClient } from '@/lib/supabaseUserClient';
 
 export async function GET(request) {
     try {
@@ -9,6 +9,8 @@ export async function GET(request) {
         if (!session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const supabase = createUserSupabaseClient(session.user.id, session.user.email);
 
         const { data: items, error } = await supabase
             .from('user_media_progress')

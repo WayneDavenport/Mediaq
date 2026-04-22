@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import supabase from '@/lib/supabaseClient';
+import { createUserSupabaseClient } from '@/lib/supabaseUserClient';
 
 export async function GET(request) {
     const session = await getServerSession(authOptions);
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const supabase = createUserSupabaseClient(session.user.id, session.user.email);
 
     try {
         // Get the highest queue number for this specific user

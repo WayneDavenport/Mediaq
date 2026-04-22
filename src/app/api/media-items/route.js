@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import supabase from '@/lib/supabaseClient';
+import { createUserSupabaseClient } from '@/lib/supabaseUserClient';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
@@ -39,6 +39,8 @@ export async function POST(request) {
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const supabase = createUserSupabaseClient(session.user.id, session.user.email);
 
     try {
         // Check user's current queue size against the limit
@@ -312,6 +314,8 @@ export async function GET(request) {
             console.log('No session found');
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const supabase = createUserSupabaseClient(session.user.id, session.user.email);
 
         // Log before Supabase query
         console.log('Attempting Supabase query for user:', session.user.id);
