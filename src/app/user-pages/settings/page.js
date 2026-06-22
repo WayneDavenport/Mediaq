@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
 
@@ -26,7 +26,9 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
+    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { AlertTriangle } from 'lucide-react';
 
 export default function Settings() {
     const { data: session, update } = useSession();
@@ -43,6 +45,9 @@ export default function Settings() {
     const [isUpdatingDurations, setIsUpdatingDurations] = useState(false);
     const [pendingReadingSpeed, setPendingReadingSpeed] = useState(null);
     const [showGenericLockDialog, setShowGenericLockDialog] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [confirmationEmail, setConfirmationEmail] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const pagesPerTwentyMin = (userData.reading_speed * 20).toFixed(1);
 
@@ -159,6 +164,39 @@ export default function Settings() {
         }
     };
 
+    const handleDeleteAccount = async () => {
+        if (confirmationEmail !== session?.user?.email) {
+            toast.error('Email does not match');
+            return;
+        }
+
+        setIsDeleting(true);
+
+        try {
+            const response = await fetch('/api/user/delete-account', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirmationEmail }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to delete account');
+            }
+
+            toast.success('Account deleted successfully. Goodbye!');
+            
+            // Sign out and redirect to home page
+            setTimeout(() => {
+                signOut({ callbackUrl: '/' });
+            }, 1500);
+        } catch (error) {
+            toast.error(error.message || 'Failed to delete account');
+            setIsDeleting(false);
+        }
+    };
+
     return (
         <>
 
@@ -250,6 +288,94 @@ export default function Settings() {
                                 {isUpdatingDurations ? 'Updating...' : 'Save Changes'}
                             </Button>
                         </form>
+                    </CardContent>
+                </Card>
+
+                {/* Danger Zone */}
+                <Card className="mt-6 border-red-200 dark:border-red-900">
+                    <CardHeader>
+                        <CardTitle className="text-red-600 dark:text-red-400 flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5" />
+                            Danger Zone
+                        </CardTitle>
+                        <CardDescription>
+                            Irreversible and destructive actions
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="border border-red-200 dark:border-red-900 rounded-lg p-4">
+                            <div className="flex items-start justify-between">
+                                <div className="space-y-1">
+                                    <h3 className="font-semibold text-red-600 dark:text-red-400">
+                                        Delete Account
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        Permanently delete your MediaQ account and all associated data. This action cannot be undone.
+                                    </p>
+                                </div>
+                                <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            variant="destructive"
+                                            className="ml-4"
+                                            onClick={() => setConfirmationEmail('')}
+                                        >
+                                            Delete Account
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                                                <AlertTriangle className="h-5 w-5" />
+                                                Delete Account
+                                            </AlertDialogTitle>
+                                            <AlertDialogDescription asChild>
+                                                <div className="space-y-4">
+                                                    <p>
+                                                        This will permanently delete your account and all associated data, including:
+                                                    </p>
+                                                    <ul className="list-disc list-inside space-y-1 text-sm">
+                                                        <li>All your media items and queue</li>
+                                                        <li>Your progress and reading history</li>
+                                                        <li>All friendships and social connections</li>
+                                                        <li>Comments and recommendations</li>
+                                                        <li>Your profile and preferences</li>
+                                                    </ul>
+                                                    <p className="font-semibold text-foreground">
+                                                        This action cannot be undone.
+                                                    </p>
+                                                    <div className="space-y-2 pt-4">
+                                                        <Label htmlFor="confirm-email">
+                                                            Type your email <span className="font-semibold">{session?.user?.email}</span> to confirm:
+                                                        </Label>
+                                                        <Input
+                                                            id="confirm-email"
+                                                            type="email"
+                                                            placeholder="your.email@example.com"
+                                                            value={confirmationEmail}
+                                                            onChange={(e) => setConfirmationEmail(e.target.value)}
+                                                            disabled={isDeleting}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel disabled={isDeleting}>
+                                                Cancel
+                                            </AlertDialogCancel>
+                                            <Button
+                                                variant="destructive"
+                                                onClick={handleDeleteAccount}
+                                                disabled={isDeleting || confirmationEmail !== session?.user?.email}
+                                            >
+                                                {isDeleting ? 'Deleting...' : 'Delete My Account'}
+                                            </Button>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
