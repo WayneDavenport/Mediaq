@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
-import { sendPasswordResetEmail } from '@/lib/sendGrid'; // Import the new email function
+import { sendPasswordResetEmail } from '@/lib/resend'; // Import the new email function
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,

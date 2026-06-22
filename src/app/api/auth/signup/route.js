@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { sendVerificationEmail } from '@/lib/sendGrid';
+import { sendVerificationEmail } from '@/lib/resend';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,

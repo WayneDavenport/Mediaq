@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
 
-// Configure SendGrid
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Configure Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request) {
     try {
@@ -20,12 +20,11 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
         }
 
-        // Create email content
-        const msg = {
+        // Send email using Resend
+        await resend.emails.send({
+            from: 'MediaQ <wayne@mediaq.io>',
             to: email,
-            from: process.env.SENDGRID_FROM_EMAIL || 'noreply@mediaq.io', // Verified sender in SendGrid
             subject: `${session.user.username || session.user.name || 'Your friend'} invites you to join MediaQ`,
-            text: `Hello! ${session.user.username || session.user.name || 'Your friend'} thinks you might enjoy using MediaQ to organize your media collections. Visit https://mediaq.io to sign up and start tracking your movies, books, TV shows, and games!`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e9e9e9; border-radius: 5px;">
                     <h2 style="color: #333;">Join MediaQ</h2>
@@ -43,10 +42,7 @@ export async function POST(request) {
                     <p style="margin-top: 30px; font-size: 0.8rem; color: #666;">If you received this email by mistake, you can simply ignore it.</p>
                 </div>
             `,
-        };
-
-        // Send email
-        await sgMail.send(msg);
+        });
 
         // Log invitation for future reference
         console.log(`Invitation sent from ${session.user.email} to ${email}`);

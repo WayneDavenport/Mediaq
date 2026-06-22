@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
-import { sendVerificationEmail } from '@/lib/sendGrid';
+import { sendVerificationEmail } from '@/lib/resend';
 import supabase from '@/lib/supabaseClient';
 
 export async function POST(request) {
@@ -45,9 +45,9 @@ export async function POST(request) {
         } catch (emailError) {
             console.error('Error sending verification email:', emailError);
 
-            // Detailed logging for SendGrid errors
+            // Detailed logging for Resend errors
             if (emailError.response) {
-                console.error('SendGrid response error:', {
+                console.error('Resend response error:', {
                     statusCode: emailError.code,
                     body: emailError.response.body
                 });

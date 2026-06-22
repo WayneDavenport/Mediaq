@@ -1,4 +1,4 @@
-import { sendThankYouEmail } from '@/lib/sendGrid';
+import { sendThankYouEmail } from '@/lib/resend';
 
 export async function POST(req) {
     const { email } = await req.json();

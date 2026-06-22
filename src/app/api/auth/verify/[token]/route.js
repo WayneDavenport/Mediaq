@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import supabase from '@/lib/supabaseClient';
-import { sendWelcomeEmail } from '@/lib/sendGrid';
+import { sendWelcomeEmail } from '@/lib/resend';
 
 export async function GET(request, { params }) {
     try {

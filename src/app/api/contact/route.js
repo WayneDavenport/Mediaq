@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
 
-// Initialize SendGrid with your API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Initialize Resend with your API key
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request) {
     try {
@@ -16,12 +16,12 @@ export async function POST(request) {
             );
         }
 
-        // Format the email
-        const msg = {
+        // Send email using Resend
+        await resend.emails.send({
+            from: 'MediaQ Contact <wayne@mediaq.io>',
             to: 'wayne@mediaq.io',
-            from: process.env.SENDGRID_FROM_EMAIL || 'contact@mediaq.io', // Use your verified sender
+            replyTo: email,
             subject: `MediaQ Contact: ${subject}`,
-            text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\nMessage: ${message}`,
             html: `
         <h1>New contact form submission</h1>
         <p><strong>Name:</strong> ${name}</p>
@@ -30,10 +30,7 @@ export async function POST(request) {
         <p><strong>Message:</strong></p>
         <p>${message.replace(/\n/g, '<br>')}</p>
       `,
-        };
-
-        // Send email using SendGrid
-        await sgMail.send(msg);
+        });
 
         return NextResponse.json({
             success: true,

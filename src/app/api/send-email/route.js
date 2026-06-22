@@ -1,20 +1,19 @@
-// Route handler for sending emails with SendGrid
+// Route handler for sending emails with Resend
 import { NextResponse } from 'next/server';
-import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST() {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
     const msg = {
-        to: 'wayne86davenport@gmail.com', // Change to your recipient
-        from: 'wayne@mediaq.io', // Change to your verified sender
-        subject: 'Sending with SendGrid is Fun',
-        text: 'and easy to do anywhere, even with Node.js',
+        from: 'MediaQ <wayne@mediaq.io>',
+        to: 'wayne86davenport@gmail.com',
+        subject: 'Sending with Resend is Fun',
         html: '<strong>and easy to do anywhere, even with Node.js</strong>',
     };
 
     try {
-        await sgMail.send(msg);
+        await resend.emails.send(msg);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error(error);

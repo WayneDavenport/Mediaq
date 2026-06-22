@@ -102,7 +102,7 @@ export default function InviteFriends() {
             <CardFooter className="flex justify-between items-center border-t pt-4 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                     <Mail className="h-3 w-3" />
-                    Powered by SendGrid
+                    Powered by Resend
                 </div>
                 <div className="flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
