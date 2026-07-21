@@ -146,15 +146,10 @@ body {
   }
 }
 
-/* Optimize scrolling */
-* {
-  @apply overscroll-none momentum-scroll;
-}
-
 /* Prevent rubber-banding on iOS */
 html,
 body {
-  @apply overscroll-none h-full;
+  @apply overscroll-none momentum-scroll h-full;
 }
 
 /* Prevent pull-to-refresh on mobile */
